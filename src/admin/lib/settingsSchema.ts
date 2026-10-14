@@ -16,21 +16,43 @@ export const privacySettingsSchema = z
 	} )
 	.strict();
 
+export const roleSchema = z
+	.object( {
+		provider: z.string(),
+		model: z.string(),
+	} )
+	.strict();
+
+export const providersSettingsSchema = z
+	.object( {
+		primary: roleSchema,
+		fallback: roleSchema,
+		embeddings: roleSchema.extend( { dimensions: z.number().int() } ),
+		// Per-provider settings; each provider defines its own fields.
+		configs: z.record( z.string(), z.record( z.string(), z.unknown() ) ),
+	} )
+	.strict();
+
 export const settingsSchema = z
 	.object( {
 		setup: setupSettingsSchema,
 		privacy: privacySettingsSchema,
+		providers: providersSettingsSchema,
 	} )
 	.strict();
 
 export type Settings = z.infer< typeof settingsSchema >;
 
+type DeepPartial< T > = T extends unknown[]
+	? T
+	: T extends object
+		? { [ K in keyof T ]?: DeepPartial< T[ K ] > }
+		: T;
+
 /**
- * A partial update: any subset of sections, each with any subset of fields.
+ * A partial update: any subset of sections and nested fields.
  */
-export type SettingsUpdate = {
-	[ Section in keyof Settings ]?: Partial< Settings[ Section ] >;
-};
+export type SettingsUpdate = DeepPartial< Settings >;
 
 /**
  * Form shown on the Settings page ("Data & privacy").
@@ -43,9 +65,44 @@ export const dataPrivacyFormSchema = z
 
 export type DataPrivacyForm = z.infer< typeof dataPrivacyFormSchema >;
 
+function isPlainObject( value: unknown ): value is Record< string, unknown > {
+	return (
+		typeof value === 'object' && value !== null && ! Array.isArray( value )
+	);
+}
+
 /**
- * Deep-merges a partial update into settings (used for optimistic updates;
- * mirrors Settings::merge_known() in PHP).
+ * Deep-merges a partial update into a value: plain objects merge, lists and
+ * scalars are replaced (mirrors Settings::merge_known() in PHP).
+ *
+ * @param current Current value.
+ * @param update  Partial update.
+ */
+function deepMerge(
+	current: Record< string, unknown >,
+	update: Record< string, unknown >
+): Record< string, unknown > {
+	const next: Record< string, unknown > = { ...current };
+
+	for ( const [ key, value ] of Object.entries( update ) ) {
+		if ( value === undefined ) {
+			continue;
+		}
+		next[ key ] =
+			isPlainObject( value ) && isPlainObject( current[ key ] )
+				? deepMerge(
+						current[ key ] as Record< string, unknown >,
+						value
+					)
+				: value;
+	}
+
+	return next;
+}
+
+/**
+ * Applies a partial update to settings, ignoring unknown sections
+ * (used for optimistic updates).
  *
  * @param current Current settings.
  * @param update  Partial update.
@@ -54,13 +111,16 @@ export function mergeSettings(
 	current: Settings,
 	update: SettingsUpdate
 ): Settings {
-	const next = { ...current } as Record< string, Record< string, unknown > >;
+	const known: Record< string, unknown > = {};
 
-	for ( const [ section, values ] of Object.entries( update ) ) {
-		if ( section in next && values ) {
-			next[ section ] = { ...next[ section ], ...values };
+	for ( const [ section, value ] of Object.entries( update ) ) {
+		if ( section in current ) {
+			known[ section ] = value;
 		}
 	}
 
-	return next as unknown as Settings;
+	return deepMerge(
+		current as unknown as Record< string, unknown >,
+		known
+	) as unknown as Settings;
 }

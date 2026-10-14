@@ -413,14 +413,62 @@ This plugin is submitted to the WordPress.org Plugin Directory. Every rule below
 - The submitted plugin is complete and fully working.
 
 ## Build phases
-1. **Foundation**: bootstrap, plugin identity and prefixes, Composer + Strauss setup, autoloader, multisite-aware activation with the redirect rules, schema and migrations, settings storage, encryption with fingerprint, wp-scripts build setup, and the admin shell with the design system foundation, sidebar navigation, and extension registry.
-2. **Providers**: interface, HTTP API transport and streamer, OpenAI-compatible base with presets, Anthropic and Gemini adapters, embeddings support, error normalization, live model lists with suggestions, test connection, primary/fallback, Providers page.
-3. **Chat backend**: session manager, conversation state, IP resolver, rate limiter, cost guard, quick answers, response cache, site-search fallback, no-key mode, prompt builder, non-streaming endpoint, logging.
-4. **Widget**: full widget UI, design token system, widget styles (floating, side panel, modal, inline), message styles, CSS parts, preview mode, streaming with stream limiter and abort handling, markdown sanitizer, source cards, quick actions, tab sync, mobile, accessibility, shortcode, block, JS API.
-5. **Admin experience**: setup wizard with provider guides, Dashboard, Chatbot, Playground, the Customizer with always-on live preview (presets, Simple/Advanced modes, colors, typography, layout, draft/publish, versions, real-site backdrop, context-aware states, click-to-edit, interactive preview, before/after, devices, Developer styling panel), Display & triggers, Conversations, Settings with Health check, core Command Palette commands.
-6. **Knowledge base**: indexer, document uploads, embeddings storage and re-embedding, two-stage retrieval with n-gram fallback, source links, WooCommerce sync, multilingual filtering, Knowledge page.
-7. **Engagement, integrations, and platform**: proactive triggers, voice, lead capture, handoff, webhooks, email notifications, analytics events, cache purging, optimization-plugin compatibility, WPML/Polylang, "Match my website", WordPress Font Library and theme.json integration, "Preview on my site", per-language content, WordPress Connectors bridge and core AI Client, Abilities registration.
-8. **Hardening and release**: privacy integrations, uninstall, full test suite, i18n, readme with all required sections, Plugin Check fixes, release zip.
+Status legend: ✅ done · 🚧 in progress · ⬜ not started. Approved deviations are listed under "Build log" below.
+
+1. ✅ **Foundation** (done 2026-10-14): bootstrap, plugin identity and prefixes, Composer + Strauss setup, autoloader, multisite-aware activation with the redirect rules, schema and migrations, settings storage, encryption with fingerprint, wp-scripts build setup, and the admin shell with the design system foundation, sidebar navigation, and extension registry.
+2. ✅ **Providers** (done 2026-10-14, awaiting review): interface, HTTP API transport and streamer, OpenAI-compatible base with presets, Anthropic and Gemini adapters, embeddings support, error normalization, live model lists with suggestions, test connection, primary/fallback, Providers page.
+3. ⬜ **Chat backend**: session manager, conversation state, IP resolver, rate limiter, cost guard, quick answers, response cache, site-search fallback, no-key mode, prompt builder, non-streaming endpoint, logging.
+4. ⬜ **Widget**: full widget UI, design token system, widget styles (floating, side panel, modal, inline), message styles, CSS parts, preview mode, streaming with stream limiter and abort handling, markdown sanitizer, source cards, quick actions, tab sync, mobile, accessibility, shortcode, block, JS API.
+5. ⬜ **Admin experience**: setup wizard with provider guides, Dashboard, Chatbot, Playground, the Customizer with always-on live preview (presets, Simple/Advanced modes, colors, typography, layout, draft/publish, versions, real-site backdrop, context-aware states, click-to-edit, interactive preview, before/after, devices, Developer styling panel), Display & triggers, Conversations, Settings with Health check, core Command Palette commands.
+6. ⬜ **Knowledge base**: indexer, document uploads, embeddings storage and re-embedding, two-stage retrieval with n-gram fallback, source links, WooCommerce sync, multilingual filtering, Knowledge page.
+7. ⬜ **Engagement, integrations, and platform**: proactive triggers, voice, lead capture, handoff, webhooks, email notifications, analytics events, cache purging, optimization-plugin compatibility, WPML/Polylang, "Match my website", WordPress Font Library and theme.json integration, "Preview on my site", per-language content, WordPress Connectors bridge and core AI Client, Abilities registration.
+8. ⬜ **Hardening and release**: privacy integrations, uninstall, full test suite, i18n, readme with all required sections, Plugin Check fixes, release zip.
+
+### Build log
+
+**Phase 1 – Foundation ✅ (2026-10-14)**
+- [x] Bootstrap, identity, prefixes, PHP version and missing-autoloader notices
+- [x] Composer PSR-4 autoloading; Strauss (pinned phar 0.27.4) prefixing into `vendor-prefixed/`
+- [x] Multisite-aware activation, new-site install, per-site table drop on site deletion
+- [x] One-time activation redirect (never on bulk, network, WP-CLI, AJAX, REST)
+- [x] Five custom tables via dbDelta, separate FULLTEXT index with detection, DB version and settings schema migrations
+- [x] Settings storage (`chatlume_settings`, not autoloaded) with schema-driven validation, sanitization, and clamping
+- [x] libsodium encryption with key fingerprint and "key unreadable" handling
+- [x] wp-scripts build (admin bundle), Tailwind 4 with `chatlume` prefix and no preflight, ESLint/Stylelint/tsc, Jest, PHPUnit, PHPCS
+- [x] Admin shell: header, registry-driven sidebar, Home (system status), Settings (Data & privacy), light/dark mode per user, extension registry (`window.chatlume.admin`)
+- [x] `uninstall.php` (pulled forward from Phase 8; removes data only when opted in)
+
+Approved deviations and decisions:
+- "Requires at least" is **WordPress 6.6** (the `react-jsx-runtime` script handle used by current wp-scripts builds does not exist in 6.5).
+- Widget and block webpack configs are added in Phase 4 with their source; the sidebar lists only pages that exist.
+- The activation redirect targets `admin.php?page=chatlume`; the wizard opens from the app in Phase 5.
+- Settings classes live in `includes/Settings/`; the messages table has an extra `meta` JSON column.
+- Admin unit tests run on Jest via `wp-scripts test-unit-jest` (wp-scripts 36 defaults to Vitest); React Router 7 is used because core still ships React 18.
+- The release zip ships `vendor/autoload.php`, `vendor/composer/`, and `vendor-prefixed/` built with `composer install --no-dev`.
+- Per-phase Plugin Check runs exclude dev-only files; the release zip is checked in Phase 8.
+
+**Phase 2 – Providers ✅ (2026-10-14, awaiting review)**
+- [x] Provider interface, normalized messages and `ChatResponse`
+- [x] HTTP API transport and `HttpStreamer` (WordPress `requests-request.progress` hook; abort through a cURL progress callback attached via `http_api_curl`, or an exception on fsockopen)
+- [x] OpenAI-compatible base with presets (OpenAI, OpenRouter, Groq, Mistral, DeepSeek, xAI, Together, Ollama, Custom endpoint)
+- [x] Anthropic and Gemini adapters
+- [x] Embeddings support and separate embeddings provider setting
+- [x] Error normalization (`ProviderError`) with admin explanations and fix links; capped provider error log
+- [x] Live model lists (12-hour cache, refresh, custom model ID) with recommendations
+- [x] Test connection, primary/fallback, price per model
+- [x] Providers page
+
+Approved decisions:
+- Recommendations use model **family patterns** in `data/model-suggestions.json`, matched against the live list; no exact model IDs are shipped.
+- Live streaming is verified against a local llama.cpp server (OpenAI-compatible).
+- The WordPress Connectors bridge stays in Phase 7; the provider error log UI is part of Settings in Phase 5.
+
+Implementation decisions (for review):
+- Aborting a stream by throwing from the cURL write callback does not work: Requests treats the failed write as an encoding error and silently re-sends the request. Streams therefore stop through a cURL transfer-progress callback attached to the WordPress HTTP API handle (`http_api_curl`), which also notices disconnects while the provider is silent. Verified live: abort in ~0.2–0.5 s instead of the full response time. No raw cURL requests are made.
+- API keys have dedicated routes (`POST`/`DELETE /providers/{id}/key`) and their own encrypted option (`chatlume_api_keys`), separate from `chatlume_settings`, so settings can be returned or exported without keys. `CHATLUME_<ID>_API_KEY` constants override stored keys.
+- Automatic pricing comes only from OpenRouter (the only provider documenting per-token prices in its model list); other providers use admin-entered prices per 1M tokens.
+- OpenRouter app attribution headers (`HTTP-Referer`, `X-OpenRouter-Title`) are off by default because they share the site URL and name.
+- Plugin Check 2.1 warns about direct AI provider integrations (`PluginCheck.CodeAnalysis.AIProvider.DirectIntegration`); these are justified in code comments (WordPress versions without the AI Client, streaming, providers core does not cover).
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

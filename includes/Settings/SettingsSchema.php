@@ -7,6 +7,7 @@
 
 namespace Chatlume\Settings;
 
+use Chatlume\Providers\ProviderRegistry;
 use WP_Error;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -22,7 +23,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * admin's Zod schemas mirror it.
  *
  * Supported types: object, boolean, integer, number, string, array.
- * String formats: text (default), textarea, email, url, hex-color, key.
+ * String formats: text (default), textarea, email, url (http/https only),
+ * hex-color, key, model (provider model IDs), header-name (HTTP header names).
  */
 final class SettingsSchema {
 
@@ -33,7 +35,7 @@ final class SettingsSchema {
 	 */
 	public static function definition(): array {
 		return array(
-			'setup'   => array(
+			'setup'     => array(
 				'type'        => 'object',
 				'description' => __( 'Setup state.', 'chatlume-ai-chatbot' ),
 				'properties'  => array(
@@ -43,7 +45,7 @@ final class SettingsSchema {
 					),
 				),
 			),
-			'privacy' => array(
+			'privacy'   => array(
 				'type'        => 'object',
 				'description' => __( 'Data and privacy settings.', 'chatlume-ai-chatbot' ),
 				'properties'  => array(
@@ -51,6 +53,60 @@ final class SettingsSchema {
 						'type'    => 'boolean',
 						'default' => false,
 					),
+				),
+			),
+			'providers' => self::providers_section(),
+		);
+	}
+
+	/**
+	 * The providers section: routing roles plus each provider's own settings.
+	 * API keys are not settings; ApiKeys stores them encrypted.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function providers_section(): array {
+		$ids  = array_merge( array( '' ), ProviderRegistry::ids() );
+		$role = static function ( bool $embeddings = false ) use ( $ids ): array {
+			$properties = array(
+				'provider' => array(
+					'type'    => 'string',
+					'format'  => 'key',
+					'default' => '',
+					'enum'    => $ids,
+				),
+				'model'    => array(
+					'type'      => 'string',
+					'format'    => 'model',
+					'default'   => '',
+					'maxLength' => 200,
+				),
+			);
+			if ( $embeddings ) {
+				// Reduced dimensions keep stored vectors small; 0 uses the model's default size.
+				$properties['dimensions'] = array(
+					'type'    => 'integer',
+					'default' => 512,
+					'minimum' => 0,
+					'maximum' => 4096,
+				);
+			}
+			return array(
+				'type'       => 'object',
+				'properties' => $properties,
+			);
+		};
+
+		return array(
+			'type'        => 'object',
+			'description' => __( 'AI providers, models, and routing.', 'chatlume-ai-chatbot' ),
+			'properties'  => array(
+				'primary'    => $role(),
+				'fallback'   => $role(),
+				'embeddings' => $role( true ),
+				'configs'    => array(
+					'type'       => 'object',
+					'properties' => ProviderRegistry::settings_schemas(),
 				),
 			),
 		);
@@ -175,6 +231,12 @@ final class SettingsSchema {
 				if ( isset( $schema['maxLength'] ) && mb_strlen( $value ) > (int) $schema['maxLength'] ) {
 					return self::error( $path, __( 'is too long', 'chatlume-ai-chatbot' ) );
 				}
+				if ( 'url' === ( $schema['format'] ?? '' ) && '' !== trim( $value ) && ! self::is_http_url( trim( $value ) ) ) {
+					return self::error( $path, __( 'must be a web address starting with http:// or https://', 'chatlume-ai-chatbot' ) );
+				}
+				if ( 'header-name' === ( $schema['format'] ?? '' ) && '' !== $value && ! preg_match( '/^[A-Za-z0-9-]{1,64}$/', $value ) ) {
+					return self::error( $path, __( 'may contain only letters, numbers, and dashes', 'chatlume-ai-chatbot' ) );
+				}
 				return true;
 		}
 	}
@@ -267,7 +329,15 @@ final class SettingsSchema {
 				$value = sanitize_email( $value );
 				break;
 			case 'url':
-				$value = esc_url_raw( $value );
+				$value = trim( $value );
+				$value = '' !== $value && self::is_http_url( $value ) ? untrailingslashit( esc_url_raw( $value, array( 'http', 'https' ) ) ) : '';
+				break;
+			case 'model':
+				// Model IDs look like "vendor/name:tag@version"; anything else is removed.
+				$value = (string) preg_replace( '/[^A-Za-z0-9._:\/@+\-]/', '', trim( $value ) );
+				break;
+			case 'header-name':
+				$value = (string) preg_replace( '/[^A-Za-z0-9-]/', '', $value );
 				break;
 			case 'hex-color':
 				$value = (string) sanitize_hex_color( $value );
@@ -318,6 +388,17 @@ final class SettingsSchema {
 		}
 
 		return $args;
+	}
+
+	/**
+	 * Whether a string is an absolute http(s) URL. Local addresses are allowed
+	 * on purpose (Ollama and other self-hosted servers).
+	 *
+	 * @param string $url URL.
+	 * @return bool
+	 */
+	private static function is_http_url( string $url ): bool {
+		return false !== filter_var( $url, FILTER_VALIDATE_URL ) && in_array( strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true );
 	}
 
 	/**

@@ -69,13 +69,42 @@ class SettingsTest extends TestCase {
 	);
 
 	public function test_defaults(): void {
+		$defaults = SettingsSchema::all_defaults();
+
+		$this->assertSame( array( 'setup', 'privacy', 'providers' ), array_keys( $defaults ) );
+		$this->assertSame( array( 'completed' => false ), $defaults['setup'] );
+		$this->assertSame( array( 'delete_data_on_uninstall' => false ), $defaults['privacy'] );
 		$this->assertSame(
 			array(
-				'setup'   => array( 'completed' => false ),
-				'privacy' => array( 'delete_data_on_uninstall' => false ),
+				'provider' => '',
+				'model'    => '',
 			),
-			SettingsSchema::all_defaults()
+			$defaults['providers']['primary']
 		);
+		$this->assertSame(
+			array(
+				'provider'   => '',
+				'model'      => '',
+				'dimensions' => 512,
+			),
+			$defaults['providers']['embeddings']
+		);
+		$this->assertSame(
+			array( 'openai', 'anthropic', 'gemini', 'openrouter', 'groq', 'mistral', 'deepseek', 'xai', 'together', 'ollama', 'custom' ),
+			array_keys( $defaults['providers']['configs'] )
+		);
+		$this->assertSame(
+			array(
+				'default_model' => '',
+				'timeout'       => 30,
+				'extra_headers' => array(),
+				'prices'        => array(),
+			),
+			$defaults['providers']['configs']['openai']
+		);
+		$this->assertArrayHasKey( 'base_url', $defaults['providers']['configs']['ollama'] );
+		$this->assertArrayHasKey( 'app_attribution', $defaults['providers']['configs']['openrouter'] );
+		$this->assertArrayNotHasKey( 'prices', $defaults['providers']['configs']['openrouter'] );
 
 		$this->assertSame(
 			array(
@@ -101,13 +130,54 @@ class SettingsTest extends TestCase {
 			'removed'        => array( 'a' => 1 ),
 		);
 
-		$this->assertSame(
+		$all = Settings::get_all();
+
+		$this->assertSame( array( 'setup', 'privacy', 'providers' ), array_keys( $all ) );
+		$this->assertSame( array( 'completed' => false ), $all['setup'] );
+		$this->assertSame( array( 'delete_data_on_uninstall' => true ), $all['privacy'] );
+	}
+
+	public function test_provider_settings_are_validated_and_sanitized(): void {
+		$result = Settings::update(
 			array(
-				'setup'   => array( 'completed' => false ),
-				'privacy' => array( 'delete_data_on_uninstall' => true ),
-			),
-			Settings::get_all()
+				'providers' => array(
+					'primary' => array(
+						'provider' => 'custom',
+						'model'    => ' vendor/model:tag <x> ',
+					),
+					'configs' => array(
+						'custom' => array(
+							'base_url'      => 'http://127.0.0.1:11434/v1/',
+							'timeout'       => 999,
+							'extra_headers' => array(
+								array(
+									'name'  => 'X-Team',
+									'value' => 'a',
+								),
+							),
+						),
+					),
+				),
+			)
 		);
+
+		$this->assertSame( 'vendor/model:tagx', $result['providers']['primary']['model'] );
+		$this->assertSame( 'http://127.0.0.1:11434/v1', $result['providers']['configs']['custom']['base_url'] );
+		$this->assertSame( 120, $result['providers']['configs']['custom']['timeout'] );
+		$this->assertSame( 'X-Team', $result['providers']['configs']['custom']['extra_headers'][0]['name'] );
+
+		$invalid = array(
+			array( 'primary' => array( 'provider' => 'unknown' ) ),
+			array( 'configs' => array( 'custom' => array( 'base_url' => 'ftp://example.test' ) ) ),
+			array( 'configs' => array( 'custom' => array( 'base_url' => 'javascript:alert(1)' ) ) ),
+			array( 'configs' => array( 'custom' => array( 'extra_headers' => array( array( 'name' => 'Bad Name' ) ) ) ) ),
+			array( 'configs' => array( 'unknown' => array() ) ),
+			array( 'configs' => array( 'openai' => array( 'base_url' => 'https://example.test' ) ) ),
+		);
+
+		foreach ( $invalid as $providers ) {
+			$this->assertInstanceOf( WP_Error::class, Settings::update( array( 'providers' => $providers ) ), wp_json_encode( $providers ) );
+		}
 	}
 
 	public function test_get_reads_dotted_paths(): void {
@@ -253,7 +323,7 @@ class SettingsTest extends TestCase {
 	public function test_rest_args_cover_every_section_with_callbacks(): void {
 		$args = SettingsSchema::rest_args();
 
-		$this->assertSame( array( 'setup', 'privacy' ), array_keys( $args ) );
+		$this->assertSame( array( 'setup', 'privacy', 'providers' ), array_keys( $args ) );
 
 		foreach ( $args as $arg ) {
 			$this->assertSame( 'object', $arg['type'] );

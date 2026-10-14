@@ -13,10 +13,14 @@ Add a fast, brandable AI chatbot to your site using the AI provider of your choi
 
 Chatlume adds a smart AI chatbot to your WordPress site. Connect the AI provider you prefer, match the chat widget to your brand, and keep costs under control with quick answers, caching, rate limits, and budget caps.
 
-This is an early development version. It installs the plugin's database tables, settings storage, secure key storage, and the Chatlume admin app. Chat features are added in upcoming releases.
+This is an early development version. It includes the Chatlume admin app and AI provider connections. The visitor chat widget is added in upcoming releases.
 
+* Connect OpenAI, Anthropic, Google Gemini, OpenRouter, Groq, Mistral AI, DeepSeek, xAI, Together AI, a local Ollama server, or any OpenAI-compatible endpoint.
+* Live model lists straight from each provider, so new models appear without a plugin update.
+* A fallback provider takes over automatically if the primary provider fails.
+* Clear explanations and fix links when a provider rejects a request.
+* Secure, encrypted storage for API keys, derived from your site's security keys. Keys can also be defined in wp-config.php.
 * A modern admin app with light and dark mode.
-* Secure, encrypted storage for API keys, derived from your site's security keys.
 * Multisite support: every site in a network keeps its own settings and data.
 * No ads, upsell banners, tracking, or remote code.
 
@@ -24,30 +28,65 @@ This is an early development version. It installs the plugin's database tables, 
 
 1. Upload the `chatlume-ai-chatbot` folder to `/wp-content/plugins/`, or install the plugin from the Plugins screen.
 2. Activate the plugin through the Plugins screen.
-3. Open **Chatlume** in the admin menu.
+3. Open **Chatlume > Providers**, add an API key for the provider you want to use, and test the connection.
+
+To keep a key out of the database, define it in wp-config.php instead, for example `define( 'CHATLUME_OPENAI_API_KEY', 'your-key' );`. The constant name is shown on each provider's settings panel.
 
 == Frequently Asked Questions ==
 
 = Does Chatlume send data to external services? =
 
-Not in this version. See the External services section below.
+Only to the AI provider you choose, and only when Chatlume needs it to answer or when you test a connection or load the model list. See the External services section below for exactly what is sent.
+
+= Can I use Chatlume without sending data to a cloud AI service? =
+
+Yes. Use Ollama or another OpenAI-compatible server running on your own infrastructure. Without any provider, the bot can still answer with quick answers and site search.
+
+= Where are API keys stored? =
+
+Encrypted in your site's database using a key derived from your WordPress security keys (salts), or in wp-config.php if you define them there. Keys are never shown again in full and never sent to visitors' browsers.
 
 = What happens to my data if I delete the plugin? =
 
-Nothing is removed unless you enable **Delete all data on uninstall** in Chatlume > Settings. With that option on, deleting the plugin removes Chatlume's database tables and settings.
+Nothing is removed unless you enable **Delete all data on uninstall** in Chatlume > Settings. With that option on, deleting the plugin removes Chatlume's database tables, settings, and stored API keys.
 
 == Screenshots ==
 
 1. The Chatlume admin home screen with system status.
+2. Providers: routing, provider cards, and the configuration panel with a live connection test.
 
 == Changelog ==
 
 = 0.1.0 =
 * Initial development release: plugin foundation, database tables, settings storage, encrypted key storage, and the admin app shell.
+* AI providers: OpenAI-compatible services, Anthropic, and Google Gemini, with streaming, live model lists, connection tests, primary and fallback providers, a separate embeddings provider, and plain-language error explanations.
 
 == External services ==
 
-This version of Chatlume does not connect to any external service. Connections to AI providers are added in later versions and will be documented here, including what data is sent, when, and links to each provider's terms and privacy policy.
+Chatlume connects to the AI provider(s) that you, the site administrator, set up under Chatlume > Providers. Nothing is sent to any provider until you add one, and only the providers you configure are ever contacted.
+
+**What is sent and when**
+
+* When you load or refresh a provider's model list: your API key (as an authentication header) to that provider's model list endpoint.
+* When you test a connection: your API key and a short test prompt ("Reply with the single word OK.").
+* When the chatbot answers a visitor (in later versions): the visitor's message, the recent conversation, your system prompt, the current page's title and URL, and matching excerpts from your site's content, sent to the primary provider (and to the fallback provider if the primary fails).
+* When building the knowledge base (in later versions): the text of the posts, pages, products, and documents you choose to index, sent to the embeddings provider.
+* OpenRouter only, and only if you turn on "Send app attribution": your site's address and name.
+
+Chatlume does not send any data to its authors, and it uses no analytics or tracking.
+
+**Services**
+
+* OpenAI API (api.openai.com). [Services Agreement](https://openai.com/policies/services-agreement/), [Privacy Policy](https://openai.com/policies/privacy-policy/).
+* Anthropic API (api.anthropic.com). [Commercial Terms](https://www.anthropic.com/legal/commercial-terms), [Privacy Policy](https://www.anthropic.com/legal/privacy).
+* Google Gemini API (generativelanguage.googleapis.com). [Gemini API Additional Terms](https://ai.google.dev/gemini-api/terms), [Google APIs Terms](https://developers.google.com/terms), [Privacy Policy](https://policies.google.com/privacy).
+* OpenRouter (openrouter.ai). [Terms](https://openrouter.ai/terms), [Privacy Policy](https://openrouter.ai/privacy).
+* Groq (api.groq.com). [Services Agreement](https://console.groq.com/docs/legal/services-agreement), [Privacy Policy](https://groq.com/privacy-policy).
+* Mistral AI (api.mistral.ai). [Commercial Terms](https://legal.mistral.ai/terms/commercial-terms-of-service), [Privacy Policy](https://legal.mistral.ai/terms/privacy-policy).
+* DeepSeek (api.deepseek.com). [Open Platform Terms](https://cdn.deepseek.com/policies/en-US/deepseek-open-platform-terms-of-service.html), [Privacy Policy](https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html).
+* xAI (api.x.ai). [Terms of Service](https://x.ai/legal/terms-of-service-enterprise), [Privacy Policy](https://x.ai/legal/privacy-policy).
+* Together AI (api.together.ai). [Terms of Service](https://www.together.ai/terms-of-service), [Privacy Policy](https://www.together.ai/privacy).
+* Ollama and custom OpenAI-compatible endpoints: requests go only to the address you enter. If that server is run by a third party, its own terms and privacy policy apply.
 
 == Source code and build ==
 
@@ -75,3 +114,5 @@ Chatlume bundles the following open-source libraries in its compiled admin app. 
 * clsx – MIT License
 * tailwind-merge – MIT License
 * class-variance-authority – Apache License 2.0
+
+No third-party logos are included. Provider names are used only to identify the services Chatlume can connect to.

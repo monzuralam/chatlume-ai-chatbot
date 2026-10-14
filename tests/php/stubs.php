@@ -285,3 +285,101 @@ if ( ! function_exists( 'sanitize_hex_color' ) ) {
 		return preg_match( '|^#([A-Fa-f0-9]{3}){1,2}$|', (string) $color ) ? $color : null;
 	}
 }
+
+if ( ! function_exists( 'wp_json_encode' ) ) {
+	/**
+	 * Core's wp_json_encode() (simplified).
+	 *
+	 * @param mixed $data  Data.
+	 * @param int   $flags Flags.
+	 * @return string|false
+	 */
+	function wp_json_encode( $data, $flags = 0 ) {
+		return json_encode( $data, $flags ); // phpcs:ignore WordPress.WP.AlternativeFunctions.json_encode_json_encode -- Test stub of the core function.
+	}
+}
+
+if ( ! function_exists( 'untrailingslashit' ) ) {
+	/**
+	 * Core's untrailingslashit().
+	 *
+	 * @param string $value Value.
+	 * @return string
+	 */
+	function untrailingslashit( $value ) {
+		return rtrim( (string) $value, '/' . chr( 92 ) );
+	}
+}
+
+if ( ! function_exists( 'wp_strip_all_tags' ) ) {
+	/**
+	 * Simplified wp_strip_all_tags().
+	 *
+	 * @param string $text Text.
+	 * @return string
+	 */
+	function wp_strip_all_tags( $text ) {
+		return trim( strip_tags( (string) $text ) ); // phpcs:ignore WordPress.WP.AlternativeFunctions.strip_tags_strip_tags -- Test stub of the core function.
+	}
+}
+
+if ( ! function_exists( 'wp_parse_url' ) ) {
+	/**
+	 * Core's wp_parse_url() (simplified).
+	 *
+	 * @param string $url       URL.
+	 * @param int    $component Component.
+	 * @return mixed
+	 */
+	function wp_parse_url( $url, $component = -1 ) {
+		return parse_url( (string) $url, $component ); // phpcs:ignore WordPress.WP.AlternativeFunctions.parse_url_parse_url -- Test stub of the core function.
+	}
+}
+
+if ( ! function_exists( 'wp_generate_uuid4' ) ) {
+	/**
+	 * Random UUID-like string.
+	 *
+	 * @return string
+	 */
+	function wp_generate_uuid4() {
+		return bin2hex( random_bytes( 16 ) );
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_body' ) ) {
+	/**
+	 * Core's wp_remote_retrieve_body() for array responses.
+	 *
+	 * @param array $response Response.
+	 * @return string
+	 */
+	function wp_remote_retrieve_body( $response ) {
+		return is_array( $response ) ? (string) ( $response['body'] ?? '' ) : '';
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_response_code' ) ) {
+	/**
+	 * Core's wp_remote_retrieve_response_code() for array responses.
+	 *
+	 * @param array $response Response.
+	 * @return int|string
+	 */
+	function wp_remote_retrieve_response_code( $response ) {
+		return is_array( $response ) ? (int) ( $response['response']['code'] ?? 0 ) : '';
+	}
+}
+
+if ( ! function_exists( 'wp_remote_retrieve_headers' ) ) {
+	/**
+	 * Core's wp_remote_retrieve_headers() for array responses.
+	 *
+	 * @param array $response Response.
+	 * @return array
+	 */
+	function wp_remote_retrieve_headers( $response ) {
+		// Returned as-is: real responses carry a header object, not an array.
+		return is_array( $response ) ? ( $response['headers'] ?? array() ) : array();
+	}
+}

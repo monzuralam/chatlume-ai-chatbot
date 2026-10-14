@@ -12,6 +12,7 @@ use Chatlume\Admin\Assets;
 use Chatlume\Installer\Activation;
 use Chatlume\Installer\Migrations;
 use Chatlume\Installer\Multisite;
+use Chatlume\REST\ProvidersController;
 use Chatlume\REST\SettingsController;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -94,6 +95,7 @@ final class Plugin {
 	 */
 	public function register_rest_routes(): void {
 		( new SettingsController() )->register_routes();
+		( new ProvidersController() )->register_routes();
 	}
 
 	/**

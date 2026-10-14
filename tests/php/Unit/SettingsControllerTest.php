@@ -81,19 +81,18 @@ class SettingsControllerTest extends TestCase {
 		}
 
 		$this->assertSame( 'GET', $endpoints[0]['methods'] );
-		$this->assertSame( array( 'setup', 'privacy' ), array_keys( $endpoints[1]['args'] ) );
+		$this->assertSame( array( 'setup', 'privacy', 'providers' ), array_keys( $endpoints[1]['args'] ) );
 	}
 
 	public function test_get_item_returns_settings(): void {
 		$response = ( new SettingsController() )->get_item();
 
-		$this->assertSame(
-			array(
-				'setup'   => array( 'completed' => false ),
-				'privacy' => array( 'delete_data_on_uninstall' => false ),
-			),
-			$response->get_data()
-		);
+		$data = $response->get_data();
+
+		$this->assertSame( array( 'setup', 'privacy', 'providers' ), array_keys( $data ) );
+		$this->assertSame( array( 'delete_data_on_uninstall' => false ), $data['privacy'] );
+		// Settings never contain API keys (they are stored separately).
+		$this->assertStringNotContainsString( 'api_key', (string) wp_json_encode( $data ) );
 	}
 
 	public function test_update_item_saves_partial_update(): void {

@@ -1,5 +1,5 @@
 import { __ } from '@wordpress/i18n';
-import { House, Settings } from 'lucide-react';
+import { House, Plug, Settings } from 'lucide-react';
 import { lazy } from 'react';
 
 import { pageRegistry } from '../extensions/registry';
@@ -7,6 +7,12 @@ import { pageRegistry } from '../extensions/registry';
 // Each route is its own chunk, loaded only when visited.
 const HomeRoute = lazy(
 	() => import( /* webpackChunkName: "route-home" */ './home/HomeRoute' )
+);
+const ProvidersRoute = lazy(
+	() =>
+		import(
+			/* webpackChunkName: "route-providers" */ './providers/ProvidersRoute'
+		)
 );
 const SettingsRoute = lazy(
 	() =>
@@ -27,6 +33,15 @@ export function registerBuiltInPages(): void {
 		icon: House,
 		component: HomeRoute,
 		order: 0,
+	} );
+
+	pageRegistry.register( {
+		id: 'providers',
+		title: __( 'Providers', 'chatlume-ai-chatbot' ),
+		path: '/providers',
+		icon: Plug,
+		component: ProvidersRoute,
+		order: 100,
 	} );
 
 	pageRegistry.register( {

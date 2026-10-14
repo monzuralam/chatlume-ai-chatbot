@@ -1,0 +1,42 @@
+{
+	"version": 1,
+	"description": "Model family patterns used only to add a Recommended badge and sort order to each provider's live model list. Patterns are case-insensitive regular expressions matched against model IDs; earlier patterns rank higher. Models missing from the live list are never shown, and no model is ever selected automatically from this file.",
+	"providers": {
+		"openai": {
+			"chat": [ "^gpt-[0-9.]+-mini$", "^gpt-[0-9.]+$" ],
+			"embedding": [ "^text-embedding-[0-9]+-small$" ]
+		},
+		"anthropic": {
+			"chat": [ "haiku", "sonnet" ],
+			"embedding": []
+		},
+		"gemini": {
+			"chat": [ "^gemini-[0-9.]+-flash-lite$", "^gemini-[0-9.]+-flash$" ],
+			"embedding": [ "^gemini-embedding-[0-9]+$", "embedding" ]
+		},
+		"groq": {
+			"chat": [ "^llama-[0-9.]+-[0-9]+b-instant$", "^llama-[0-9.]+-[0-9]+b-versatile$" ],
+			"embedding": []
+		},
+		"mistral": {
+			"chat": [ "^mistral-small-latest$", "^mistral-medium-latest$" ],
+			"embedding": [ "^mistral-embed$" ]
+		},
+		"deepseek": {
+			"chat": [ "^deepseek-chat$" ],
+			"embedding": []
+		},
+		"xai": {
+			"chat": [ "-mini$", "-fast$" ],
+			"embedding": []
+		},
+		"openrouter": {
+			"chat": [],
+			"embedding": []
+		},
+		"together": {
+			"chat": [ "instruct-turbo$" ],
+			"embedding": [ "bge-base", "m2-bert" ]
+		}
+	}
+}

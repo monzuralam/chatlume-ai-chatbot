@@ -17,6 +17,7 @@ define( 'CHATLUME_PATH', dirname( __DIR__, 2 ) . '/' );
 define( 'CHATLUME_URL', 'https://example.test/wp-content/plugins/chatlume-ai-chatbot/' );
 define( 'CHATLUME_BASENAME', 'chatlume-ai-chatbot/chatlume-ai-chatbot.php' );
 define( 'MINUTE_IN_SECONDS', 60 );
+define( 'HOUR_IN_SECONDS', 3600 );
 
 require_once dirname( __DIR__, 2 ) . '/vendor/autoload.php';
 require_once __DIR__ . '/stubs.php';
