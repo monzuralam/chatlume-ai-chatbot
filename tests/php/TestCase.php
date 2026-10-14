@@ -129,9 +129,83 @@ abstract class TestCase extends PolyfillTestCase {
 		Functions\when( 'home_url' )->justReturn( 'https://example.test/' );
 		Functions\when( 'get_bloginfo' )->justReturn( 'Example Site' );
 
+		$this->cache            = array();
+		$this->ext_object_cache = false;
+
+		Functions\when( 'wp_using_ext_object_cache' )->alias(
+			function () {
+				return $this->ext_object_cache;
+			}
+		);
+		Functions\when( 'wp_cache_get' )->alias(
+			function ( $key, $group = '' ) {
+				return $this->cache[ $group . ':' . $key ] ?? false;
+			}
+		);
+		Functions\when( 'wp_cache_set' )->alias(
+			function ( $key, $value, $group = '' ) {
+				$this->cache[ $group . ':' . $key ] = $value;
+				return true;
+			}
+		);
+		Functions\when( 'wp_cache_add' )->alias(
+			function ( $key, $value, $group = '' ) {
+				if ( isset( $this->cache[ $group . ':' . $key ] ) ) {
+					return false;
+				}
+				$this->cache[ $group . ':' . $key ] = $value;
+				return true;
+			}
+		);
+		Functions\when( 'wp_cache_incr' )->alias(
+			function ( $key, $offset = 1, $group = '' ) {
+				if ( ! isset( $this->cache[ $group . ':' . $key ] ) ) {
+					return false;
+				}
+				$this->cache[ $group . ':' . $key ] += $offset;
+				return $this->cache[ $group . ':' . $key ];
+			}
+		);
+		Functions\when( 'wp_cache_get_last_changed' )->alias(
+			function ( $group ) {
+				return (string) ( $this->cache[ 'last_changed:' . $group ] ?? '1' );
+			}
+		);
+		Functions\when( 'wp_cache_set_last_changed' )->alias(
+			function ( $group ) {
+				$this->cache[ 'last_changed:' . $group ] = (int) ( $this->cache[ 'last_changed:' . $group ] ?? 1 ) + 1;
+				return true;
+			}
+		);
+		Functions\when( 'wp_date' )->alias(
+			static function ( $format, $timestamp = null ) {
+				return gmdate( $format, $timestamp ?? time() );
+			}
+		);
+		Functions\when( 'current_time' )->alias(
+			static function ( $type ) {
+				return 'mysql' === $type ? gmdate( 'Y-m-d H:i:s' ) : time();
+			}
+		);
+		Functions\when( 'get_locale' )->justReturn( 'en_US' );
+
 		ProviderRegistry::reset();
 		ModelSuggestions::set_data( null );
 	}
+
+	/**
+	 * In-memory object cache: "group:key" => value.
+	 *
+	 * @var array<string, mixed>
+	 */
+	protected array $cache = array();
+
+	/**
+	 * Whether wp_using_ext_object_cache() reports a persistent object cache.
+	 *
+	 * @var bool
+	 */
+	protected bool $ext_object_cache = false;
 
 	/**
 	 * Queues an HTTP response for the next wp_remote_request().

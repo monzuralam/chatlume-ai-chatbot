@@ -71,9 +71,16 @@ class SettingsTest extends TestCase {
 	public function test_defaults(): void {
 		$defaults = SettingsSchema::all_defaults();
 
-		$this->assertSame( array( 'setup', 'privacy', 'providers' ), array_keys( $defaults ) );
+		$this->assertSame( array( 'setup', 'privacy', 'providers', 'chatbot', 'quick_answers', 'security', 'costs', 'cache' ), array_keys( $defaults ) );
 		$this->assertSame( array( 'completed' => false ), $defaults['setup'] );
-		$this->assertSame( array( 'delete_data_on_uninstall' => false ), $defaults['privacy'] );
+		$this->assertSame(
+			array(
+				'delete_data_on_uninstall' => false,
+				'store_conversations'      => true,
+				'retention_days'           => 90,
+			),
+			$defaults['privacy']
+		);
 		$this->assertSame(
 			array(
 				'provider' => '',
@@ -132,9 +139,9 @@ class SettingsTest extends TestCase {
 
 		$all = Settings::get_all();
 
-		$this->assertSame( array( 'setup', 'privacy', 'providers' ), array_keys( $all ) );
+		$this->assertSame( array( 'setup', 'privacy', 'providers', 'chatbot', 'quick_answers', 'security', 'costs', 'cache' ), array_keys( $all ) );
 		$this->assertSame( array( 'completed' => false ), $all['setup'] );
-		$this->assertSame( array( 'delete_data_on_uninstall' => true ), $all['privacy'] );
+		$this->assertTrue( $all['privacy']['delete_data_on_uninstall'] );
 	}
 
 	public function test_provider_settings_are_validated_and_sanitized(): void {
@@ -323,7 +330,7 @@ class SettingsTest extends TestCase {
 	public function test_rest_args_cover_every_section_with_callbacks(): void {
 		$args = SettingsSchema::rest_args();
 
-		$this->assertSame( array( 'setup', 'privacy', 'providers' ), array_keys( $args ) );
+		$this->assertSame( array( 'setup', 'privacy', 'providers', 'chatbot', 'quick_answers', 'security', 'costs', 'cache' ), array_keys( $args ) );
 
 		foreach ( $args as $arg ) {
 			$this->assertSame( 'object', $arg['type'] );

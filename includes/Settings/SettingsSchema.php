@@ -8,6 +8,7 @@
 namespace Chatlume\Settings;
 
 use Chatlume\Providers\ProviderRegistry;
+use Chatlume\Security\IpResolver;
 use WP_Error;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -35,7 +36,7 @@ final class SettingsSchema {
 	 */
 	public static function definition(): array {
 		return array(
-			'setup'     => array(
+			'setup'         => array(
 				'type'        => 'object',
 				'description' => __( 'Setup state.', 'chatlume-ai-chatbot' ),
 				'properties'  => array(
@@ -45,7 +46,7 @@ final class SettingsSchema {
 					),
 				),
 			),
-			'privacy'   => array(
+			'privacy'       => array(
 				'type'        => 'object',
 				'description' => __( 'Data and privacy settings.', 'chatlume-ai-chatbot' ),
 				'properties'  => array(
@@ -53,9 +54,26 @@ final class SettingsSchema {
 						'type'    => 'boolean',
 						'default' => false,
 					),
+					// When off, conversations live only in a short-lived transient and nothing is written to the tables.
+					'store_conversations'      => array(
+						'type'    => 'boolean',
+						'default' => true,
+					),
+					// Days to keep conversations; 0 keeps them until deleted.
+					'retention_days'           => array(
+						'type'    => 'integer',
+						'default' => 90,
+						'minimum' => 0,
+						'maximum' => 3650,
+					),
 				),
 			),
-			'providers' => self::providers_section(),
+			'providers'     => self::providers_section(),
+			'chatbot'       => ChatSettingsSchema::chatbot(),
+			'quick_answers' => ChatSettingsSchema::quick_answers(),
+			'security'      => ChatSettingsSchema::security(),
+			'costs'         => ChatSettingsSchema::costs(),
+			'cache'         => ChatSettingsSchema::cache(),
 		);
 	}
 
@@ -237,6 +255,12 @@ final class SettingsSchema {
 				if ( 'header-name' === ( $schema['format'] ?? '' ) && '' !== $value && ! preg_match( '/^[A-Za-z0-9-]{1,64}$/', $value ) ) {
 					return self::error( $path, __( 'may contain only letters, numbers, and dashes', 'chatlume-ai-chatbot' ) );
 				}
+				if ( 'ip-range' === ( $schema['format'] ?? '' ) && ! IpResolver::is_valid_range( trim( $value ) ) ) {
+					return self::error( $path, __( 'must be an IP address or a range such as 203.0.113.0/24', 'chatlume-ai-chatbot' ) );
+				}
+				if ( 'email' === ( $schema['format'] ?? '' ) && '' !== trim( $value ) && ! is_email( trim( $value ) ) ) {
+					return self::error( $path, __( 'must be a valid email address', 'chatlume-ai-chatbot' ) );
+				}
 				return true;
 		}
 	}
@@ -338,6 +362,27 @@ final class SettingsSchema {
 				break;
 			case 'header-name':
 				$value = (string) preg_replace( '/[^A-Za-z0-9-]/', '', $value );
+				break;
+			case 'rich':
+				// Visitor-facing rich text (welcome message): bold, italics, links, line breaks.
+				$value = wp_kses(
+					$value,
+					array(
+						'strong' => array(),
+						'b'      => array(),
+						'em'     => array(),
+						'i'      => array(),
+						'br'     => array(),
+						'a'      => array(
+							'href'   => true,
+							'target' => true,
+							'rel'    => true,
+						),
+					)
+				);
+				break;
+			case 'ip-range':
+				$value = (string) preg_replace( '/[^0-9A-Fa-f:.\/]/', '', $value );
 				break;
 			case 'hex-color':
 				$value = (string) sanitize_hex_color( $value );

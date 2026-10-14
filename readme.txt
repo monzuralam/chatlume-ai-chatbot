@@ -46,6 +46,10 @@ Yes. Use Ollama or another OpenAI-compatible server running on your own infrastr
 
 Encrypted in your site's database using a key derived from your WordPress security keys (salts), or in wp-config.php if you define them there. Keys are never shown again in full and never sent to visitors' browsers.
 
+= Can I stop Chatlume from storing conversations? =
+
+Yes. Turn off conversation storage and conversations are kept only briefly (30 minutes of inactivity) to keep the chat flowing; nothing is written to the database. When storage is on, conversations are deleted automatically after the retention period (90 days by default). Visitor IP addresses are never stored; only a salted hash is used for rate limiting.
+
 = What happens to my data if I delete the plugin? =
 
 Nothing is removed unless you enable **Delete all data on uninstall** in Chatlume > Settings. With that option on, deleting the plugin removes Chatlume's database tables, settings, and stored API keys.
@@ -60,6 +64,7 @@ Nothing is removed unless you enable **Delete all data on uninstall** in Chatlum
 = 0.1.0 =
 * Initial development release: plugin foundation, database tables, settings storage, encrypted key storage, and the admin app shell.
 * AI providers: OpenAI-compatible services, Anthropic, and Google Gemini, with streaming, live model lists, connection tests, primary and fallback providers, a separate embeddings provider, and plain-language error explanations.
+* Chat backend: visitor sessions, quick answers, response cache, budgets with email alerts, rate limits, guardrails, site-search fallback that works without an API key, and conversation logging with automatic retention cleanup.
 
 == External services ==
 
@@ -69,7 +74,7 @@ Chatlume connects to the AI provider(s) that you, the site administrator, set up
 
 * When you load or refresh a provider's model list: your API key (as an authentication header) to that provider's model list endpoint.
 * When you test a connection: your API key and a short test prompt ("Reply with the single word OK.").
-* When the chatbot answers a visitor (in later versions): the visitor's message, the recent conversation, your system prompt, the current page's title and URL, and matching excerpts from your site's content, sent to the primary provider (and to the fallback provider if the primary fails).
+* When the chatbot answers a visitor: the visitor's message, the recent conversation, your system prompt, the current page's title and URL, the visitor's display name if your prompt uses {user_name}, and matching excerpts from your site's content, sent to the primary provider (and to the fallback provider if the primary fails). Quick answers, cached answers, and site-search results are served without contacting any provider.
 * When building the knowledge base (in later versions): the text of the posts, pages, products, and documents you choose to index, sent to the embeddings provider.
 * OpenRouter only, and only if you turn on "Send app attribution": your site's address and name.
 

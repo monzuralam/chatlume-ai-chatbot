@@ -13,6 +13,8 @@ export const setupSettingsSchema = z
 export const privacySettingsSchema = z
 	.object( {
 		delete_data_on_uninstall: z.boolean(),
+		store_conversations: z.boolean(),
+		retention_days: z.number().int().min( 0 ).max( 3650 ),
 	} )
 	.strict();
 
@@ -38,6 +40,12 @@ export const settingsSchema = z
 		setup: setupSettingsSchema,
 		privacy: privacySettingsSchema,
 		providers: providersSettingsSchema,
+		// Validated on the server; typed in detail when their admin pages are built.
+		chatbot: z.record( z.string(), z.unknown() ),
+		quick_answers: z.record( z.string(), z.unknown() ),
+		security: z.record( z.string(), z.unknown() ),
+		costs: z.record( z.string(), z.unknown() ),
+		cache: z.record( z.string(), z.unknown() ),
 	} )
 	.strict();
 

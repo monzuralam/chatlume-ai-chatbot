@@ -187,7 +187,13 @@ final class ProviderRegistry {
 		$targets = array( self::role( 'primary' ) );
 		$backup  = self::role( 'fallback' );
 
-		if ( '' !== $backup['provider'] && ( $backup['provider'] !== $targets[0]['provider'] || $backup['model'] !== $targets[0]['model'] ) ) {
+		// 'route' => 'fallback' uses only the fallback (for example once a budget is used up).
+		$fallback_only = 'fallback' === ( $options['route'] ?? '' );
+		unset( $options['route'] );
+
+		if ( $fallback_only ) {
+			$targets = array( $backup );
+		} elseif ( '' !== $backup['provider'] && ( $backup['provider'] !== $targets[0]['provider'] || $backup['model'] !== $targets[0]['model'] ) ) {
 			$targets[] = $backup;
 		}
 

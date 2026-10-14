@@ -9,10 +9,13 @@ namespace Chatlume;
 
 use Chatlume\Admin\AdminPage;
 use Chatlume\Admin\Assets;
+use Chatlume\Cron\RetentionCleanup;
 use Chatlume\Installer\Activation;
 use Chatlume\Installer\Migrations;
 use Chatlume\Installer\Multisite;
+use Chatlume\REST\ChatController;
 use Chatlume\REST\ProvidersController;
+use Chatlume\REST\QuickAnswersController;
 use Chatlume\REST\SettingsController;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -75,6 +78,7 @@ final class Plugin {
 		( new Migrations() )->register();
 		( new Multisite() )->register();
 		( new Activation() )->register();
+		( new RetentionCleanup() )->register();
 
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 
@@ -96,6 +100,8 @@ final class Plugin {
 	public function register_rest_routes(): void {
 		( new SettingsController() )->register_routes();
 		( new ProvidersController() )->register_routes();
+		( new ChatController() )->register_routes();
+		( new QuickAnswersController() )->register_routes();
 	}
 
 	/**

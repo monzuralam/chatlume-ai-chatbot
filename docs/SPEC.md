@@ -417,7 +417,7 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started. Approved deviati
 
 1. ✅ **Foundation** (done 2026-10-14): bootstrap, plugin identity and prefixes, Composer + Strauss setup, autoloader, multisite-aware activation with the redirect rules, schema and migrations, settings storage, encryption with fingerprint, wp-scripts build setup, and the admin shell with the design system foundation, sidebar navigation, and extension registry.
 2. ✅ **Providers** (done 2026-10-14, awaiting review): interface, HTTP API transport and streamer, OpenAI-compatible base with presets, Anthropic and Gemini adapters, embeddings support, error normalization, live model lists with suggestions, test connection, primary/fallback, Providers page.
-3. ⬜ **Chat backend**: session manager, conversation state, IP resolver, rate limiter, cost guard, quick answers, response cache, site-search fallback, no-key mode, prompt builder, non-streaming endpoint, logging.
+3. ✅ **Chat backend** (done 2026-10-14, awaiting review): session manager, conversation state, IP resolver, rate limiter, cost guard, quick answers, response cache, site-search fallback, no-key mode, prompt builder, non-streaming endpoint, logging.
 4. ⬜ **Widget**: full widget UI, design token system, widget styles (floating, side panel, modal, inline), message styles, CSS parts, preview mode, streaming with stream limiter and abort handling, markdown sanitizer, source cards, quick actions, tab sync, mobile, accessibility, shortcode, block, JS API.
 5. ⬜ **Admin experience**: setup wizard with provider guides, Dashboard, Chatbot, Playground, the Customizer with always-on live preview (presets, Simple/Advanced modes, colors, typography, layout, draft/publish, versions, real-site backdrop, context-aware states, click-to-edit, interactive preview, before/after, devices, Developer styling panel), Display & triggers, Conversations, Settings with Health check, core Command Palette commands.
 6. ⬜ **Knowledge base**: indexer, document uploads, embeddings storage and re-embedding, two-stage retrieval with n-gram fallback, source links, WooCommerce sync, multilingual filtering, Knowledge page.
@@ -469,6 +469,33 @@ Implementation decisions (for review):
 - Automatic pricing comes only from OpenRouter (the only provider documenting per-token prices in its model list); other providers use admin-entered prices per 1M tokens.
 - OpenRouter app attribution headers (`HTTP-Referer`, `X-OpenRouter-Title`) are off by default because they share the site URL and name.
 - Plugin Check 2.1 warns about direct AI provider integrations (`PluginCheck.CodeAnalysis.AIProvider.DirectIntegration`); these are justified in code comments (WordPress versions without the AI Client, streaming, providers core does not cover).
+
+**Phase 3 – Chat backend ✅ (2026-10-14, awaiting review)**
+- [x] Settings: chatbot behavior, quick answers, security limits, cost controls, response cache, storage and retention
+- [x] IP resolver (trusted proxies, hashed IPs) and signed session manager
+- [x] Rate limiter (object cache or `chatlume_rate_limits` table)
+- [x] Conversation state and repositories (database, or a 30-minute transient when storage is off)
+- [x] Prompt builder with presets and variables
+- [x] Quick answers: matcher and admin REST CRUD
+- [x] Response cache
+- [x] Cost guard: message cap, daily/monthly budgets, cap behavior, 80%/100% email alerts
+- [x] Site-search fallback and no-key mode
+- [x] Chat pipeline, public REST routes (`/session`, `/chat`, `/feedback`), logging, retention cron
+
+Approved decisions:
+- Quick answers get backend REST CRUD now; their UI comes with the Knowledge page (Phase 6).
+- Cloudflare Turnstile is built in Phase 7 with the other integrations.
+- Budget alert emails (80% and 100%) are built in Phase 3 as part of cost control.
+- The visitor language is the page language sent by the widget (validated on the server); the prompt still asks the model to reply in the visitor’s language, and cached answers are keyed by page language.
+
+Implementation decisions (for review):
+- Extra reply sources beyond the spec list: `guardrail` (blocked words) and `offline` (budget used up with the offline behavior), so the log shows exactly why each reply was given.
+- Chat settings live in their own sections (`chatbot`, `quick_answers`, `security`, `costs`, `cache`) plus `privacy.store_conversations` and `privacy.retention_days`. Empty text settings mean "use the built-in default", so defaults stay translated and preset-dependent.
+- Session tokens are hex-encoded HMAC-signed payloads (no base64, to avoid obfuscation flags); they expire after `security.session_hours` (default 24).
+- The per-IP rate limit uses the same numbers as the per-session limit (spec default 20 per 10 minutes). Visitors behind one shared IP (offices, schools) share that budget; the `chatlume_rate_limit` filter can raise it per bucket.
+- Response-cache keys include the answering provider and model, so switching models never serves another model’s answer.
+- `POST /feedback` and `POST /chat` set `Cache-Control: no-store`. Public routes require a matching Origin or Referer (`chatlume_allowed_origins` filter for future external embedding).
+- Unstored conversations (storage off) use IDs starting with `t_` and live in a transient bound to the session for 30 idle minutes.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

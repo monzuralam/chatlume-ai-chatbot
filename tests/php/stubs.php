@@ -131,6 +131,59 @@ if ( ! class_exists( 'WP_REST_Response' ) ) {
 		public function get_data() {
 			return $this->data;
 		}
+
+		/**
+		 * Headers.
+		 *
+		 * @var array<string, string>
+		 */
+		private $headers = array();
+
+		/**
+		 * Status.
+		 *
+		 * @var int
+		 */
+		private $status = 200;
+
+		/**
+		 * Sets a header.
+		 *
+		 * @param string $key   Header.
+		 * @param string $value Value.
+		 * @return void
+		 */
+		public function header( $key, $value ) {
+			$this->headers[ $key ] = $value;
+		}
+
+		/**
+		 * Headers.
+		 *
+		 * @return array<string, string>
+		 */
+		public function get_headers() {
+			return $this->headers;
+		}
+
+		/**
+		 * Sets the status.
+		 *
+		 * @param int $code Status.
+		 * @return void
+		 */
+		public function set_status( $code ) {
+			$this->status = (int) $code;
+		}
+
+		/**
+		 * Status.
+		 *
+		 * @return int
+		 */
+		public function get_status() {
+			return $this->status;
+		}
 	}
 }
 
@@ -381,5 +434,30 @@ if ( ! function_exists( 'wp_remote_retrieve_headers' ) ) {
 	function wp_remote_retrieve_headers( $response ) {
 		// Returned as-is: real responses carry a header object, not an array.
 		return is_array( $response ) ? ( $response['headers'] ?? array() ) : array();
+	}
+}
+
+if ( ! function_exists( 'is_email' ) ) {
+	/**
+	 * Simplified is_email().
+	 *
+	 * @param string $email Email.
+	 * @return string|false
+	 */
+	function is_email( $email ) {
+		return false !== filter_var( (string) $email, FILTER_VALIDATE_EMAIL ) ? $email : false;
+	}
+}
+
+if ( ! function_exists( 'wp_kses' ) ) {
+	/**
+	 * Simplified wp_kses(): keeps only the allowed tag names (attributes are not filtered).
+	 *
+	 * @param string $content Content.
+	 * @param array  $allowed Allowed tags.
+	 * @return string
+	 */
+	function wp_kses( $content, $allowed ) {
+		return strip_tags( (string) $content, '<' . implode( '><', array_keys( (array) $allowed ) ) . '>' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.strip_tags_strip_tags -- Test stub of the core function.
 	}
 }

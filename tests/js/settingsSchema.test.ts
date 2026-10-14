@@ -7,7 +7,16 @@ import {
 
 const settings: Settings = {
 	setup: { completed: false },
-	privacy: { delete_data_on_uninstall: false },
+	privacy: {
+		delete_data_on_uninstall: false,
+		store_conversations: true,
+		retention_days: 90,
+	},
+	chatbot: { bot_name: '' },
+	quick_answers: { enabled: true },
+	security: { rate_limit_messages: 20 },
+	costs: { daily_budget: 0 },
+	cache: { enabled: true },
 	providers: {
 		primary: { provider: '', model: '' },
 		fallback: { provider: '', model: '' },
@@ -54,9 +63,13 @@ describe( 'settings schema', () => {
 	it( 'validates the Data & privacy form', () => {
 		expect(
 			dataPrivacyFormSchema.parse( {
-				privacy: { delete_data_on_uninstall: true },
-			} )
-		).toEqual( { privacy: { delete_data_on_uninstall: true } } );
+				privacy: {
+					delete_data_on_uninstall: true,
+					store_conversations: false,
+					retention_days: 30,
+				},
+			} ).privacy.retention_days
+		).toBe( 30 );
 	} );
 } );
 
