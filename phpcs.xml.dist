@@ -1,0 +1,60 @@
+<?xml version="1.0"?>
+<ruleset name="Chatlume">
+	<description>Coding standards for Chatlume – AI Chatbot.</description>
+
+	<file>.</file>
+
+	<exclude-pattern>/build/*</exclude-pattern>
+	<exclude-pattern>/docs/*</exclude-pattern>
+	<exclude-pattern>/node_modules/*</exclude-pattern>
+	<exclude-pattern>/vendor/*</exclude-pattern>
+	<exclude-pattern>/vendor-prefixed/*</exclude-pattern>
+	<exclude-pattern>/languages/*</exclude-pattern>
+	<exclude-pattern>/.claude/*</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg name="basepath" value="."/>
+	<arg name="parallel" value="8"/>
+	<arg name="cache" value=".phpcs-cache"/>
+	<arg value="sp"/>
+
+	<config name="testVersion" value="8.0-"/>
+	<config name="minimum_wp_version" value="6.6"/>
+
+	<rule ref="WordPress-Extra"/>
+	<rule ref="PHPCompatibilityWP"/>
+
+	<rule ref="WordPress.WP.I18n">
+		<properties>
+			<property name="text_domain" type="array">
+				<element value="chatlume-ai-chatbot"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="chatlume"/>
+				<element value="Chatlume"/>
+			</property>
+		</properties>
+	</rule>
+
+	<!-- Classes follow PSR-4 (Composer autoloading), so file names match class names. -->
+	<rule ref="WordPress.Files.FileName">
+		<exclude-pattern>/includes/*</exclude-pattern>
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+
+	<!-- Unit tests use PHPUnit conventions (camelCase test methods, mocked globals). -->
+	<rule ref="WordPress.NamingConventions.ValidFunctionName.MethodNameInvalid">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.GlobalVariablesOverride">
+		<exclude-pattern>/tests/*</exclude-pattern>
+	</rule>
+</ruleset>

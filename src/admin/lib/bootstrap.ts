@@ -1,0 +1,73 @@
+/**
+ * Typed access to the boot data printed by PHP (Admin\Assets::bootstrap_data).
+ */
+
+export type ColorMode = 'system' | 'light' | 'dark';
+
+export type EncryptionStatus = 'ok' | 'key_changed' | 'unavailable';
+
+export interface SystemStatus {
+	wpVersion: string;
+	phpVersion: string;
+	dbVersion: number;
+	dbVersionExpected: number;
+	fulltext: boolean;
+	encryption: EncryptionStatus;
+	isMultisite: boolean;
+	features: {
+		abilitiesApi: boolean;
+		aiClient: boolean;
+		connectors: boolean;
+		fontLibrary: boolean;
+		commandPalette: boolean;
+	};
+}
+
+export interface ChatlumeBootstrap {
+	version: string;
+	restNamespace: string;
+	assetsUrl: string;
+	adminUrl: string;
+	docsUrl: string;
+	colorMode: ColorMode;
+	user: {
+		id: number;
+		displayName: string;
+	};
+	isRtl: boolean;
+	system: SystemStatus;
+}
+
+const FALLBACK: ChatlumeBootstrap = {
+	version: '',
+	restNamespace: 'chatlume/v1',
+	assetsUrl: '',
+	adminUrl: '',
+	docsUrl: '',
+	colorMode: 'system',
+	user: { id: 0, displayName: '' },
+	isRtl: false,
+	system: {
+		wpVersion: '',
+		phpVersion: '',
+		dbVersion: 0,
+		dbVersionExpected: 0,
+		fulltext: false,
+		encryption: 'ok',
+		isMultisite: false,
+		features: {
+			abilitiesApi: false,
+			aiClient: false,
+			connectors: false,
+			fontLibrary: false,
+			commandPalette: false,
+		},
+	},
+};
+
+/**
+ * Boot data, or safe defaults when it is missing (e.g. in tests).
+ */
+export function getBootstrap(): ChatlumeBootstrap {
+	return window.chatlume?.bootstrap ?? FALLBACK;
+}

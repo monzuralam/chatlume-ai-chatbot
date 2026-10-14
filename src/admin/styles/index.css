@@ -1,0 +1,205 @@
+/*
+ * Chatlume admin styles.
+ *
+ * Isolation strategy:
+ * - Tailwind runs with the `chatlume` prefix (classes like `chatlume:flex`,
+ *   theme variables like `--chatlume-color-*`) and WITHOUT its global
+ *   preflight, so nothing leaks into the rest of wp-admin.
+ * - Utilities are `!important` so wp-admin's element styles (forms, buttons,
+ *   links) can never override them inside the app.
+ * - A small reset scoped to #chatlume-admin replaces preflight.
+ * - Design tokens live on #chatlume-admin and swap for dark mode.
+ */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme) prefix(chatlume);
+/* stylelint-disable-next-line at-rule-prelude-no-invalid -- Tailwind v4 import options. */
+@import "tailwindcss/utilities.css" layer(utilities) source(none) important;
+@source "../";
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+@theme inline {
+	--color-canvas: var(--chatlume-ui-canvas);
+	--color-surface: var(--chatlume-ui-surface);
+	--color-surface-muted: var(--chatlume-ui-surface-muted);
+	--color-border: var(--chatlume-ui-border);
+	--color-fg: var(--chatlume-ui-fg);
+	--color-fg-muted: var(--chatlume-ui-fg-muted);
+	--color-accent: var(--chatlume-ui-accent);
+	--color-accent-hover: var(--chatlume-ui-accent-hover);
+	--color-accent-fg: var(--chatlume-ui-accent-fg);
+	--color-accent-soft: var(--chatlume-ui-accent-soft);
+	--color-success: var(--chatlume-ui-success);
+	--color-success-soft: var(--chatlume-ui-success-soft);
+	--color-warning: var(--chatlume-ui-warning);
+	--color-warning-soft: var(--chatlume-ui-warning-soft);
+	--color-danger: var(--chatlume-ui-danger);
+	--color-danger-soft: var(--chatlume-ui-danger-soft);
+	--color-ring: var(--chatlume-ui-ring);
+	--font-sans: var(--chatlume-ui-font);
+	--radius-card: 14px;
+	--radius-control: 10px;
+	--shadow-card: 0 1px 2px oklch(0 0 0 / 4%), 0 2px 8px oklch(0 0 0 / 4%);
+	--shadow-float: 0 8px 24px oklch(0 0 0 / 12%), 0 2px 6px oklch(0 0 0 / 8%);
+}
+
+/* Base styles and design tokens: refined neutrals with one accent (light). */
+#chatlume-admin {
+	position: relative;
+	min-height: calc(100vh - var(--wp-admin--admin-bar--height, 32px));
+	background: var(--chatlume-ui-canvas);
+	color: var(--chatlume-ui-fg);
+	font-family: var(--chatlume-ui-font);
+	font-size: 14px;
+	line-height: 1.5;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+	color-scheme: light;
+	--chatlume-ui-font: -apple-system, blinkmacsystemfont, "Segoe UI", roboto, oxygen-sans, ubuntu, cantarell, "Helvetica Neue", "Noto Sans", sans-serif;
+	--chatlume-ui-canvas: oklch(98.4% 0.003 264);
+	--chatlume-ui-surface: oklch(100% 0 0);
+	--chatlume-ui-surface-muted: oklch(96.8% 0.004 264);
+	--chatlume-ui-border: oklch(91.5% 0.006 264);
+	--chatlume-ui-fg: oklch(21% 0.02 266);
+	--chatlume-ui-fg-muted: oklch(48% 0.02 266);
+	--chatlume-ui-accent: oklch(52% 0.2 277);
+	--chatlume-ui-accent-hover: oklch(47% 0.2 277);
+	--chatlume-ui-accent-fg: oklch(100% 0 0);
+	--chatlume-ui-accent-soft: oklch(95.5% 0.03 277);
+	--chatlume-ui-success: oklch(50% 0.13 155);
+	--chatlume-ui-success-soft: oklch(95.5% 0.04 155);
+	--chatlume-ui-warning: oklch(52% 0.12 65);
+	--chatlume-ui-warning-soft: oklch(96% 0.05 85);
+	--chatlume-ui-danger: oklch(52% 0.2 25);
+	--chatlume-ui-danger-soft: oklch(95.5% 0.03 25);
+	--chatlume-ui-ring: oklch(52% 0.2 277 / 45%);
+}
+
+#chatlume-admin[data-theme="dark"] {
+	--chatlume-ui-canvas: oklch(17% 0.012 266);
+	--chatlume-ui-surface: oklch(21% 0.013 266);
+	--chatlume-ui-surface-muted: oklch(25% 0.014 266);
+	--chatlume-ui-border: oklch(31% 0.014 266);
+	--chatlume-ui-fg: oklch(96% 0.004 266);
+	--chatlume-ui-fg-muted: oklch(72% 0.015 266);
+	--chatlume-ui-accent: oklch(72% 0.15 277);
+	--chatlume-ui-accent-hover: oklch(77% 0.13 277);
+	--chatlume-ui-accent-fg: oklch(18% 0.03 277);
+	--chatlume-ui-accent-soft: oklch(30% 0.07 277);
+	--chatlume-ui-success: oklch(76% 0.14 155);
+	--chatlume-ui-success-soft: oklch(29% 0.05 155);
+	--chatlume-ui-warning: oklch(82% 0.13 80);
+	--chatlume-ui-warning-soft: oklch(30% 0.05 80);
+	--chatlume-ui-danger: oklch(72% 0.16 25);
+	--chatlume-ui-danger-soft: oklch(30% 0.06 25);
+	--chatlume-ui-ring: oklch(72% 0.15 277 / 50%);
+	color-scheme: dark;
+}
+
+/* Let the app fill the wp-admin content area on the Chatlume screen only. */
+.chatlume-admin-screen #wpcontent {
+	padding-inline-start: 0;
+}
+
+.chatlume-admin-screen #wpbody-content {
+	padding-bottom: 0;
+}
+
+.chatlume-admin-screen #wpfooter {
+	display: none;
+}
+
+/* Scoped reset (replaces Tailwind preflight inside the app only). */
+#chatlume-admin *,
+#chatlume-admin *::before,
+#chatlume-admin *::after {
+	box-sizing: border-box;
+	margin: 0;
+	padding: 0;
+	border: 0 solid var(--chatlume-ui-border);
+}
+
+#chatlume-admin h1,
+#chatlume-admin h2,
+#chatlume-admin h3,
+#chatlume-admin h4,
+#chatlume-admin p {
+	color: inherit;
+	font-size: inherit;
+	font-weight: inherit;
+	line-height: inherit;
+}
+
+#chatlume-admin a {
+	color: inherit;
+	text-decoration: inherit;
+}
+
+#chatlume-admin button,
+#chatlume-admin input,
+#chatlume-admin select,
+#chatlume-admin textarea {
+	min-height: 0;
+	border-radius: 0;
+	background: transparent;
+	box-shadow: none;
+	color: inherit;
+	font: inherit;
+	letter-spacing: inherit;
+	line-height: inherit;
+}
+
+#chatlume-admin button {
+	cursor: pointer;
+}
+
+#chatlume-admin button:disabled {
+	cursor: default;
+}
+
+/* Replace wp-admin focus styles; components add their own focus rings. */
+#chatlume-admin a:focus,
+#chatlume-admin button:focus,
+#chatlume-admin input:focus {
+	box-shadow: none;
+	outline: none;
+}
+
+/* Fallback keyboard focus indicator for elements without a ring utility. */
+#chatlume-admin a:focus-visible,
+#chatlume-admin button:focus-visible,
+#chatlume-admin input:focus-visible,
+#chatlume-admin [tabindex]:focus-visible {
+	outline: 2px solid var(--chatlume-ui-accent);
+	outline-offset: 2px;
+}
+
+#chatlume-admin ul,
+#chatlume-admin ol {
+	list-style: none;
+}
+
+#chatlume-admin img,
+#chatlume-admin svg {
+	display: block;
+	max-width: 100%;
+}
+
+#chatlume-admin .screen-reader-text {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	#chatlume-admin *,
+	#chatlume-admin *::before,
+	#chatlume-admin *::after {
+		transition-duration: 0.01ms !important;
+		animation-duration: 0.01ms !important;
+		animation-iteration-count: 1 !important;
+	}
+}
