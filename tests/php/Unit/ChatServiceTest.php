@@ -522,4 +522,119 @@ class ChatServiceTest extends TestCase {
 		$this->assertSame( 'ai', $second['reply']['source'], 'A stopped answer is not served from the cache.' );
 		$this->assertCount( 2, $this->provider->calls );
 	}
+
+	public function test_debug_requests_return_a_trace_of_the_pipeline(): void {
+		Filters\expectApplied( 'chatlume_retrieved_context' )->andReturn(
+			array(
+				array(
+					'content' => 'We ship worldwide.',
+					'title'   => 'Shipping',
+					'url'     => 'https://example.test/shipping/',
+					'score'   => 0.81234,
+				),
+			)
+		);
+		$service = $this->service();
+
+		$plain = $service->handle( $this->request( array( 'session_id' => 'a' ) ) );
+		$this->assertArrayNotHasKey( 'trace', $plain['details'], 'Visitors never get a trace.' );
+
+		$first = $service->handle(
+			$this->request(
+				array(
+					'session_id' => 'b',
+					'message'    => 'Do you ship abroad?',
+					'debug'      => true,
+				)
+			)
+		);
+		$trace = $first['details']['trace'];
+
+		$this->assertSame( 'ai', $trace['route'] );
+		$this->assertSame( 'stored', $trace['cache'] );
+		$this->assertSame(
+			array(
+				'title'   => 'Shipping',
+				'url'     => 'https://example.test/shipping/',
+				'score'   => 0.812,
+				'excerpt' => 'We ship worldwide.',
+			),
+			$trace['knowledge'][0]
+		);
+		$this->assertSame( 'system', $trace['prompt']['messages'][0]['role'] );
+		$this->assertStringContainsString( 'We ship worldwide.', $trace['prompt']['messages'][0]['content'] );
+		$this->assertSame(
+			array(
+				'role'    => 'user',
+				'content' => 'Do you ship abroad?',
+			),
+			end( $trace['prompt']['messages'] )
+		);
+
+		$again = $service->handle(
+			$this->request(
+				array(
+					'session_id' => 'c',
+					'message'    => 'Do you ship abroad?',
+					'debug'      => true,
+				)
+			)
+		);
+		$this->assertSame( 'cache', $again['details']['trace']['route'] );
+		$this->assertSame( 'hit', $again['details']['trace']['cache'] );
+	}
+
+	public function test_trace_names_the_quick_answer_guardrail_and_site_search_routes(): void {
+		$service = $this->service();
+
+		$trace = $service->handle(
+			$this->request(
+				array(
+					'message' => 'what are your opening hours',
+					'debug'   => true,
+				)
+			)
+		)['details']['trace'];
+		$this->assertSame( 'quick_answer', $trace['route'] );
+		$this->assertSame( 7, $trace['quick_answer']['id'] );
+		$this->assertSame( 'What are your opening hours?', $trace['quick_answer']['question'] );
+		$this->assertGreaterThan( 0, $trace['quick_answer']['score'] );
+		$this->assertSame( array(), $trace['prompt'], 'No prompt was built.' );
+
+		$this->settings( array( 'chatbot' => array( 'blocked_words' => array( 'casino' ) ) ) );
+		$this->assertSame(
+			'blocked_word',
+			$service->handle(
+				$this->request(
+					array(
+						'message' => 'casino?',
+						'debug'   => true,
+					)
+				)
+			)['details']['trace']['route']
+		);
+
+		$this->options[ Settings::OPTION ]['providers']['primary'] = array(
+			'provider' => '',
+			'model'    => '',
+		);
+		$this->assertSame( 'site_search', $this->service()->handle( $this->request( array( 'debug' => true ) ) )['details']['trace']['route'] );
+	}
+
+	public function test_admin_tests_can_skip_the_visitor_rate_limit(): void {
+		$this->settings( array( 'security' => array( 'rate_limit_messages' => 1 ) ) );
+		$service = $this->service();
+
+		for ( $index = 0; $index < 3; $index++ ) {
+			$result = $service->handle(
+				$this->request(
+					array(
+						'session_id'      => 'admin-playground-1',
+						'skip_rate_limit' => true,
+					)
+				)
+			);
+			$this->assertSame( 'ok', $result['reply']['text'] );
+		}
+	}
 }

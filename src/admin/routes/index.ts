@@ -1,6 +1,7 @@
 import { __ } from '@wordpress/i18n';
 import {
 	Bot,
+	FlaskConical,
 	LayoutDashboard,
 	MessagesSquare,
 	Plug,
@@ -30,6 +31,12 @@ const ConversationsRoute = lazy(
 	() =>
 		import(
 			/* webpackChunkName: "route-conversations" */ './conversations/ConversationsRoute'
+		)
+);
+const PlaygroundRoute = lazy(
+	() =>
+		import(
+			/* webpackChunkName: "route-playground" */ './playground/PlaygroundRoute'
 		)
 );
 const SettingsRoute = lazy(
@@ -69,6 +76,15 @@ export function registerBuiltInPages(): void {
 		icon: Bot,
 		component: ChatbotRoute,
 		order: 200,
+	} );
+
+	pageRegistry.register( {
+		id: 'playground',
+		title: __( 'Test your bot', 'chatlume-ai-chatbot' ),
+		path: '/playground',
+		icon: FlaskConical,
+		component: PlaygroundRoute,
+		order: 250,
 	} );
 
 	pageRegistry.register( {

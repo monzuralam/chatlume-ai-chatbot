@@ -579,7 +579,7 @@ Implementation decisions (for review):
 - Empty date filters use fixed boundary dates, because strict SQL modes reject comparing a DATETIME column with an empty string.
 - Filter changes build on the address the page last requested, so quick successive changes (or a delayed search) never undo each other.
 
-Module 5.4 – Dashboard ✅ (2026-10-15, awaiting review)
+Module 5.4 – Dashboard ✅ (2026-10-15)
 - [x] Today / 7 days / 30 days: conversations, questions, tokens, estimated cost, and money saved by quick answers and the cache
 - [x] Questions per day chart with tooltips and an accessible data table
 - [x] Connection: primary (and fallback) provider with status, no-key explanation, daily and monthly budget usage, and a link to the Health check when something needs attention
@@ -593,6 +593,18 @@ Implementation decisions (for review):
 - "Saved" is estimated as the number of quick answers and cached answers multiplied by the average cost of an AI answer in the same period (or over all time when the period had none).
 - The chart is a small built-in SVG instead of a charting library: one bar series does not justify a ~100 KB dependency, and it uses the admin's light and dark theme colors directly.
 - Days follow the site's timezone; the Home page became the Dashboard (installation details live in the Health check).
+
+Module 5.5 – Playground ("Test your bot") ✅ (2026-10-15, awaiting review)
+- [x] Chat with the real bot inside the admin; replies render with the same allowlist Markdown as the widget
+- [x] "Why this answer" panel per reply: plain-language explanation, source, provider and model, tokens, estimated cost, time, matched quick answer with its score, response cache state, error type, knowledge passages with scores, and the final prompt sent to the AI (never keys)
+- [x] "Ask AI instead" on quick answers, "Save as quick answer", "Improve this answer" (edit the reply into a quick answer), and "New conversation"
+- [x] The quick answer sheet is shared with the Dashboard
+- [x] REST: `POST /playground/chat` (admin only)
+
+Implementation decisions (for review):
+- Playground chats run as a logged-out visitor (no user ID or name), so caching and personalization behave exactly as visitors experience them.
+- They are stored as test conversations (hidden from Conversations and statistics) and skip visitor rate limits; AI replies still count toward the budget because they cost real money.
+- The pipeline builds its trace only when the admin-only route asks for it; visitor routes never return it.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

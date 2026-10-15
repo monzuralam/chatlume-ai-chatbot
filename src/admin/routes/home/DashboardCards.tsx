@@ -11,14 +11,14 @@ import {
 	ThumbsUp,
 	TriangleAlert,
 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Link } from 'react-router';
-import { toast } from 'sonner';
 
 import {
 	ProviderAvatar,
 	StateBadge,
 } from '../../components/providers/ProviderBits';
+import { QuickAnswerSheet } from '../../components/QuickAnswerSheet';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import {
@@ -28,14 +28,10 @@ import {
 	CardHeader,
 	CardTitle,
 } from '../../components/ui/card';
-import { Field } from '../../components/ui/field';
-import { Input, inputClasses } from '../../components/ui/input';
-import { Sheet } from '../../components/ui/sheet';
 import { Skeleton } from '../../components/ui/skeleton';
 import { pageRegistry } from '../../extensions/registry';
 import { useRegistry } from '../../extensions/useRegistry';
 import { useProviders } from '../../hooks/useProviders';
-import { useCreateQuickAnswer } from '../../hooks/useStats';
 import { getBootstrap } from '../../lib/bootstrap';
 import {
 	budgetShare,
@@ -270,118 +266,6 @@ export function HealthCard( { stats }: { stats?: StatsResponse } ) {
 	);
 }
 
-function CreateQuickAnswer( {
-	question,
-	onClose,
-}: {
-	question: UnansweredQuestion | null;
-	onClose: () => void;
-} ) {
-	const create = useCreateQuickAnswer();
-	const [ text, setText ] = useState( '' );
-	const [ answer, setAnswer ] = useState( '' );
-
-	// Fill the form when a question is chosen.
-	useEffect( () => {
-		if ( question ) {
-			setText( question.question );
-			setAnswer( '' );
-		}
-	}, [ question ] );
-
-	const save = () => {
-		if ( ! question || ! text.trim() || ! answer.trim() ) {
-			return;
-		}
-		create.mutate(
-			{
-				question: text.trim(),
-				answer: answer.trim(),
-				language: question.language,
-				enabled: true,
-			},
-			{
-				onSuccess: () => {
-					toast.success(
-						__(
-							'Quick answer created. Visitors asking this get your answer instantly.',
-							'chatlume-ai-chatbot'
-						)
-					);
-					onClose();
-				},
-				onError: ( error ) => toast.error( error.message ),
-			}
-		);
-	};
-
-	return (
-		<Sheet
-			open={ question !== null }
-			onOpenChange={ ( open ) => ! open && onClose() }
-			title={ __( 'Create a quick answer', 'chatlume-ai-chatbot' ) }
-			description={ __(
-				'Your own answer, served instantly and for free whenever a visitor asks this.',
-				'chatlume-ai-chatbot'
-			) }
-			footer={
-				<>
-					<Button type="button" variant="ghost" onClick={ onClose }>
-						{ __( 'Cancel', 'chatlume-ai-chatbot' ) }
-					</Button>
-					<Button
-						type="button"
-						variant="primary"
-						disabled={
-							! text.trim() || ! answer.trim() || create.isPending
-						}
-						onClick={ save }
-					>
-						{ __( 'Create quick answer', 'chatlume-ai-chatbot' ) }
-					</Button>
-				</>
-			}
-		>
-			<div className="chatlume:flex chatlume:flex-col chatlume:gap-5">
-				<Field
-					id="chatlume-qa-question"
-					label={ __( 'Question', 'chatlume-ai-chatbot' ) }
-				>
-					<Input
-						id="chatlume-qa-question"
-						maxLength={ 500 }
-						value={ text }
-						onChange={ ( event ) => setText( event.target.value ) }
-					/>
-				</Field>
-				<Field
-					id="chatlume-qa-answer"
-					label={ __( 'Answer', 'chatlume-ai-chatbot' ) }
-					hint={ __(
-						'Short and complete. You can use **bold** and links.',
-						'chatlume-ai-chatbot'
-					) }
-				>
-					<textarea
-						id="chatlume-qa-answer"
-						rows={ 6 }
-						maxLength={ 5000 }
-						className={ cn(
-							inputClasses,
-							'chatlume:h-auto chatlume:py-2'
-						) }
-						aria-describedby="chatlume-qa-answer-hint"
-						value={ answer }
-						onChange={ ( event ) =>
-							setAnswer( event.target.value )
-						}
-					/>
-				</Field>
-			</div>
-		</Sheet>
-	);
-}
-
 /**
  * Questions the bot could not answer well, with "Create quick answer".
  *
@@ -391,6 +275,15 @@ function CreateQuickAnswer( {
 export function UnansweredCard( { stats }: { stats?: StatsResponse } ) {
 	const [ chosen, setChosen ] = useState< UnansweredQuestion | null >( null );
 	const list = stats?.unanswered ?? [];
+	const draft = useMemo(
+		() =>
+			chosen && {
+				question: chosen.question,
+				answer: '',
+				language: chosen.language,
+			},
+		[ chosen ]
+	);
 
 	return (
 		<Card>
@@ -476,8 +369,8 @@ export function UnansweredCard( { stats }: { stats?: StatsResponse } ) {
 					</ul>
 				) }
 			</CardContent>
-			<CreateQuickAnswer
-				question={ chosen }
+			<QuickAnswerSheet
+				draft={ draft }
 				onClose={ () => setChosen( null ) }
 			/>
 		</Card>

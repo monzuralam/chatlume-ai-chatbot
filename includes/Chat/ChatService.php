@@ -115,6 +115,14 @@ class ChatService {
 	private array $stream = array();
 
 	/**
+	 * How the current reply was produced (the admin Playground shows it):
+	 * route, quick answer, cache, knowledge chunks, and the final prompt.
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $trace = array();
+
+	/**
 	 * Constructor. Every collaborator can be replaced (tests).
 	 *
 	 * @param array<string, object> $deps Optional: state, matcher, quick_answers, cache, costs, site_search, limiter, prompts.
@@ -134,7 +142,8 @@ class ChatService {
 	 * Answers a visitor message.
 	 *
 	 * @param array<string, mixed> $request session_id, message, conversation_id, page_url, page_title, language,
-	 *                                      user_id, user_name, visitor_hash, skip_quick_answers, quick_answer_id, is_test.
+	 *                                      user_id, user_name, visitor_hash, skip_quick_answers, quick_answer_id, is_test,
+	 *                                      skip_rate_limit and debug (admin Playground only: never set from visitor input).
 	 * @param array<string, mixed> $stream  Optional streaming callbacks: on_start, on_token, should_abort, timeout.
 	 *                                      Only AI replies stream; other replies are returned whole.
 	 * @return array{conversation_id: string, message_id: int, reply: array<string, mixed>, details: array<string, mixed>}
@@ -142,6 +151,13 @@ class ChatService {
 	 */
 	public function handle( array $request, array $stream = array() ): array {
 		$this->stream = $stream;
+		$this->trace  = array(
+			'route'        => 'ai',
+			'quick_answer' => null,
+			'cache'        => 'skipped',
+			'knowledge'    => array(),
+			'prompt'       => array(),
+		);
 		$started      = microtime( true );
 		$message      = trim( (string) ( $request['message'] ?? '' ) );
 		$session_id   = (string) $request['session_id'];
@@ -154,7 +170,9 @@ class ChatService {
 		);
 
 		// 1. Validation.
-		$this->check_rate_limits( (string) ( $request['visitor_hash'] ?? '' ), $session_id );
+		if ( empty( $request['skip_rate_limit'] ) ) {
+			$this->check_rate_limits( (string) ( $request['visitor_hash'] ?? '' ), $session_id );
+		}
 
 		if ( '' === $message ) {
 			throw new ChatException( 'empty_message', __( 'Please type a message.', 'chatlume-ai-chatbot' ) );
@@ -251,20 +269,25 @@ class ChatService {
 			)
 		);
 
+		$details = array(
+			'provider'      => $reply['provider'] ?? '',
+			'model'         => $reply['model'] ?? '',
+			'input_tokens'  => $reply['input_tokens'] ?? 0,
+			'output_tokens' => $reply['output_tokens'] ?? 0,
+			'cost'          => $reply['cost'] ?? 0,
+			'latency_ms'    => $reply['latency_ms'],
+			'error_type'    => $reply['error_type'] ?? '',
+			'meta'          => $reply['meta'],
+		);
+		if ( ! empty( $request['debug'] ) ) {
+			$details['trace'] = $this->trace;
+		}
+
 		return array(
 			'conversation_id' => $conversation['id'],
 			'message_id'      => $message_id,
 			'reply'           => $public,
-			'details'         => array(
-				'provider'      => $reply['provider'] ?? '',
-				'model'         => $reply['model'] ?? '',
-				'input_tokens'  => $reply['input_tokens'] ?? 0,
-				'output_tokens' => $reply['output_tokens'] ?? 0,
-				'cost'          => $reply['cost'] ?? 0,
-				'latency_ms'    => $reply['latency_ms'],
-				'error_type'    => $reply['error_type'] ?? '',
-				'meta'          => $reply['meta'],
-			),
+			'details'         => $details,
 		);
 	}
 
@@ -350,6 +373,7 @@ class ChatService {
 
 		foreach ( (array) Settings::get( 'chatbot.blocked_words', array() ) as $word ) {
 			if ( is_string( $word ) && Text::contains_phrase( $normalized, Text::normalize( $word ) ) ) {
+				$this->trace['route'] = 'blocked_word';
 				return self::reply( BotText::refusal(), self::SOURCE_GUARDRAIL );
 			}
 		}
@@ -377,6 +401,13 @@ class ChatService {
 
 		$this->quick_answers->record_hit( (int) $match['id'] );
 
+		$this->trace['route']        = 'quick_answer';
+		$this->trace['quick_answer'] = array(
+			'id'       => (int) $match['id'],
+			'question' => (string) ( $match['question'] ?? '' ),
+			'score'    => $match['score'],
+		);
+
 		$reply                    = self::reply( (string) $match['answer'], self::SOURCE_QUICK_ANSWER );
 		$reply['quick_answer_id'] = (int) $match['id'];
 		$reply['meta']            = array( 'quick_answer_score' => $match['score'] );
@@ -397,14 +428,17 @@ class ChatService {
 		$route     = '';
 
 		if ( '' !== $exhausted ) {
-			$behavior = $this->costs->cap_behavior();
+			$this->trace['budget'] = $exhausted;
+			$behavior              = $this->costs->cap_behavior();
 			if ( 'offline' === $behavior ) {
+				$this->trace['route'] = 'offline';
 				return self::reply( BotText::offline(), self::SOURCE_OFFLINE, array( 'meta' => array( 'budget' => $exhausted ) ) );
 			}
 			if ( 'fallback_model' !== $behavior || '' === ProviderRegistry::role( 'fallback' )['provider'] ) {
 				return $this->site_search_reply( $message, array( 'budget' => $exhausted ) );
 			}
-			$route = 'fallback';
+			$route                = 'fallback';
+			$this->trace['route'] = 'fallback_model';
 		}
 
 		$primary = ProviderRegistry::role( 'fallback' === $route ? 'fallback' : 'primary' );
@@ -421,14 +455,30 @@ class ChatService {
 		$cacheable = ResponseCache::eligible( array() === $history, (int) $context['user_id'] );
 		$cache_key = $cacheable ? ResponseCache::key( $message, (string) $context['language'], $system, $target ) : '';
 
+		$this->trace['prompt'] = array(
+			'system'  => $system,
+			'history' => count( $history ),
+		);
+
 		if ( $cacheable ) {
-			$cached = $this->cache->get( $cache_key );
+			$cached               = $this->cache->get( $cache_key );
+			$this->trace['cache'] = null !== $cached ? 'hit' : 'miss';
 			if ( null !== $cached ) {
+				$this->trace['route'] = 'cache';
 				return self::reply( $cached['text'], self::SOURCE_CACHE, array( 'sources' => (array) $cached['sources'] ) );
 			}
 		}
 
-		$messages = $this->prompts->messages( $system, $history, $message, $context );
+		$messages                          = $this->prompts->messages( $system, $history, $message, $context );
+		$this->trace['prompt']['messages'] = array_values(
+			array_map(
+				static fn( $item ): array => array(
+					'role'    => (string) ( $item['role'] ?? '' ),
+					'content' => is_string( $item['content'] ?? null ) ? $item['content'] : (string) wp_json_encode( $item['content'] ?? '' ),
+				),
+				array_filter( $messages, 'is_array' )
+			)
+		);
 
 		$options  = array(
 			'temperature' => (float) Settings::get( 'chatbot.temperature', 0.3 ),
@@ -486,6 +536,7 @@ class ChatService {
 		// Stopped or cut-off answers are never cached.
 		if ( $cacheable && ! $aborted && 'length' !== $response->finish_reason ) {
 			$this->cache->set( $cache_key, $text, $knowledge['sources'] );
+			$this->trace['cache'] = 'stored';
 		}
 
 		$meta = array();
@@ -546,6 +597,13 @@ class ChatService {
 			$texts[] = ( '' !== $title ? '## ' . $title . "\n" : '' ) . trim( (string) $chunk['content'] );
 
 			$url = esc_url_raw( (string) ( $chunk['url'] ?? '' ) );
+
+			$this->trace['knowledge'][] = array(
+				'title'   => $title,
+				'url'     => $url,
+				'score'   => isset( $chunk['score'] ) && is_numeric( $chunk['score'] ) ? round( (float) $chunk['score'], 3 ) : null,
+				'excerpt' => mb_substr( trim( (string) $chunk['content'] ), 0, 300 ),
+			);
 			if ( '' !== $url && ! isset( $sources[ $url ] ) && count( $sources ) < 3 ) {
 				$sources[ $url ] = array(
 					'title' => '' !== $title ? $title : $url,
@@ -569,7 +627,8 @@ class ChatService {
 	 * @return array<string, mixed>
 	 */
 	private function site_search_reply( string $message, array $meta, string $error_type = '' ): array {
-		$pages = $this->site_search->search( $message, 3 );
+		$this->trace['route'] = 'site_search';
+		$pages                = $this->site_search->search( $message, 3 );
 
 		return self::reply(
 			array() === $pages ? BotText::nothing_found() : BotText::site_search(),

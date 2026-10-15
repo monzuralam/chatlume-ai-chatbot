@@ -19,6 +19,7 @@ use Chatlume\REST\ChatbotController;
 use Chatlume\REST\ChatController;
 use Chatlume\REST\ConversationsController;
 use Chatlume\REST\HealthController;
+use Chatlume\REST\PlaygroundController;
 use Chatlume\REST\ProvidersController;
 use Chatlume\REST\QuickAnswersController;
 use Chatlume\REST\SettingsController;
@@ -117,6 +118,7 @@ final class Plugin {
 		( new ChatbotController() )->register_routes();
 		( new ConversationsController() )->register_routes();
 		( new StatsController() )->register_routes();
+		( new PlaygroundController() )->register_routes();
 	}
 
 	/**
