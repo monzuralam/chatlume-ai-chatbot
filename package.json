@@ -12,6 +12,7 @@
 		"uninstall.php",
 		"readme.txt",
 		"includes",
+		"assets",
 		"build",
 		"vendor/autoload.php",
 		"vendor/composer",

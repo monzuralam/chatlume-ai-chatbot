@@ -12,6 +12,7 @@
 import launcherCss from './styles/launcher.css?inline';
 import { CLOSE_ICON, LAUNCHER_ICONS, svgIcon } from './launcher/icons';
 import { showFloating } from './lib/display';
+import { loadFonts } from './lib/fonts';
 import { read, write } from './lib/storage';
 import { pageDirection, resolveMode, safeUrl, themeCss } from './lib/theme';
 import type { ChatApp, ThemeConfig, WidgetConfig, WidgetHost } from './types';
@@ -233,6 +234,7 @@ class Controller implements WidgetHost {
 			return;
 		}
 		this.config = { ...this.config, theme };
+		loadFonts( theme.fonts );
 		this.tokens.textContent = themeCss( theme );
 		this.wrap.dataset.position = theme.ui.position;
 		this.wrap.dataset.style = this.inline ? 'inline' : theme.ui.style;

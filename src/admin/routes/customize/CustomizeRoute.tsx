@@ -227,6 +227,8 @@ function Customizer( {
 		set: ( path, value, gesture ) =>
 			change( setPath( theme, path, value ), gesture ),
 		replace: change,
+		fonts: server.fonts,
+		onServer: apply,
 	};
 
 	// Undo, redo, and save shortcuts (text fields keep their own undo).
@@ -322,11 +324,11 @@ function Customizer( {
 	};
 
 	const config = useMemo( () => {
-		const resolved = resolveTheme( theme );
+		const resolved = resolveTheme( theme, server.fonts.options );
 		return previewMode === 'theme'
 			? resolved
 			: { ...resolved, ui: { ...resolved.ui, mode: previewMode } };
-	}, [ theme, previewMode ] );
+	}, [ theme, previewMode, server.fonts.options ] );
 
 	const behavior = useMemo(
 		() => previewBehavior( chatbot, info.defaults ),

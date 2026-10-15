@@ -61,30 +61,28 @@ final class ThemeSchema {
 	 * Enumerated options: path => allowed values (first is the default).
 	 */
 	private const ENUMS = array(
-		'mode'                   => array( 'light', 'dark', 'auto' ),
-		'header.style'           => array( 'solid', 'gradient', 'minimal' ),
-		'typography.bodyFont'    => array( 'inherit', 'system', 'system-serif', 'system-rounded', 'mono' ),
-		'typography.headingFont' => array( 'same', 'inherit', 'system', 'system-serif', 'system-rounded', 'mono' ),
-		'layout.style'           => array( 'floating', 'panel', 'modal' ),
-		'layout.position'        => array( 'right', 'left' ),
-		'shape.preset'           => array( 'soft', 'sharp', 'rounded', 'pill' ),
-		'shape.shadow'           => array( 'medium', 'none', 'soft', 'strong' ),
-		'shape.density'          => array( 'comfortable', 'compact', 'spacious' ),
-		'messages.style'         => array( 'bubbles', 'flat', 'outlined' ),
-		'messages.timestamps'    => array( 'hover', 'always', 'never' ),
-		'background.type'        => array( 'solid', 'pattern', 'gradient' ),
-		'background.pattern'     => array( 'dots', 'grid', 'waves', 'diagonal' ),
-		'composer.style'         => array( 'rounded', 'bar' ),
-		'composer.sendButton'    => array( 'icon', 'text' ),
-		'launcher.type'          => array( 'icon', 'avatar', 'image' ),
-		'launcher.icon'          => self::LAUNCHER_ICONS,
-		'launcher.shape'         => array( 'circle', 'square', 'pill' ),
-		'launcher.size'          => array( 'm', 's', 'l' ),
-		'launcher.attention'     => array( 'none', 'pulse', 'bounce', 'badge' ),
-		'motion.open'            => array( 'scale', 'slide', 'none' ),
-		'motion.speed'           => array( 'normal', 'fast', 'slow' ),
-		'brand.avatarType'       => array( 'initials', 'image', 'illustration' ),
-		'brand.illustration'     => array( 'bubbles', 'robot', 'spark', 'leaf', 'wave', 'planet' ),
+		'mode'                => array( 'light', 'dark', 'auto' ),
+		'header.style'        => array( 'solid', 'gradient', 'minimal' ),
+		'layout.style'        => array( 'floating', 'panel', 'modal' ),
+		'layout.position'     => array( 'right', 'left' ),
+		'shape.preset'        => array( 'soft', 'sharp', 'rounded', 'pill' ),
+		'shape.shadow'        => array( 'medium', 'none', 'soft', 'strong' ),
+		'shape.density'       => array( 'comfortable', 'compact', 'spacious' ),
+		'messages.style'      => array( 'bubbles', 'flat', 'outlined' ),
+		'messages.timestamps' => array( 'hover', 'always', 'never' ),
+		'background.type'     => array( 'solid', 'pattern', 'gradient' ),
+		'background.pattern'  => array( 'dots', 'grid', 'waves', 'diagonal' ),
+		'composer.style'      => array( 'rounded', 'bar' ),
+		'composer.sendButton' => array( 'icon', 'text' ),
+		'launcher.type'       => array( 'icon', 'avatar', 'image' ),
+		'launcher.icon'       => self::LAUNCHER_ICONS,
+		'launcher.shape'      => array( 'circle', 'square', 'pill' ),
+		'launcher.size'       => array( 'm', 's', 'l' ),
+		'launcher.attention'  => array( 'none', 'pulse', 'bounce', 'badge' ),
+		'motion.open'         => array( 'scale', 'slide', 'none' ),
+		'motion.speed'        => array( 'normal', 'fast', 'slow' ),
+		'brand.avatarType'    => array( 'initials', 'image', 'illustration' ),
+		'brand.illustration'  => array( 'bubbles', 'robot', 'spark', 'leaf', 'wave', 'planet' ),
 	);
 
 	/**
@@ -340,6 +338,16 @@ final class ThemeSchema {
 			if ( null !== $value ) {
 				self::set( $clean, $path, rest_sanitize_boolean( $value ) );
 			}
+		}
+
+		// Fonts are keys from FontCatalog ("inherit", "system", "bundled:inter", "custom:…").
+		$body = self::get( $theme, 'typography.bodyFont' );
+		if ( is_string( $body ) && preg_match( FontCatalog::KEY_PATTERN, $body ) ) {
+			$clean['typography']['bodyFont'] = $body;
+		}
+		$heading = self::get( $theme, 'typography.headingFont' );
+		if ( is_string( $heading ) && ( 'same' === $heading || preg_match( FontCatalog::KEY_PATTERN, $heading ) ) ) {
+			$clean['typography']['headingFont'] = $heading;
 		}
 
 		$clean['version'] = self::VERSION;

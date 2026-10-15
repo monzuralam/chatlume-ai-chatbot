@@ -21,10 +21,10 @@ import {
 	LAUNCHER_ICONS,
 	RANGES,
 	SHAPE_PRESETS,
-	SYSTEM_FONTS,
 	type ColorToken,
 	type Theme,
 } from '../../lib/theme/types';
+import type { AppearanceState } from '../../lib/appearance';
 import { cn } from '../../lib/utils';
 import { LAUNCHER_ICONS as ICON_PATHS } from '../../../widget/launcher/icons';
 import {
@@ -37,6 +37,7 @@ import {
 	Toggle,
 	type Change,
 } from './controls';
+import { FontSelect, FontUploads } from './FontPicker';
 
 export interface SectionProps {
 	theme: Theme;
@@ -45,6 +46,10 @@ export interface SectionProps {
 	/** Replaces the whole theme (palettes, fixes). */
 	replace: ( theme: Theme, gesture?: string ) => void;
 	advanced: boolean;
+	/** Font catalog and uploads. */
+	fonts: AppearanceState[ 'fonts' ];
+	/** Receives the Customizer state after a font upload or deletion. */
+	onServer: ( state: AppearanceState ) => void;
 }
 
 /**
@@ -90,21 +95,6 @@ function tokenLabels(): Record< ColorToken, string > {
 		muted: __( 'Secondary text', 'chatlume-ai-chatbot' ),
 		error: __( 'Error', 'chatlume-ai-chatbot' ),
 		success: __( 'Success', 'chatlume-ai-chatbot' ),
-	};
-}
-
-/**
- * Font names.
- *
- * @return Labels.
- */
-function fontLabels(): Record< string, string > {
-	return {
-		inherit: __( 'Same as my site', 'chatlume-ai-chatbot' ),
-		system: __( 'System sans-serif', 'chatlume-ai-chatbot' ),
-		'system-serif': __( 'System serif', 'chatlume-ai-chatbot' ),
-		'system-rounded': __( 'System rounded', 'chatlume-ai-chatbot' ),
-		mono: __( 'Monospace', 'chatlume-ai-chatbot' ),
 	};
 }
 
@@ -541,49 +531,38 @@ export function BrandSection( { theme, set, advanced }: SectionProps ) {
  * @param props.theme
  * @param props.set
  * @param props.advanced
+ * @param props.fonts
+ * @param props.onServer
  */
-export function TypographySection( { theme, set, advanced }: SectionProps ) {
+export function TypographySection( {
+	theme,
+	set,
+	advanced,
+	fonts,
+	onServer,
+}: SectionProps ) {
 	const type = theme.typography;
-	const fonts = fontLabels();
 	return (
 		<>
-			<Row label={ __( 'Font', 'chatlume-ai-chatbot' ) }>
-				<Select
-					aria-label={ __( 'Font', 'chatlume-ai-chatbot' ) }
-					value={ type.bodyFont }
-					onChange={ ( event ) =>
-						set( 'typography.bodyFont', event.target.value )
-					}
-				>
-					{ SYSTEM_FONTS.map( ( font ) => (
-						<option key={ font } value={ font }>
-							{ fonts[ font ] }
-						</option>
-					) ) }
-				</Select>
-			</Row>
+			<FontSelect
+				label={ __( 'Font', 'chatlume-ai-chatbot' ) }
+				value={ type.bodyFont }
+				options={ fonts.options }
+				siteScript={ fonts.site_script }
+				onChange={ ( key ) => set( 'typography.bodyFont', key ) }
+			/>
 			{ advanced && (
-				<Row label={ __( 'Heading font', 'chatlume-ai-chatbot' ) }>
-					<Select
-						aria-label={ __(
-							'Heading font',
-							'chatlume-ai-chatbot'
-						) }
-						value={ type.headingFont }
-						onChange={ ( event ) =>
-							set( 'typography.headingFont', event.target.value )
-						}
-					>
-						<option value="same">
-							{ __( 'Same as the text', 'chatlume-ai-chatbot' ) }
-						</option>
-						{ SYSTEM_FONTS.map( ( font ) => (
-							<option key={ font } value={ font }>
-								{ fonts[ font ] }
-							</option>
-						) ) }
-					</Select>
-				</Row>
+				<FontSelect
+					label={ __( 'Heading font', 'chatlume-ai-chatbot' ) }
+					value={ type.headingFont }
+					options={ fonts.options }
+					siteScript={ fonts.site_script }
+					same
+					onChange={ ( key ) => set( 'typography.headingFont', key ) }
+				/>
+			) }
+			{ advanced && (
+				<FontUploads fonts={ fonts } onChange={ onServer } />
 			) }
 			<Slider
 				label={ __( 'Text size', 'chatlume-ai-chatbot' ) }

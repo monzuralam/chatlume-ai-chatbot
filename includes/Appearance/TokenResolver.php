@@ -34,18 +34,6 @@ final class TokenResolver {
 	public const THEME_OPTION = 'chatlume_theme';
 
 	/**
-	 * Font stacks with fallbacks covering scripts many fonts lack
-	 * (Bengali, Arabic, CJK) so text never renders as boxes.
-	 */
-	private const FONT_STACKS = array(
-		'inherit'        => 'inherit',
-		'system'         => 'system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Noto Sans Bengali", "Noto Sans Arabic", "Noto Sans CJK SC", "Helvetica Neue", Arial, sans-serif',
-		'system-serif'   => 'ui-serif, Georgia, Cambria, "Noto Serif", "Noto Serif Bengali", "Noto Naskh Arabic", "Noto Serif CJK SC", "Times New Roman", serif',
-		'system-rounded' => 'ui-rounded, "SF Pro Rounded", "Nunito", system-ui, "Noto Sans", "Noto Sans Bengali", "Noto Sans Arabic", "Noto Sans CJK SC", sans-serif',
-		'mono'           => 'ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace',
-	);
-
-	/**
 	 * Shadow presets.
 	 */
 	private const SHADOWS = array(
@@ -110,7 +98,8 @@ final class TokenResolver {
 	 * @return array<string, mixed>
 	 */
 	public static function rebuild(): array {
-		$config = self::resolve( self::published_theme() );
+		$config          = self::resolve( self::published_theme() );
+		$config['build'] = self::build();
 
 		// Autoloaded on purpose: the launcher needs it on every front-end page.
 		update_option( self::OPTION, $config, true );
@@ -126,11 +115,21 @@ final class TokenResolver {
 	public static function config(): array {
 		$config = get_option( self::OPTION, array() );
 
-		if ( ! is_array( $config ) || ( $config['schema'] ?? 0 ) !== ThemeSchema::VERSION || empty( $config['v'] ) ) {
+		// Rebuilt after a plugin update or a site move, since font URLs depend on both.
+		if ( ! is_array( $config ) || ( $config['schema'] ?? 0 ) !== ThemeSchema::VERSION || empty( $config['v'] ) || ( $config['build'] ?? '' ) !== self::build() ) {
 			return self::rebuild();
 		}
 
 		return $config;
+	}
+
+	/**
+	 * Identifies the plugin version and address the stored URLs belong to.
+	 *
+	 * @return string
+	 */
+	private static function build(): string {
+		return substr( md5( CHATLUME_VERSION . '|' . CHATLUME_URL ), 0, 8 );
 	}
 
 	/**
@@ -164,14 +163,20 @@ final class TokenResolver {
 		unset( $tokens );
 
 		$type    = $theme['typography'];
-		$body    = self::FONT_STACKS[ $type['bodyFont'] ] ?? 'inherit';
-		$heading = 'same' === $type['headingFont'] ? $body : ( self::FONT_STACKS[ $type['headingFont'] ] ?? $body );
+		$body    = FontCatalog::resolve( (string) $type['bodyFont'] );
+		$heading = 'same' === $type['headingFont'] ? $body : FontCatalog::resolve( (string) $type['headingFont'] );
 		$layout  = $theme['layout'];
-		$radii   = $theme['shape']['radii'];
+
+		// Only the faces of fonts in use; the widget registers them at document level.
+		$fonts = array();
+		foreach ( array_merge( $body['faces'], $heading['faces'] ) as $face ) {
+			$fonts[ $face['family'] . '|' . $face['src'] ] = $face;
+		}
+		$radii = $theme['shape']['radii'];
 
 		$vars = array(
-			'--chatlume-font'            => $body,
-			'--chatlume-font-heading'    => $heading,
+			'--chatlume-font'            => $body['stack'],
+			'--chatlume-font-heading'    => $heading['stack'],
 			'--chatlume-font-size'       => $type['baseSize'] . 'px',
 			'--chatlume-line-height'     => (string) $type['lineHeight'],
 			'--chatlume-title-weight'    => (string) $type['titleWeight'],
@@ -216,6 +221,7 @@ final class TokenResolver {
 			'dark'   => $dark,
 			'vars'   => $vars,
 			'ui'     => $ui,
+			'fonts'  => array_values( $fonts ),
 		);
 
 		// Changes whenever anything visible changes; the widget compares it with its cached copy.

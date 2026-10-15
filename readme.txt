@@ -84,6 +84,7 @@ Nothing is removed unless you enable **Delete all data on uninstall** in Chatlum
 * Test your bot: chat with your bot in the admin and see why each answer was given (quick answer, cache, AI, or site search), with knowledge used, tokens, cost, time, and the final prompt; save or improve any answer as a quick answer.
 * Display: show the chat button on all pages, only on chosen pages, or everywhere except them (pages, content types, and addresses with wildcards); by device, logged-in status, and role; business hours in your timezone with an offline message or a hidden button outside them; copy-ready shortcode and block instructions.
 * Customize: a live editor for the chat widget with Simple and Advanced modes, colors generated from your brand color with automatic contrast checks, 10 presets, layout, shape, launcher and motion options, undo and redo, private drafts, publishing, and the last 10 versions.
+* Customize fonts: seven bundled open-license fonts (including Bengali and Arabic), your theme's fonts, the WordPress Font Library, or your own woff2 upload, with separate heading fonts and readable fallbacks for every language.
 
 == External services ==
 
@@ -139,5 +140,15 @@ Chatlume bundles the following open-source libraries in its compiled admin app a
 * clsx – MIT License
 * tailwind-merge – MIT License
 * class-variance-authority – Apache License 2.0
+
+Bundled fonts (assets/fonts, woff2 from the Fontsource packages), each under the SIL Open Font License 1.1, which is GPL-compatible; each font's license is included next to its files:
+
+* Inter – Copyright 2016 The Inter Project Authors
+* DM Sans – Copyright 2014 The DM Sans Project Authors
+* Manrope – Copyright 2019 The Manrope Project Authors
+* Plus Jakarta Sans – Copyright 2020 The Plus Jakarta Sans Project Authors
+* Lora – Copyright 2011 The Lora Project Authors
+* Noto Sans Bengali – Copyright 2025 The Noto Project Authors
+* Noto Sans Arabic – Copyright 2022 The Noto Project Authors
 
 The widget's icons and avatar illustrations are drawn for Chatlume. No third-party logos are included. Provider names are used only to identify the services Chatlume can connect to.

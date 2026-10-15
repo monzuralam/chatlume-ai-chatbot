@@ -13,6 +13,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Brain\Monkey;
 use Brain\Monkey\Functions;
+use Chatlume\Appearance\FontCatalog;
 use Chatlume\Providers\ModelSuggestions;
 use Chatlume\Providers\ProviderRegistry;
 use Yoast\PHPUnitPolyfills\TestCases\TestCase as PolyfillTestCase;
@@ -189,6 +190,8 @@ abstract class TestCase extends PolyfillTestCase {
 		);
 		Functions\when( 'get_locale' )->justReturn( 'en_US' );
 		Functions\when( 'wp_unslash' )->returnArg();
+		Functions\when( 'post_type_exists' )->justReturn( false );
+		FontCatalog::flush();
 
 		ProviderRegistry::reset();
 		ModelSuggestions::set_data( null );

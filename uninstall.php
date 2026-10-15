@@ -39,6 +39,14 @@ function chatlume_uninstall_current_site(): bool {
 
 	\Chatlume\Installer\Schema::drop_tables( $wpdb->prefix );
 
+	// Uploaded fonts (uploads/chatlume-fonts/).
+	global $wp_filesystem;
+	require_once ABSPATH . 'wp-admin/includes/file.php';
+	$chatlume_fonts = \Chatlume\Appearance\FontUploads::folder()['dir'];
+	if ( ( $wp_filesystem || WP_Filesystem() ) && $wp_filesystem->is_dir( $chatlume_fonts ) ) {
+		$wp_filesystem->delete( $chatlume_fonts, true );
+	}
+
 	// Removes every chatlume_* option and transient of this site in one pass; there is no core API for prefix deletes.
 	// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 	$wpdb->query(

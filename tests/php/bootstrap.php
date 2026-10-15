@@ -18,6 +18,7 @@ define( 'CHATLUME_URL', 'https://example.test/wp-content/plugins/chatlume-ai-cha
 define( 'CHATLUME_BASENAME', 'chatlume-ai-chatbot/chatlume-ai-chatbot.php' );
 define( 'MINUTE_IN_SECONDS', 60 );
 define( 'HOUR_IN_SECONDS', 3600 );
+define( 'MB_IN_BYTES', 1048576 );
 if ( ! defined( 'ARRAY_A' ) ) {
 	define( 'ARRAY_A', 'ARRAY_A' );
 }

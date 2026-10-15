@@ -123,5 +123,6 @@
             "showStatus": true,
             "poweredBy": false
         }
-    }
+    },
+    "fonts": []
 }

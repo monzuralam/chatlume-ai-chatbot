@@ -4,8 +4,13 @@
  * instantly without a server round trip. A shared fixture test keeps both
  * implementations identical.
  */
-import type { ThemeConfig } from '../../../widget/types';
-import { COLOR_TOKENS, type ColorSet, type Theme } from './types';
+import type { FontFaceSpec, ThemeConfig } from '../../../widget/types';
+import {
+	COLOR_TOKENS,
+	type ColorSet,
+	type FontOption,
+	type Theme,
+} from './types';
 
 const FONT_STACKS: Record< string, string > = {
 	inherit: 'inherit',
@@ -27,6 +32,27 @@ const SHADOWS = {
 const DENSITY = { compact: 8, comfortable: 12, spacious: 16 };
 const SPEED = { fast: 140, normal: 200, slow: 320 };
 const LAUNCHER_SIZE = { s: 52, m: 58, l: 66 };
+
+/**
+ * Stack and faces for a font key, as FontCatalog::resolve() does: unknown
+ * keys use the system stack.
+ *
+ * @param key   Font key.
+ * @param fonts Catalog.
+ * @return Stack and faces.
+ */
+export function resolveFont(
+	key: string,
+	fonts: FontOption[]
+): { stack: string; faces: FontFaceSpec[] } {
+	const option =
+		fonts.find( ( item ) => item.key === key ) ??
+		fonts.find( ( item ) => item.key === 'system' );
+	if ( option ) {
+		return { stack: option.stack, faces: option.faces };
+	}
+	return { stack: FONT_STACKS[ key ] ?? FONT_STACKS.system, faces: [] };
+}
 
 const kebab = ( name: string ) =>
 	name.replace( /(?<!^)[A-Z]/g, ( letter ) => '-' + letter ).toLowerCase();
@@ -57,9 +83,13 @@ export function headerFill(
  * Resolves a theme into the configuration the widget renders.
  *
  * @param theme Theme.
+ * @param fonts Font catalog (from GET /appearance); system stacks apply without it.
  * @return Configuration (version "draft").
  */
-export function resolveTheme( theme: Theme ): ThemeConfig {
+export function resolveTheme(
+	theme: Theme,
+	fonts: FontOption[] = []
+): ThemeConfig {
 	const modes: Record< 'light' | 'dark', Record< string, string > > = {
 		light: {},
 		dark: {},
@@ -81,11 +111,15 @@ export function resolveTheme( theme: Theme ): ThemeConfig {
 	}
 
 	const type = theme.typography;
-	const body = FONT_STACKS[ type.bodyFont ] ?? 'inherit';
+	const body = resolveFont( type.bodyFont, fonts );
 	const heading =
 		type.headingFont === 'same'
 			? body
-			: ( FONT_STACKS[ type.headingFont ] ?? body );
+			: resolveFont( type.headingFont, fonts );
+	const faces = new Map< string, FontFaceSpec >();
+	for ( const face of [ ...body.faces, ...heading.faces ] ) {
+		faces.set( `${ face.family }|${ face.src }`, face );
+	}
 	const { layout } = theme;
 	const radii = theme.shape.radii;
 
@@ -94,8 +128,8 @@ export function resolveTheme( theme: Theme ): ThemeConfig {
 		light: modes.light,
 		dark: modes.dark,
 		vars: {
-			'--chatlume-font': body,
-			'--chatlume-font-heading': heading,
+			'--chatlume-font': body.stack,
+			'--chatlume-font-heading': heading.stack,
 			'--chatlume-font-size': `${ type.baseSize }px`,
 			'--chatlume-line-height': String( type.lineHeight ),
 			'--chatlume-title-weight': String( type.titleWeight ),
@@ -134,6 +168,7 @@ export function resolveTheme( theme: Theme ): ThemeConfig {
 			motion: theme.motion.open,
 			brand: theme.brand,
 		},
+		fonts: [ ...faces.values() ],
 		v: 'draft',
 	};
 }

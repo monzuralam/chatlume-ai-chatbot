@@ -1,8 +1,11 @@
 /**
  * Customizer data: draft, published theme, and versions.
  */
-import { request } from './api';
-import type { Theme } from './theme/types';
+import apiFetch from '@wordpress/api-fetch';
+
+import { request, toApiError } from './api';
+import { getBootstrap } from './bootstrap';
+import type { FontOption, Theme } from './theme/types';
 
 export interface AppearanceVersion {
 	id: string;
@@ -11,12 +14,75 @@ export interface AppearanceVersion {
 	current: boolean;
 }
 
+export interface UploadedFont {
+	id: string;
+	name: string;
+	url: string;
+	weight: string;
+	style: 'normal' | 'italic';
+}
+
 export interface AppearanceState {
 	draft: Theme;
 	published: Theme;
 	has_changes: boolean;
 	defaults: Theme;
 	versions: AppearanceVersion[];
+	fonts: {
+		options: FontOption[];
+		uploaded: UploadedFont[];
+		/** Script of the site language, e.g. "bengali". */
+		site_script: string;
+	};
+}
+
+/**
+ * Uploads a woff2 font.
+ *
+ * @param file   File.
+ * @param name   Display name.
+ * @param weight Weight ("400" … "700", or "100 900" for variable fonts).
+ * @return New state.
+ */
+export async function uploadFont(
+	file: File,
+	name: string,
+	weight: string
+): Promise< AppearanceState > {
+	const body = new FormData();
+	body.append( 'font', file );
+	body.append( 'name', name );
+	body.append( 'weight', weight );
+	try {
+		return await apiFetch< AppearanceState >( {
+			path: `/${ getBootstrap().restNamespace }/appearance/fonts`,
+			method: 'POST',
+			body,
+		} );
+	} catch ( error ) {
+		throw toApiError( error );
+	}
+}
+
+export const deleteFont = ( id: string ) =>
+	request< AppearanceState >(
+		`/appearance/fonts/${ encodeURIComponent( id ) }`,
+		{ method: 'DELETE' }
+	);
+
+/**
+ * Whether a font lacks the site's script (a note for the admin), or null
+ * when unknown.
+ *
+ * @param option Font.
+ * @param script Site script.
+ * @return True when the script is missing.
+ */
+export function lacksScript(
+	option: FontOption | undefined,
+	script: string
+): boolean {
+	return !! option?.scripts && ! option.scripts.includes( script );
 }
 
 export const fetchAppearance = () =>

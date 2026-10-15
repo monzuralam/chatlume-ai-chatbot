@@ -623,7 +623,7 @@ Implementation decisions (for review, chosen 2026-10-15):
 
 Module 5.7 – Customizer, delivered in three parts (decided 2026-10-15): 5.7a core editor, 5.7b typography and fonts, 5.7c site preview and power tools.
 
-Module 5.7a – Customizer core editor ✅ (2026-10-15, awaiting review)
+Module 5.7a – Customizer core editor ✅ (2026-10-15)
 - [x] Full-width editor: settings panel and an always-visible live preview (sticky; "Show preview" overlay below 1024 px)
 - [x] Simple mode (brand color, avatar, logo, font, position, presets) and Advanced mode (every option), remembered per browser
 - [x] Draft autosave, "Unpublished changes" badge, Publish, Discard changes, Reset to defaults, reset per section, last 10 published versions with restore
@@ -640,6 +640,22 @@ Implementation decisions (for review):
 - Built-in presets live in the admin as a brand color plus style choices; their palettes are generated and tested for AA. Saved custom presets (5.7c) will be stored on the server.
 - Restoring a version loads it into the draft; it goes live only after Publish.
 - A draft equal to the published theme is deleted, so "Unpublished changes" disappears when edits are undone.
+
+Module 5.7b – Customizer typography and fonts ✅ (2026-10-15, awaiting review)
+- [x] Font sources: same as the site, system stacks, 7 bundled open-license variable fonts (Inter, DM Sans, Manrope, Plus Jakarta Sans, Lora, Noto Sans Bengali, Noto Sans Arabic), the active theme's theme.json fonts, the WordPress Font Library, and uploaded woff2 files
+- [x] Separate text and heading fonts; every stack ends with fallbacks for Bengali, Arabic, and CJK
+- [x] "Script support" note when the chosen font has no letters for the site's language; a deleted font falls back to the system font with a note
+- [x] Shadow DOM font loading: faces registered at document level with the FontFace API (`font-display: swap`), only for fonts in use; the browser downloads only the subsets a page needs
+- [x] woff2 uploads (2 MB, at most 20) checked by extension, size, and the file's own signature, stored with WP_Filesystem in uploads/chatlume-fonts/, deletable; removed on uninstall when the admin opted in
+- [x] REST: `POST /appearance/fonts`, `DELETE /appearance/fonts/{id}`; `GET /appearance` includes the font catalog
+- [x] readme Credits list the bundled fonts and their licenses; each font's OFL text ships next to its files
+
+Implementation decisions (for review):
+- Bundled fonts come from the Fontsource packages (variable weight axis, normal style, every subset with its unicode-range); about 0.95 MB on disk, none of it loaded until the chat is opened with that font.
+- Bundled and uploaded faces use namespaced family names ("Chatlume Inter", "Chatlume Custom …") so they never clash with fonts the site already loads.
+- Uploads use Chatlume's own upload route instead of allowing woff2 in the Media Library, so no site-wide MIME change is needed.
+- The stored widget configuration is rebuilt automatically after a plugin update or a site move, because font URLs depend on both.
+- Phones keep the message field at 16 px or larger, whatever the base size (no iOS zoom).
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

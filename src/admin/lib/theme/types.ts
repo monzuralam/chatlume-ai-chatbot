@@ -4,6 +4,8 @@
  * the Customizer's controls within the same limits.
  */
 
+import type { FontFaceSpec } from '../../../widget/types';
+
 export const COLOR_TOKENS = [
 	'primary',
 	'onPrimary',
@@ -64,14 +66,27 @@ export const SYSTEM_FONTS = [
 	'mono',
 ] as const;
 
+/** A font choice from `Chatlume\Appearance\FontCatalog`. */
+export interface FontOption {
+	key: string;
+	label: string;
+	group: 'basic' | 'bundled' | 'theme' | 'library' | 'custom';
+	stack: string;
+	faces: FontFaceSpec[];
+	/** Supported scripts, when known. */
+	scripts: string[] | null;
+}
+
 export interface Theme {
 	version: number;
 	mode: 'light' | 'dark' | 'auto';
 	colors: { light: ColorSet; dark: ColorSet };
 	header: { style: 'solid' | 'gradient' | 'minimal'; gradientAngle: number };
 	typography: {
-		bodyFont: ( typeof SYSTEM_FONTS )[ number ];
-		headingFont: 'same' | ( typeof SYSTEM_FONTS )[ number ];
+		/** A font key from the catalog ("system", "bundled:inter", "custom:…"). */
+		bodyFont: string;
+		/** "same" or a font key. */
+		headingFont: string;
 		baseSize: number;
 		lineHeight: number;
 		titleWeight: number;

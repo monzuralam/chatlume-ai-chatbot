@@ -55,12 +55,23 @@ export interface ThemeUi {
 	};
 }
 
+/** A font face the widget registers (see `Chatlume\Appearance\FontCatalog`). */
+export interface FontFaceSpec {
+	family: string;
+	src: string;
+	weight: string;
+	style: string;
+	unicodeRange: string;
+}
+
 export interface ThemeConfig {
 	schema: number;
 	light: Record< string, string >;
 	dark: Record< string, string >;
 	vars: Record< string, string >;
 	ui: ThemeUi;
+	/** Faces of the fonts in use (empty for system fonts). */
+	fonts?: FontFaceSpec[];
 	v: string;
 }
 

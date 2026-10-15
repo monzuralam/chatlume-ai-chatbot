@@ -8,6 +8,8 @@
 namespace Chatlume\REST;
 
 use Chatlume\Appearance\AppearanceStore;
+use Chatlume\Appearance\FontCatalog;
+use Chatlume\Appearance\FontUploads;
 use Chatlume\Appearance\ThemeSchema;
 use Chatlume\Appearance\TokenResolver;
 use Chatlume\Plugin;
@@ -91,6 +93,55 @@ class AppearanceController {
 				'callback'            => array( $this, 'publish' ),
 				'permission_callback' => $permission,
 				'args'                => array(),
+			)
+		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/appearance/fonts',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'upload_font' ),
+				'permission_callback' => $permission,
+				'args'                => array(
+					'name'   => array(
+						'type'              => 'string',
+						'default'           => '',
+						'maxLength'         => 60,
+						'sanitize_callback' => 'sanitize_text_field',
+						'validate_callback' => 'rest_validate_request_arg',
+					),
+					'weight' => array(
+						'type'              => 'string',
+						'default'           => '400',
+						'enum'              => FontUploads::WEIGHTS,
+						'validate_callback' => 'rest_validate_request_arg',
+					),
+					'style'  => array(
+						'type'              => 'string',
+						'default'           => 'normal',
+						'enum'              => array( 'normal', 'italic' ),
+						'validate_callback' => 'rest_validate_request_arg',
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/appearance/fonts/(?P<id>[a-f0-9]{12})',
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_font' ),
+				'permission_callback' => $permission,
+				'args'                => array(
+					'id' => array(
+						'type'              => 'string',
+						'required'          => true,
+						'pattern'           => '^[a-f0-9]{12}$',
+						'validate_callback' => 'rest_validate_request_arg',
+					),
+				),
 			)
 		);
 
@@ -226,6 +277,45 @@ class AppearanceController {
 	}
 
 	/**
+	 * POST /appearance/fonts: a woff2 upload (multipart field "font").
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function upload_font( WP_REST_Request $request ) {
+		$files = $request->get_file_params();
+		if ( empty( $files['font'] ) || ! is_array( $files['font'] ) ) {
+			return new WP_Error( 'chatlume_font_upload_failed', __( 'Choose a .woff2 font file to upload.', 'chatlume-ai-chatbot' ), array( 'status' => 400 ) );
+		}
+
+		$font = FontUploads::store(
+			$files['font'],
+			(string) $request->get_param( 'name' ),
+			(string) $request->get_param( 'weight' ),
+			(string) $request->get_param( 'style' )
+		);
+		if ( is_wp_error( $font ) ) {
+			return $font;
+		}
+
+		return self::state();
+	}
+
+	/**
+	 * DELETE /appearance/fonts/{id}.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function delete_font( WP_REST_Request $request ) {
+		if ( ! FontUploads::delete( (string) $request->get_param( 'id' ) ) ) {
+			return new WP_Error( 'chatlume_not_found', __( 'This font no longer exists.', 'chatlume-ai-chatbot' ), array( 'status' => 404 ) );
+		}
+
+		return self::state();
+	}
+
+	/**
 	 * The Customizer's state.
 	 *
 	 * @return WP_REST_Response
@@ -239,6 +329,11 @@ class AppearanceController {
 					'has_changes' => AppearanceStore::has_changes(),
 					'defaults'    => ThemeSchema::defaults(),
 					'versions'    => AppearanceStore::versions(),
+					'fonts'       => array(
+						'options'     => array_values( FontCatalog::options() ),
+						'uploaded'    => FontCatalog::uploaded(),
+						'site_script' => FontCatalog::site_script(),
+					),
 				)
 			)
 		);
