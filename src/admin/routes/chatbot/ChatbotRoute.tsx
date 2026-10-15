@@ -38,6 +38,7 @@ import type { ApiError } from '../../lib/api';
 import {
 	chatbotFormSchema,
 	fetchChatbotInfo,
+	previewSamples,
 	fromChatbotForm,
 	previewBehavior,
 	STARTER_SLOTS,
@@ -127,40 +128,6 @@ function dollars( value: number ): string {
 		currency: 'USD',
 		maximumFractionDigits: value > 0 && value < 1 ? 4 : 2,
 	} ).format( value );
-}
-
-/**
- * Sample conversation for the preview (translated here, shown by the widget).
- *
- * @return Samples.
- */
-function previewSamples() {
-	return {
-		question: __( 'What can you help me with?', 'chatlume-ai-chatbot' ),
-		answer: [
-			__(
-				'I can answer questions about **our products and services**, for example:',
-				'chatlume-ai-chatbot'
-			),
-			'',
-			'- ' + __( 'prices and plans', 'chatlume-ai-chatbot' ),
-			'- ' + __( 'delivery and returns', 'chatlume-ai-chatbot' ),
-			'- ' + __( 'how to get in touch', 'chatlume-ai-chatbot' ),
-		].join( '\n' ),
-		sources: [],
-		quickQuestion: __(
-			'What are your opening hours?',
-			'chatlume-ai-chatbot'
-		),
-		quickAnswer: __(
-			'We are open Monday to Friday, 9:00 to 17:00.',
-			'chatlume-ai-chatbot'
-		),
-		reply: __(
-			'This is a sample reply. The preview never contacts your AI provider, so you can try the chat for free.',
-			'chatlume-ai-chatbot'
-		),
-	};
 }
 
 function ChatbotForm( {

@@ -33,6 +33,8 @@ export interface PageRegistration {
 	icon?: ComponentType< IconProps >;
 	/** Sort order in the sidebar. Built-in pages use 0–1000. */
 	order?: number;
+	/** Use the full width of the screen (editors such as the Customizer). */
+	wide?: boolean;
 }
 
 export interface SettingsSectionRegistration {

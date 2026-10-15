@@ -1,9 +1,14 @@
 /**
  * Chatbot page data and the preview mapping.
  */
+import { __ } from '@wordpress/i18n';
 import { z } from 'zod';
 
-import type { BehaviorConfig, QuickAction } from '../../widget/types';
+import type {
+	BehaviorConfig,
+	PreviewSamples,
+	QuickAction,
+} from '../../widget/types';
 import { request } from './api';
 import {
 	chatbotSettingsSchema,
@@ -207,5 +212,71 @@ export function fromChatbotForm( values: ChatbotFormValues ): ChatbotStored {
 				value: action.value.trim(),
 			} ) ),
 		},
+	};
+}
+
+/**
+ * Sample conversation for previews (translated here, shown by the widget).
+ *
+ * @param rich    Add a code block and source links (the Customizer shows every element).
+ * @param siteUrl Site address for the sample sources.
+ * @return Samples.
+ */
+export function previewSamples(
+	rich = false,
+	siteUrl = ''
+): Partial< PreviewSamples > {
+	const answer = [
+		__(
+			'I can answer questions about **our products and services**, for example:',
+			'chatlume-ai-chatbot'
+		),
+		'',
+		'- ' + __( 'prices and plans', 'chatlume-ai-chatbot' ),
+		'- ' + __( 'delivery and returns', 'chatlume-ai-chatbot' ),
+		'- ' + __( 'how to get in touch', 'chatlume-ai-chatbot' ),
+	];
+	if ( rich ) {
+		answer.push(
+			'',
+			__( 'Use this code at checkout:', 'chatlume-ai-chatbot' ),
+			'',
+			'```',
+			'WELCOME10',
+			'```'
+		);
+	}
+	const base = siteUrl.replace( /\/+$/, '' );
+	return {
+		question: __( 'What can you help me with?', 'chatlume-ai-chatbot' ),
+		answer: answer.join( '\n' ),
+		sources:
+			rich && base
+				? [
+						{
+							title: __(
+								'Shipping and returns',
+								'chatlume-ai-chatbot'
+							),
+							url: `${ base }/shipping/`,
+						},
+						{
+							title: __( 'Contact us', 'chatlume-ai-chatbot' ),
+							url: `${ base }/contact/`,
+						},
+					]
+				: [],
+		quickQuestion: __(
+			'What are your opening hours?',
+			'chatlume-ai-chatbot'
+		),
+		quickAnswer: __(
+			'We are open Monday to Friday, 9:00 to 17:00.',
+			'chatlume-ai-chatbot'
+		),
+		reply: __(
+			'This is a sample reply. The preview never contacts your AI provider, so you can try the chat for free.',
+			'chatlume-ai-chatbot'
+		),
 	};
 }

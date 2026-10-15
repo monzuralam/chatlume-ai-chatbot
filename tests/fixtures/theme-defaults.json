@@ -1,0 +1,134 @@
+{
+    "version": 1,
+    "mode": "light",
+    "colors": {
+        "light": {
+            "primary": "#4f46e5",
+            "onPrimary": "#ffffff",
+            "accent": "#7c3aed",
+            "background": "#ffffff",
+            "surface": "#f6f7f9",
+            "headerBackground": "#4f46e5",
+            "headerBackgroundEnd": "#7c3aed",
+            "headerText": "#ffffff",
+            "botBubble": "#f1f2f6",
+            "botText": "#1f2330",
+            "userBubble": "#4f46e5",
+            "userText": "#ffffff",
+            "link": "#4338ca",
+            "border": "#e4e6eb",
+            "inputBackground": "#ffffff",
+            "inputText": "#1f2330",
+            "launcherBackground": "#4f46e5",
+            "launcherIcon": "#ffffff",
+            "sourceCard": "#ffffff",
+            "muted": "#5f6576",
+            "error": "#c62828",
+            "success": "#1b7f4b"
+        },
+        "dark": {
+            "primary": "#8b8cf8",
+            "onPrimary": "#12122a",
+            "accent": "#a78bfa",
+            "background": "#16171d",
+            "surface": "#1d1f27",
+            "headerBackground": "#2a2b4a",
+            "headerBackgroundEnd": "#3b2d5c",
+            "headerText": "#f4f4f8",
+            "botBubble": "#262833",
+            "botText": "#eceef3",
+            "userBubble": "#5b5ef0",
+            "userText": "#ffffff",
+            "link": "#a5b4fc",
+            "border": "#2e313d",
+            "inputBackground": "#1d1f27",
+            "inputText": "#eceef3",
+            "launcherBackground": "#5b5ef0",
+            "launcherIcon": "#ffffff",
+            "sourceCard": "#1d1f27",
+            "muted": "#a3a8b8",
+            "error": "#ff8a80",
+            "success": "#6fd49b"
+        }
+    },
+    "header": {
+        "style": "solid",
+        "gradientAngle": 135
+    },
+    "typography": {
+        "bodyFont": "inherit",
+        "headingFont": "same",
+        "baseSize": 15,
+        "lineHeight": 1.5,
+        "titleWeight": 600,
+        "messageWeight": 400,
+        "letterSpacing": 0
+    },
+    "layout": {
+        "style": "floating",
+        "position": "right",
+        "offsetX": 20,
+        "offsetY": 20,
+        "mobileOffsetX": 12,
+        "mobileOffsetY": 12,
+        "zIndex": 99999,
+        "width": 380,
+        "height": 600,
+        "mobileFullscreen": true,
+        "fullscreenBelow": 480
+    },
+    "shape": {
+        "preset": "soft",
+        "radii": {
+            "window": 16,
+            "bubble": 16,
+            "button": 999,
+            "input": 999,
+            "card": 12
+        },
+        "shadow": "medium",
+        "density": "comfortable"
+    },
+    "messages": {
+        "style": "bubbles",
+        "avatar": true,
+        "timestamps": "hover",
+        "animate": true
+    },
+    "background": {
+        "type": "solid",
+        "pattern": "dots",
+        "glass": false
+    },
+    "composer": {
+        "style": "rounded",
+        "sendButton": "icon"
+    },
+    "launcher": {
+        "type": "icon",
+        "icon": "chat",
+        "image": "",
+        "shape": "circle",
+        "size": "m",
+        "label": "",
+        "attention": "none",
+        "teaser": ""
+    },
+    "motion": {
+        "open": "scale",
+        "speed": "normal"
+    },
+    "brand": {
+        "avatarType": "initials",
+        "avatarUrl": "",
+        "illustration": "bubbles",
+        "logoUrl": "",
+        "showLogo": false,
+        "headerTitle": "",
+        "headerSubtitle": "",
+        "statusText": "",
+        "showAvatar": true,
+        "showStatus": true,
+        "poweredBy": false
+    }
+}

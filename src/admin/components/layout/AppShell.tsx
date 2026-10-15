@@ -1,6 +1,6 @@
 import { __ } from '@wordpress/i18n';
 import { domAnimation, LazyMotion, m, MotionConfig } from 'motion/react';
-import { Suspense, useState } from 'react';
+import { Suspense, useState, type ReactNode } from 'react';
 import { useLocation } from 'react-router';
 import { Toaster } from 'sonner';
 
@@ -42,6 +42,30 @@ function PageOutlet() {
 }
 
 /**
+ * Content width: readable by default, full width for editors.
+ *
+ * @param props          Props.
+ * @param props.children Page.
+ */
+function PageWidth( { children }: { children: ReactNode } ) {
+	const location = useLocation();
+	const pages = useRegistry( pageRegistry );
+	const wide = !! matchPage( pages, location.pathname )?.wide;
+
+	return (
+		<div
+			className={
+				wide
+					? 'chatlume:mx-auto chatlume:max-w-[1800px]'
+					: 'chatlume:mx-auto chatlume:max-w-5xl'
+			}
+		>
+			{ children }
+		</div>
+	);
+}
+
+/**
  * App frame: header, sidebar, page area, toasts, and the portal container.
  */
 export function AppShell() {
@@ -64,9 +88,9 @@ export function AppShell() {
 									'chatlume-ai-chatbot'
 								) }
 							>
-								<div className="chatlume:mx-auto chatlume:max-w-5xl">
+								<PageWidth>
 									<PageOutlet />
-								</div>
+								</PageWidth>
 							</main>
 						</div>
 						<Toaster

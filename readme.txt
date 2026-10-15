@@ -83,6 +83,7 @@ Nothing is removed unless you enable **Delete all data on uninstall** in Chatlum
 * Dashboard: conversations, questions, tokens, estimated cost, and money saved for today, 7, or 30 days; a daily chart; connection and budget status; questions your bot could not answer with one-click quick answers; recent conversations; and a setup checklist.
 * Test your bot: chat with your bot in the admin and see why each answer was given (quick answer, cache, AI, or site search), with knowledge used, tokens, cost, time, and the final prompt; save or improve any answer as a quick answer.
 * Display: show the chat button on all pages, only on chosen pages, or everywhere except them (pages, content types, and addresses with wildcards); by device, logged-in status, and role; business hours in your timezone with an offline message or a hidden button outside them; copy-ready shortcode and block instructions.
+* Customize: a live editor for the chat widget with Simple and Advanced modes, colors generated from your brand color with automatic contrast checks, 10 presets, layout, shape, launcher and motion options, undo and redo, private drafts, publishing, and the last 10 versions.
 
 == External services ==
 

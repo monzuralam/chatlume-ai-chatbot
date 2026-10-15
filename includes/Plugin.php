@@ -15,6 +15,7 @@ use Chatlume\Frontend\WidgetLoader;
 use Chatlume\Installer\Activation;
 use Chatlume\Installer\Migrations;
 use Chatlume\Installer\Multisite;
+use Chatlume\REST\AppearanceController;
 use Chatlume\REST\ChatbotController;
 use Chatlume\REST\ChatController;
 use Chatlume\REST\ConversationsController;
@@ -121,6 +122,7 @@ final class Plugin {
 		( new StatsController() )->register_routes();
 		( new PlaygroundController() )->register_routes();
 		( new DisplayController() )->register_routes();
+		( new AppearanceController() )->register_routes();
 	}
 
 	/**

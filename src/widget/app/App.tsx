@@ -170,6 +170,9 @@ export function App( {
 				if ( batch.theme ) {
 					host.setTheme( batch.theme as ThemeConfig );
 				}
+				if ( batch.direction === 'rtl' || batch.direction === 'ltr' ) {
+					host.setDirection( batch.direction );
+				}
 				if ( batch.strings ) {
 					setConfig( ( current ) => ( {
 						...current,

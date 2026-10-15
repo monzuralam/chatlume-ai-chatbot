@@ -7,6 +7,7 @@
  *   - behavior   BehaviorConfig    Bot name, welcome, starters, quick actions.
  *   - state      PreviewState      Forced preview state.
  *   - highlight  { part: string }  Briefly outlines an element.
+ *   - direction  'ltr' | 'rtl'     Text direction.
  *
  * Widget → Customizer: `{ source: 'chatlume-preview', type, payload }`
  *   - ready      {}                The preview is listening.
@@ -22,6 +23,7 @@ export const PREVIEW_TYPES = [
 	'behavior',
 	'state',
 	'highlight',
+	'direction',
 ] as const;
 
 export type PreviewType = ( typeof PREVIEW_TYPES )[ number ];

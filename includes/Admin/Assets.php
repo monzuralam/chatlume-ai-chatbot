@@ -104,6 +104,11 @@ class Assets {
 			wp_enqueue_script( WidgetLoader::HANDLE );
 		}
 
+		// The Media Library, for the avatar, logo, and launcher images in the Customizer.
+		if ( current_user_can( 'upload_files' ) ) {
+			wp_enqueue_media();
+		}
+
 		if ( is_readable( CHATLUME_PATH . 'build/admin/index.css' ) ) {
 			wp_enqueue_style( self::HANDLE, CHATLUME_URL . 'build/admin/index.css', array(), $ver );
 			wp_style_add_data( self::HANDLE, 'rtl', 'replace' );

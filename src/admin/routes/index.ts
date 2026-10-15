@@ -5,6 +5,7 @@ import {
 	LayoutDashboard,
 	MessagesSquare,
 	MonitorSmartphone,
+	Paintbrush,
 	Plug,
 	Settings,
 } from 'lucide-react';
@@ -32,6 +33,12 @@ const ConversationsRoute = lazy(
 	() =>
 		import(
 			/* webpackChunkName: "route-conversations" */ './conversations/ConversationsRoute'
+		)
+);
+const CustomizeRoute = lazy(
+	() =>
+		import(
+			/* webpackChunkName: "route-customize" */ './customize/CustomizeRoute'
 		)
 );
 const DisplayRoute = lazy(
@@ -83,6 +90,16 @@ export function registerBuiltInPages(): void {
 		icon: Bot,
 		component: ChatbotRoute,
 		order: 200,
+	} );
+
+	pageRegistry.register( {
+		id: 'customize',
+		title: __( 'Customize', 'chatlume-ai-chatbot' ),
+		path: '/customize',
+		icon: Paintbrush,
+		component: CustomizeRoute,
+		order: 220,
+		wide: true,
 	} );
 
 	pageRegistry.register( {

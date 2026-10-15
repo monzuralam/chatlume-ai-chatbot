@@ -606,7 +606,7 @@ Implementation decisions (for review):
 - They are stored as test conversations (hidden from Conversations and statistics) and skip visitor rate limits; AI replies still count toward the budget because they cost real money.
 - The pipeline builds its trace only when the admin-only route asks for it; visitor routes never return it.
 
-Module 5.6 – Display & business hours ✅ (2026-10-15, awaiting review)
+Module 5.6 – Display & business hours ✅ (2026-10-15)
 - [x] Chat button on/off and "Open instantly" (preload)
 - [x] Pages: all, only on…, or everywhere except…, matching chosen pages and posts (title search), content types (single items and archives), and page addresses with `*` wildcards
 - [x] Devices (computers and phones, computers only, phones only), visitors (everyone, logged out, logged in) and roles
@@ -620,6 +620,26 @@ Implementation decisions (for review, chosen 2026-10-15):
 - Outside hours the admin chooses between the offline message (default) and hiding the button; chats placed inside pages always show the offline message.
 - Phones are screens narrower than 768 pixels. "/shop/*" also matches "/shop"; addresses are compared without case, query string, or trailing slash, relative to the site address.
 - Proactive triggers (time on page, scroll depth, exit intent, frequency caps) remain in Phase 7, as agreed.
+
+Module 5.7 – Customizer, delivered in three parts (decided 2026-10-15): 5.7a core editor, 5.7b typography and fonts, 5.7c site preview and power tools.
+
+Module 5.7a – Customizer core editor ✅ (2026-10-15, awaiting review)
+- [x] Full-width editor: settings panel and an always-visible live preview (sticky; "Show preview" overlay below 1024 px)
+- [x] Simple mode (brand color, avatar, logo, font, position, presets) and Advanced mode (every option), remembered per browser
+- [x] Draft autosave, "Unpublished changes" badge, Publish, Discard changes, Reset to defaults, reset per section, last 10 published versions with restore
+- [x] Undo and redo (buttons, Ctrl/Cmd+Z, Shift+Ctrl/Cmd+Z, Ctrl+Y); a drag of a slider or color picker is one step
+- [x] Colors: one brand color generates complete light and dark palettes (OKLCH); every token editable per mode in Advanced; color mode light, dark, or follow the visitor; header solid, gradient (angle), or minimal; hex input, system picker, eyedropper where supported, recent colors
+- [x] Contrast checker for every text and background pair (WCAG AA; 3:1 for the launcher icon) with "Fix" per pair and "Fix all automatically"
+- [x] 10 presets with live thumbnails (Minimal, Midnight, Glass, Corporate, Soft, Playful, Mono, Ocean, Sunset, Forest) and "Keep my brand color"; every preset passes AA in light and dark
+- [x] Brand (avatar as initials, Media Library image, or illustration; header logo, title, subtitle, status; "Powered by" off by default), layout (style, position, size, offsets for desktop and phones, full screen on phones, z-index), shape (corner presets and per-element radii, shadow, spacing), messages, background, composer, launcher (12 icons, avatar or image, shape, label, size, colors, attention effect, teaser), motion
+- [x] Preview tools: state switcher (conversation with Markdown, code block, and source cards; empty; closed launcher; writing; typing; error; offline), light/dark override, right-to-left, "Show launcher"
+- [x] REST: `GET /appearance`, `GET/POST/DELETE /appearance/draft`, `POST /appearance/publish`, `GET /appearance/versions`, `POST /appearance/versions/{id}/restore`
+
+Implementation decisions (for review):
+- The admin resolves the draft into widget tokens itself (a TypeScript port of TokenResolver), so every change reaches the preview without a server round trip; a shared fixture test keeps both resolvers identical.
+- Built-in presets live in the admin as a brand color plus style choices; their palettes are generated and tested for AA. Saved custom presets (5.7c) will be stored on the server.
+- Restoring a version loads it into the draft; it goes live only after Publish.
+- A draft equal to the published theme is deleted, so "Unpublished changes" disappears when edits are undone.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

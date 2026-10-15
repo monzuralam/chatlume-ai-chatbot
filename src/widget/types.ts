@@ -187,6 +187,8 @@ export interface WidgetHost {
 	close: () => void;
 	/** Applies a (new) theme without re-rendering. */
 	setTheme: ( theme: ThemeConfig ) => void;
+	/** Text direction (preview RTL toggle). */
+	setDirection: ( direction: 'ltr' | 'rtl' ) => void;
 	/** Shows the unread dot on the launcher while closed. */
 	notify: () => void;
 	/** Subscribes to open/close changes. */

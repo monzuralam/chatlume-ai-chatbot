@@ -10,6 +10,7 @@ import type {
 	BehaviorConfig,
 	PreviewSamples,
 	PreviewState,
+	ThemeConfig,
 } from '../../../widget/types';
 import { getBootstrap } from '../../lib/bootstrap';
 import { cn } from '../../lib/utils';
@@ -50,6 +51,9 @@ interface WidgetPreviewProps {
 	behavior: BehaviorConfig;
 	samples: Partial< PreviewSamples >;
 	state?: PreviewState;
+	/** A theme to show instead of the published one (Customizer). */
+	theme?: ThemeConfig;
+	direction?: 'ltr' | 'rtl';
 	className?: string;
 }
 
@@ -60,17 +64,21 @@ interface WidgetPreviewProps {
  * @param props.behavior  Behavior settings to show.
  * @param props.samples   Sample conversation texts.
  * @param props.state     Forced state.
+ * @param props.theme     Theme to show (defaults to the published one).
+ * @param props.direction Text direction.
  * @param props.className Extra classes for the frame.
  */
 export function WidgetPreview( {
 	behavior,
 	samples,
 	state,
+	theme,
+	direction,
 	className,
 }: WidgetPreviewProps ) {
 	const box = useRef< HTMLDivElement >( null );
-	const latest = useRef( { behavior, samples, state } );
-	latest.current = { behavior, samples, state };
+	const latest = useRef( { behavior, samples, state, theme } );
+	latest.current = { behavior, samples, state, theme };
 	const [ failed, setFailed ] = useState( false );
 	const config = getBootstrap().widget;
 
@@ -92,6 +100,7 @@ export function WidgetPreview( {
 			}
 			window.Chatlume.mountPreview( element, {
 				...config,
+				theme: latest.current.theme ?? config.theme,
 				preview: {
 					origin: window.location.origin,
 					behavior: latest.current.behavior,
@@ -116,6 +125,19 @@ export function WidgetPreview( {
 			postToPreview( 'state', state );
 		}
 	}, [ state ] );
+
+	// Every edit travels as tokens; the widget applies them once per frame.
+	useEffect( () => {
+		if ( theme ) {
+			postToPreview( 'theme', theme );
+		}
+	}, [ theme ] );
+
+	useEffect( () => {
+		if ( direction ) {
+			postToPreview( 'direction', direction );
+		}
+	}, [ direction ] );
 
 	if ( failed ) {
 		return (

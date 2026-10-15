@@ -224,6 +224,10 @@ class Controller implements WidgetHost {
 		return () => this.listeners.delete( listener );
 	}
 
+	setDirection( direction: 'ltr' | 'rtl' ): void {
+		this.wrap.dir = direction;
+	}
+
 	setTheme( theme: ThemeConfig ): void {
 		if ( ! theme || ! theme.ui ) {
 			return;

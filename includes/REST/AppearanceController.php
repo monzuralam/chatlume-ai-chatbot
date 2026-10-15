@@ -1,0 +1,258 @@
+<?php
+/**
+ * REST: the widget Customizer.
+ *
+ * @package Chatlume
+ */
+
+namespace Chatlume\REST;
+
+use Chatlume\Appearance\AppearanceStore;
+use Chatlume\Appearance\ThemeSchema;
+use Chatlume\Appearance\TokenResolver;
+use Chatlume\Plugin;
+use WP_Error;
+use WP_REST_Request;
+use WP_REST_Response;
+use WP_REST_Server;
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit;
+}
+
+/**
+ * GET /appearance, POST and DELETE /appearance/draft, POST
+ * /appearance/publish, GET /appearance/versions, and POST
+ * /appearance/versions/{id}/restore. Admin only.
+ */
+class AppearanceController {
+
+	/**
+	 * Largest accepted theme, in bytes of JSON.
+	 */
+	private const MAX_THEME_BYTES = 32768;
+
+	/**
+	 * Registers routes.
+	 *
+	 * @return void
+	 */
+	public function register_routes(): void {
+		$permission = array( $this, 'permissions_check' );
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/appearance',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_item' ),
+				'permission_callback' => $permission,
+				'args'                => array(),
+			)
+		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/appearance/draft',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_item' ),
+					'permission_callback' => $permission,
+					'args'                => array(),
+				),
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'save_draft' ),
+					'permission_callback' => $permission,
+					'args'                => array(
+						'theme' => array(
+							'type'              => 'object',
+							'required'          => true,
+							'validate_callback' => array( self::class, 'validate_theme' ),
+							'sanitize_callback' => array( ThemeSchema::class, 'sanitize' ),
+						),
+					),
+				),
+				array(
+					'methods'             => WP_REST_Server::DELETABLE,
+					'callback'            => array( $this, 'discard' ),
+					'permission_callback' => $permission,
+					'args'                => array(),
+				),
+			)
+		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/appearance/publish',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'publish' ),
+				'permission_callback' => $permission,
+				'args'                => array(),
+			)
+		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/appearance/versions',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_versions' ),
+				'permission_callback' => $permission,
+				'args'                => array(),
+			)
+		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/appearance/versions/(?P<id>[a-f0-9-]{36})/restore',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'restore' ),
+				'permission_callback' => $permission,
+				'args'                => array(
+					'id' => array(
+						'type'              => 'string',
+						'required'          => true,
+						'pattern'           => '^[a-f0-9-]{36}$',
+						'sanitize_callback' => 'sanitize_text_field',
+						'validate_callback' => 'rest_validate_request_arg',
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * Only Chatlume managers.
+	 *
+	 * @return true|WP_Error
+	 */
+	public function permissions_check() {
+		if ( Plugin::current_user_can_manage() ) {
+			return true;
+		}
+
+		return new WP_Error(
+			'rest_forbidden',
+			__( 'Sorry, you are not allowed to change the widget appearance.', 'chatlume-ai-chatbot' ),
+			array( 'status' => rest_authorization_required_code() )
+		);
+	}
+
+	/**
+	 * A theme must be an object of reasonable size.
+	 *
+	 * @param mixed $value Theme.
+	 * @return true|WP_Error
+	 */
+	public static function validate_theme( $value ) {
+		if ( ! is_array( $value ) ) {
+			return new WP_Error( 'chatlume_invalid_theme', __( 'The appearance settings are not valid.', 'chatlume-ai-chatbot' ), array( 'status' => 400 ) );
+		}
+		if ( strlen( (string) wp_json_encode( $value ) ) > self::MAX_THEME_BYTES ) {
+			return new WP_Error( 'chatlume_theme_too_large', __( 'The appearance settings are too large.', 'chatlume-ai-chatbot' ), array( 'status' => 400 ) );
+		}
+
+		return true;
+	}
+
+	/**
+	 * GET /appearance: draft, published theme, defaults, and versions.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function get_item(): WP_REST_Response {
+		return self::state();
+	}
+
+	/**
+	 * POST /appearance/draft.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public function save_draft( WP_REST_Request $request ): WP_REST_Response {
+		AppearanceStore::save_draft( (array) $request->get_param( 'theme' ) );
+
+		return self::state();
+	}
+
+	/**
+	 * DELETE /appearance/draft.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function discard(): WP_REST_Response {
+		AppearanceStore::discard();
+
+		return self::state();
+	}
+
+	/**
+	 * POST /appearance/publish.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function publish(): WP_REST_Response {
+		AppearanceStore::publish();
+
+		return self::state();
+	}
+
+	/**
+	 * GET /appearance/versions.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function get_versions(): WP_REST_Response {
+		return self::no_store( new WP_REST_Response( AppearanceStore::versions() ) );
+	}
+
+	/**
+	 * POST /appearance/versions/{id}/restore: loads a version into the draft.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function restore( WP_REST_Request $request ) {
+		if ( null === AppearanceStore::restore( (string) $request->get_param( 'id' ) ) ) {
+			return new WP_Error( 'chatlume_not_found', __( 'This version no longer exists.', 'chatlume-ai-chatbot' ), array( 'status' => 404 ) );
+		}
+
+		return self::state();
+	}
+
+	/**
+	 * The Customizer's state.
+	 *
+	 * @return WP_REST_Response
+	 */
+	private static function state(): WP_REST_Response {
+		return self::no_store(
+			new WP_REST_Response(
+				array(
+					'draft'       => AppearanceStore::draft(),
+					'published'   => TokenResolver::published_theme(),
+					'has_changes' => AppearanceStore::has_changes(),
+					'defaults'    => ThemeSchema::defaults(),
+					'versions'    => AppearanceStore::versions(),
+				)
+			)
+		);
+	}
+
+	/**
+	 * Never cached.
+	 *
+	 * @param WP_REST_Response $response Response.
+	 * @return WP_REST_Response
+	 */
+	private static function no_store( WP_REST_Response $response ): WP_REST_Response {
+		$response->header( 'Cache-Control', 'no-store, private' );
+
+		return $response;
+	}
+}
