@@ -1,6 +1,7 @@
 /**
  * Typed access to the boot data printed by PHP (Admin\Assets::bootstrap_data).
  */
+import type { WidgetConfig } from '../../widget/types';
 
 export type ColorMode = 'system' | 'light' | 'dark';
 
@@ -36,6 +37,8 @@ export interface ChatlumeBootstrap {
 	};
 	isRtl: boolean;
 	system: SystemStatus;
+	/** Widget configuration for live previews; null until the widget is built. */
+	widget: WidgetConfig | null;
 }
 
 const FALLBACK: ChatlumeBootstrap = {
@@ -47,6 +50,7 @@ const FALLBACK: ChatlumeBootstrap = {
 	colorMode: 'system',
 	user: { id: 0, displayName: '' },
 	isRtl: false,
+	widget: null,
 	system: {
 		wpVersion: '',
 		phpVersion: '',

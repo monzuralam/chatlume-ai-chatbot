@@ -57,6 +57,58 @@ export const securitySettingsSchema = z
 	} )
 	.strict();
 
+export const quickActionSchema = z
+	.object( {
+		label: z.string().max( 40 ).default( '' ),
+		type: z
+			.enum( [ 'url', 'email', 'phone', 'whatsapp', 'message' ] )
+			.default( 'url' ),
+		value: z.string().max( 500 ).default( '' ),
+	} )
+	.strict();
+
+export const chatbotSettingsSchema = z
+	.object( {
+		bot_name: z.string().max( 60 ),
+		preset: z.enum( [ 'support', 'sales', 'faq', 'blank' ] ),
+		system_prompt: z.string().max( 8000 ),
+		welcome_message: z.string().max( 1000 ),
+		starter_questions: z.array( z.string().max( 120 ) ).max( 4 ),
+		quick_actions: z.array( quickActionSchema ).max( 4 ),
+		temperature: z.number().min( 0 ).max( 2 ),
+		max_output_tokens: z.number().int().min( 50 ).max( 4000 ),
+		history_window: z.number().int().min( 0 ).max( 30 ),
+		max_message_length: z.number().int().min( 50 ).max( 4000 ),
+		language_mode: z.enum( [ 'visitor', 'fixed' ] ),
+		fixed_language: z.string().max( 40 ),
+		site_topics_only: z.boolean(),
+		refusal_message: z.string().max( 500 ),
+		blocked_words: z.array( z.string().max( 60 ) ).max( 200 ),
+		offline_message: z.string().max( 500 ),
+		error_message: z.string().max( 500 ),
+		site_search_message: z.string().max( 500 ),
+	} )
+	.strict();
+
+export const quickAnswersSettingsSchema = z
+	.object( {
+		enabled: z.boolean(),
+		threshold: z.number().min( 0.5 ).max( 1 ),
+		show_as_starters: z.boolean(),
+	} )
+	.strict();
+
+export const costsSettingsSchema = z
+	.object( {
+		conversation_message_cap: z.number().int().min( 0 ).max( 1000 ),
+		budget_unit: z.enum( [ 'currency', 'tokens' ] ),
+		daily_budget: z.number().min( 0 ).max( 1_000_000_000 ),
+		monthly_budget: z.number().min( 0 ).max( 1_000_000_000 ),
+		cap_behavior: z.enum( [ 'site_search', 'offline', 'fallback_model' ] ),
+		alert_email: z.union( [ z.literal( '' ), z.email().max( 100 ) ] ),
+	} )
+	.strict();
+
 export const cacheSettingsSchema = z
 	.object( {
 		enabled: z.boolean(),
@@ -91,11 +143,10 @@ export const settingsSchema = z
 		setup: setupSettingsSchema,
 		privacy: privacySettingsSchema,
 		providers: providersSettingsSchema,
-		// Validated on the server; typed in detail when their admin pages are built.
-		chatbot: z.record( z.string(), z.unknown() ),
-		quick_answers: z.record( z.string(), z.unknown() ),
+		chatbot: chatbotSettingsSchema,
+		quick_answers: quickAnswersSettingsSchema,
 		security: securitySettingsSchema,
-		costs: z.record( z.string(), z.unknown() ),
+		costs: costsSettingsSchema,
 		cache: cacheSettingsSchema,
 		display: displaySettingsSchema,
 		streaming: streamingSettingsSchema,

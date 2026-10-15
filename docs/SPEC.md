@@ -537,7 +537,7 @@ Approved decisions:
 - The Display & triggers page builds the display rules and business hours now; proactive triggers (time on page, scroll depth, exit intent, frequency caps) come in Phase 7 with the rest of engagement.
 - The bundled open-license fonts (Inter, DM Sans, Manrope, Plus Jakarta Sans, Lora, Noto Sans Bengali, Noto Sans Arabic) and woff2 uploads are part of the Customizer in Phase 5.
 
-Module 5.1 – Settings and Health check ✅ (2026-10-15, awaiting review)
+Module 5.1 – Settings and Health check ✅ (2026-10-15)
 - [x] General tab: rate limits, chat session length, trusted proxy (none, Cloudflare, custom IP list with inline validation), streaming toggle and limits, response cache with "Clear cached answers", conversation storage and retention, delete data on uninstall, debug logging
 - [x] Import and export of settings as JSON (API keys and the widget appearance are never included; `setup` is never imported)
 - [x] Health check tab: PHP version, database tables, API key encryption, HTTP transport, REST API reachability (loopback), WP-Cron, FULLTEXT, request time limit, object cache, caching and optimization plugins, WordPress AI Client, each with a plain-language fix; live streaming test run from the browser
@@ -550,6 +550,21 @@ Implementation decisions (for review):
 - "Clear cached answers" bumps a cache generation number that is part of every cache key, so all earlier answers stop matching at once and expire on their own.
 - The streaming test sends six events a quarter second apart from an admin-only route; the browser judges the result by when the events arrive, because only the browser can see buffering by proxies and CDNs.
 - Recommended PHP version is 8.2 or newer (the oldest PHP line still receiving security fixes on 2026-10-15); 8.0 and 8.1 still work and get a "recommended" notice.
+
+Module 5.2 – Chatbot page ✅ (2026-10-15, awaiting review)
+- [x] Personality: bot name, starting point (Customer support, Sales assistant, FAQ bot, Blank), system prompt editor with variable buttons inserted at the cursor, a character counter, and "Edit the starting instructions"
+- [x] First impression: welcome message, four starter question slots, up to four quick action buttons with per-type validation
+- [x] How it answers: creativity (temperature), longest answer, messages remembered, longest visitor message, reply language (visitor's or fixed)
+- [x] Guardrails: site topics only, refusal message, blocked words
+- [x] Quick answers: on/off, match strictness, show as starters
+- [x] Cost controls with today's and this month's usage: message cap per conversation, budget unit, daily and monthly budgets, behavior when used up, alert email
+- [x] Messages: offline, error, and site-search introduction
+- [x] Preview drawer: the real widget in preview mode, updated live from unsaved changes, with sample replies (no provider calls)
+- [x] REST: `GET /chatbot` (preset defaults, prompt variables, budget usage)
+
+Implementation decisions (for review):
+- Empty text fields keep using the built-in, translated defaults of the chosen starting point; the defaults are shown in grey so the admin sees exactly what visitors get.
+- The admin screen loads the widget script without page configuration, so it shows no floating button there and only provides `window.Chatlume.mountPreview()` for previews.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

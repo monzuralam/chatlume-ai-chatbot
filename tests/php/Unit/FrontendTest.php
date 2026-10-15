@@ -68,6 +68,7 @@ class FrontendTest extends TestCase {
 			}
 		);
 		Functions\when( 'esc_url_raw' )->returnArg();
+		Functions\when( 'wp_script_is' )->justReturn( false );
 		Functions\when( 'wp_register_script' )->alias(
 			function ( $handle, $src, $deps, $version, $args ) {
 				$this->scripts[ $handle ] = array( $src, $deps, $version, $args );

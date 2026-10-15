@@ -7,6 +7,7 @@
 
 namespace Chatlume\Admin;
 
+use Chatlume\Frontend\WidgetLoader;
 use Chatlume\Plugin;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -98,6 +99,11 @@ class Assets {
 		wp_set_script_translations( self::HANDLE, 'chatlume-ai-chatbot', CHATLUME_PATH . 'languages' );
 		wp_enqueue_script( self::HANDLE );
 
+		// The widget itself, for live previews (no floating launcher in the admin).
+		if ( WidgetLoader::register_script() ) {
+			wp_enqueue_script( WidgetLoader::HANDLE );
+		}
+
 		if ( is_readable( CHATLUME_PATH . 'build/admin/index.css' ) ) {
 			wp_enqueue_style( self::HANDLE, CHATLUME_URL . 'build/admin/index.css', array(), $ver );
 			wp_style_add_data( self::HANDLE, 'rtl', 'replace' );
@@ -126,6 +132,8 @@ class Assets {
 			),
 			'isRtl'         => is_rtl(),
 			'system'        => HealthCheck::snapshot(),
+			// Widget configuration for previews (same data visitors' pages get).
+			'widget'        => WidgetLoader::is_built() ? WidgetLoader::inline_config( false ) : null,
 		);
 	}
 }

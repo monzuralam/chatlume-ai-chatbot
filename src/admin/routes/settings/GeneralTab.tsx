@@ -4,34 +4,28 @@
  */
 import { __ } from '@wordpress/i18n';
 import { Eraser, TriangleAlert } from 'lucide-react';
-import { useEffect, useId, type ReactNode } from 'react';
+import { useEffect, useId } from 'react';
 import {
-	Controller,
 	useForm,
-	type Control,
 	type FieldError,
 	type FieldErrors,
-	type FieldPath,
 	type Resolver,
-	type UseFormRegister,
 } from 'react-hook-form';
 import { toast } from 'sonner';
 
+import {
+	FormSection,
+	NumberField,
+	SwitchField,
+} from '../../components/form/fields';
 import { StickySaveBar } from '../../components/layout/StickySaveBar';
 import { UnsavedChangesGuard } from '../../components/layout/UnsavedChangesGuard';
 import { Button } from '../../components/ui/button';
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
 import { Field } from '../../components/ui/field';
-import { Input, inputClasses } from '../../components/ui/input';
+import { inputClasses } from '../../components/ui/input';
 import { Select } from '../../components/ui/select';
 import { Skeleton } from '../../components/ui/skeleton';
-import { Switch } from '../../components/ui/switch';
 import { useClearCache } from '../../hooks/useHealth';
 import { useSaveShortcut } from '../../hooks/useSaveShortcut';
 import { useSettings, useUpdateSettings } from '../../hooks/useSettings';
@@ -132,126 +126,6 @@ function problem( message: string | undefined ): string | undefined {
 		: __( 'Please check this value.', 'chatlume-ai-chatbot' );
 }
 
-function Section( {
-	title,
-	description,
-	children,
-}: {
-	title: string;
-	description: string;
-	children: ReactNode;
-} ) {
-	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>{ title }</CardTitle>
-				<CardDescription>{ description }</CardDescription>
-			</CardHeader>
-			<CardContent className="chatlume:flex chatlume:flex-col chatlume:gap-5">
-				{ children }
-			</CardContent>
-		</Card>
-	);
-}
-
-function SwitchRow( {
-	control,
-	name,
-	label,
-	description,
-}: {
-	control: Control< FormValues >;
-	name: FieldPath< FormValues >;
-	label: string;
-	description: string;
-} ) {
-	const id = useId();
-	return (
-		<div className="chatlume:flex chatlume:items-start chatlume:justify-between chatlume:gap-6">
-			<div>
-				<label
-					htmlFor={ id }
-					className="chatlume:text-sm chatlume:font-medium chatlume:text-fg"
-				>
-					{ label }
-				</label>
-				<p
-					id={ `${ id }-hint` }
-					className="chatlume:mt-1 chatlume:max-w-xl chatlume:text-[13px] chatlume:text-fg-muted"
-				>
-					{ description }
-				</p>
-			</div>
-			<Controller
-				control={ control }
-				name={ name }
-				render={ ( { field } ) => (
-					<Switch
-						id={ id }
-						aria-describedby={ `${ id }-hint` }
-						checked={ field.value as boolean }
-						onCheckedChange={ field.onChange }
-						onBlur={ field.onBlur }
-					/>
-				) }
-			/>
-		</div>
-	);
-}
-
-function NumberField( {
-	register,
-	name,
-	label,
-	hint,
-	tooltip,
-	min,
-	max,
-	error,
-	suffix,
-}: {
-	register: UseFormRegister< FormValues >;
-	name: FieldPath< FormValues >;
-	label: string;
-	hint?: string;
-	tooltip?: string;
-	min: number;
-	max: number;
-	error?: string;
-	suffix?: string;
-} ) {
-	const id = useId();
-	return (
-		<Field
-			id={ id }
-			label={ label }
-			hint={ hint }
-			tooltip={ tooltip }
-			error={ error }
-		>
-			<div className="chatlume:flex chatlume:items-center chatlume:gap-2">
-				<Input
-					id={ id }
-					type="number"
-					inputMode="numeric"
-					min={ min }
-					max={ max }
-					step={ 1 }
-					className="chatlume:w-28"
-					aria-invalid={ error ? true : undefined }
-					aria-describedby={ `${ id }-hint ${ id }-error` }
-					{ ...register( name, { valueAsNumber: true } ) }
-				/>
-				{ suffix && (
-					<span className="chatlume:text-sm chatlume:text-fg-muted">
-						{ suffix }
-					</span>
-				) }
-			</div>
-		</Field>
-	);
-}
-
 /**
  * The General tab.
  */
@@ -348,7 +222,7 @@ export function GeneralTab() {
 					save();
 				} }
 			>
-				<Section
+				<FormSection
 					title={ __(
 						'Rate limits and security',
 						'chatlume-ai-chatbot'
@@ -475,16 +349,16 @@ export function GeneralTab() {
 							/>
 						</Field>
 					) }
-				</Section>
+				</FormSection>
 
-				<Section
+				<FormSection
 					title={ __( 'Streaming', 'chatlume-ai-chatbot' ) }
 					description={ __(
 						'Replies appear word by word while the AI writes them.',
 						'chatlume-ai-chatbot'
 					) }
 				>
-					<SwitchRow
+					<SwitchField
 						control={ control }
 						name="streaming.enabled"
 						label={ __( 'Stream replies', 'chatlume-ai-chatbot' ) }
@@ -548,16 +422,16 @@ export function GeneralTab() {
 							) }
 						/>
 					</div>
-				</Section>
+				</FormSection>
 
-				<Section
+				<FormSection
 					title={ __( 'Response cache', 'chatlume-ai-chatbot' ) }
 					description={ __(
 						'Reuse recent AI answers to identical first questions from logged-out visitors. Saves money and answers instantly.',
 						'chatlume-ai-chatbot'
 					) }
 				>
-					<SwitchRow
+					<SwitchField
 						control={ control }
 						name="cache.enabled"
 						label={ __( 'Cache answers', 'chatlume-ai-chatbot' ) }
@@ -605,9 +479,9 @@ export function GeneralTab() {
 							) }
 						</Button>
 					</div>
-				</Section>
+				</FormSection>
 
-				<Section
+				<FormSection
 					title={ __(
 						'Conversations and privacy',
 						'chatlume-ai-chatbot'
@@ -617,7 +491,7 @@ export function GeneralTab() {
 						'chatlume-ai-chatbot'
 					) }
 				>
-					<SwitchRow
+					<SwitchField
 						control={ control }
 						name="privacy.store_conversations"
 						label={ __(
@@ -649,7 +523,7 @@ export function GeneralTab() {
 							) }
 						/>
 					) }
-					<SwitchRow
+					<SwitchField
 						control={ control }
 						name="privacy.delete_data_on_uninstall"
 						label={ __(
@@ -673,16 +547,16 @@ export function GeneralTab() {
 							) }
 						</p>
 					) }
-				</Section>
+				</FormSection>
 
-				<Section
+				<FormSection
 					title={ __( 'Troubleshooting', 'chatlume-ai-chatbot' ) }
 					description={ __(
 						'Tools for finding out why the bot behaves as it does.',
 						'chatlume-ai-chatbot'
 					) }
 				>
-					<SwitchRow
+					<SwitchField
 						control={ control }
 						name="debug.enabled"
 						label={ __( 'Debug logging', 'chatlume-ai-chatbot' ) }
@@ -691,7 +565,7 @@ export function GeneralTab() {
 							'chatlume-ai-chatbot'
 						) }
 					/>
-				</Section>
+				</FormSection>
 			</form>
 
 			<div className="chatlume:mt-6">

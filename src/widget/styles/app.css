@@ -164,6 +164,21 @@
 	position: absolute;
 }
 
+/* Sized by the container, not the browser window. */
+.cl-root[data-contained]:not([data-style="panel"]):not([data-style="modal"]) .cl-window {
+	width: min(var(--chatlume-width), calc(100% - 2 * var(--chatlume-offset-x)));
+	height: min(var(--chatlume-height), calc(100% - var(--chatlume-offset-y) - var(--chatlume-launcher-size) - 32px));
+}
+
+.cl-root[data-contained][data-style="modal"] .cl-window {
+	width: min(calc(var(--chatlume-width) + 140px), calc(100% - 32px));
+	height: min(var(--chatlume-height), calc(100% - 48px));
+}
+
+.cl-root[data-contained][data-style="panel"] .cl-window {
+	width: min(var(--chatlume-width), 100%);
+}
+
 /* Backgrounds. */
 .cl-window[data-bg="gradient"] {
 	background: linear-gradient(180deg, var(--chatlume-surface), var(--chatlume-background) 60%);

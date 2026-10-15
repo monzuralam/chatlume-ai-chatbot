@@ -98,22 +98,9 @@ class WidgetLoader {
 	 * @return void
 	 */
 	public static function enqueue( bool $floating ): void {
-		if ( ! self::is_built() ) {
+		if ( ! self::register_script() ) {
 			return;
 		}
-
-		$asset = require CHATLUME_PATH . 'build/widget/index.asset.php';
-
-		wp_register_script(
-			self::HANDLE,
-			CHATLUME_URL . 'build/widget/index.js',
-			array(),
-			isset( $asset['version'] ) ? (string) $asset['version'] : CHATLUME_VERSION,
-			array(
-				'in_footer' => true,
-				'strategy'  => 'defer',
-			)
-		);
 
 		if ( ! self::$configured ) {
 			self::$configured = true;
@@ -125,6 +112,36 @@ class WidgetLoader {
 		}
 
 		wp_enqueue_script( self::HANDLE );
+	}
+
+	/**
+	 * Registers the launcher script (without configuration). The admin loads
+	 * it this way for previews: with no page configuration it shows no
+	 * floating launcher and only provides `window.Chatlume.mountPreview()`.
+	 *
+	 * @return bool Whether the widget is built.
+	 */
+	public static function register_script(): bool {
+		if ( ! self::is_built() ) {
+			return false;
+		}
+
+		if ( ! wp_script_is( self::HANDLE, 'registered' ) ) {
+			$asset = require CHATLUME_PATH . 'build/widget/index.asset.php';
+
+			wp_register_script(
+				self::HANDLE,
+				CHATLUME_URL . 'build/widget/index.js',
+				array(),
+				isset( $asset['version'] ) ? (string) $asset['version'] : CHATLUME_VERSION,
+				array(
+					'in_footer' => true,
+					'strategy'  => 'defer',
+				)
+			);
+		}
+
+		return true;
 	}
 
 	/**

@@ -45,6 +45,16 @@ final class BotText {
 	 * @return string
 	 */
 	public static function welcome(): string {
+		return self::setting( 'chatbot.welcome_message', self::default_welcome( self::preset() ) );
+	}
+
+	/**
+	 * The preset's default welcome message.
+	 *
+	 * @param string $preset Preset.
+	 * @return string
+	 */
+	public static function default_welcome( string $preset ): string {
 		$defaults = array(
 			'support' => __( 'Hi there! 👋 How can I help you today?', 'chatlume-ai-chatbot' ),
 			'sales'   => __( 'Hi! Looking for something specific? I can help you find the right fit.', 'chatlume-ai-chatbot' ),
@@ -52,7 +62,7 @@ final class BotText {
 			'blank'   => __( 'Hi! How can I help?', 'chatlume-ai-chatbot' ),
 		);
 
-		return self::setting( 'chatbot.welcome_message', $defaults[ self::preset() ] );
+		return $defaults[ $preset ] ?? $defaults['support'];
 	}
 
 	/**
@@ -62,10 +72,17 @@ final class BotText {
 	 */
 	public static function starters(): array {
 		$saved = array_values( array_filter( (array) Settings::get( 'chatbot.starter_questions', array() ), 'is_string' ) );
-		if ( array() !== $saved ) {
-			return $saved;
-		}
 
+		return array() !== $saved ? $saved : self::default_starters( self::preset() );
+	}
+
+	/**
+	 * The preset's default starter questions.
+	 *
+	 * @param string $preset Preset.
+	 * @return string[]
+	 */
+	public static function default_starters( string $preset ): array {
 		$defaults = array(
 			'support' => array(
 				__( 'How can I contact you?', 'chatlume-ai-chatbot' ),
@@ -85,7 +102,32 @@ final class BotText {
 			'blank'   => array(),
 		);
 
-		return $defaults[ self::preset() ];
+		return $defaults[ $preset ] ?? $defaults['support'];
+	}
+
+	/**
+	 * Built-in texts used when a setting is empty, per preset, for the admin.
+	 *
+	 * @return array{bot_name: string, refusal: string, offline: string, error: string, site_search: string, presets: array<string, array{prompt: string, welcome: string, starters: string[]}>}
+	 */
+	public static function defaults(): array {
+		$presets = array();
+		foreach ( array( 'support', 'sales', 'faq', 'blank' ) as $preset ) {
+			$presets[ $preset ] = array(
+				'prompt'   => PromptBuilder::preset_prompt( $preset ),
+				'welcome'  => self::default_welcome( $preset ),
+				'starters' => self::default_starters( $preset ),
+			);
+		}
+
+		return array(
+			'bot_name'    => __( 'Assistant', 'chatlume-ai-chatbot' ),
+			'refusal'     => self::default_refusal(),
+			'offline'     => self::default_offline(),
+			'error'       => self::default_error(),
+			'site_search' => self::default_site_search(),
+			'presets'     => $presets,
+		);
 	}
 
 	/**
@@ -94,7 +136,16 @@ final class BotText {
 	 * @return string
 	 */
 	public static function refusal(): string {
-		return self::setting( 'chatbot.refusal_message', __( 'Sorry, I can only help with questions about this website.', 'chatlume-ai-chatbot' ) );
+		return self::setting( 'chatbot.refusal_message', self::default_refusal() );
+	}
+
+	/**
+	 * Built-in refusal.
+	 *
+	 * @return string
+	 */
+	public static function default_refusal(): string {
+		return __( 'Sorry, I can only help with questions about this website.', 'chatlume-ai-chatbot' );
 	}
 
 	/**
@@ -103,7 +154,16 @@ final class BotText {
 	 * @return string
 	 */
 	public static function offline(): string {
-		return self::setting( 'chatbot.offline_message', __( 'Our assistant is taking a short break. Please try again later or contact us directly.', 'chatlume-ai-chatbot' ) );
+		return self::setting( 'chatbot.offline_message', self::default_offline() );
+	}
+
+	/**
+	 * Built-in offline message.
+	 *
+	 * @return string
+	 */
+	public static function default_offline(): string {
+		return __( 'Our assistant is taking a short break. Please try again later or contact us directly.', 'chatlume-ai-chatbot' );
 	}
 
 	/**
@@ -112,7 +172,16 @@ final class BotText {
 	 * @return string
 	 */
 	public static function error(): string {
-		return self::setting( 'chatbot.error_message', __( 'Sorry, I’m having trouble answering right now. Please try again in a moment.', 'chatlume-ai-chatbot' ) );
+		return self::setting( 'chatbot.error_message', self::default_error() );
+	}
+
+	/**
+	 * Built-in error message.
+	 *
+	 * @return string
+	 */
+	public static function default_error(): string {
+		return __( 'Sorry, I’m having trouble answering right now. Please try again in a moment.', 'chatlume-ai-chatbot' );
 	}
 
 	/**
@@ -121,7 +190,16 @@ final class BotText {
 	 * @return string
 	 */
 	public static function site_search(): string {
-		return self::setting( 'chatbot.site_search_message', __( 'I couldn’t answer that directly, but these pages might help:', 'chatlume-ai-chatbot' ) );
+		return self::setting( 'chatbot.site_search_message', self::default_site_search() );
+	}
+
+	/**
+	 * Built-in introduction to site-search results.
+	 *
+	 * @return string
+	 */
+	public static function default_site_search(): string {
+		return __( 'I couldn’t answer that directly, but these pages might help:', 'chatlume-ai-chatbot' );
 	}
 
 	/**
