@@ -80,6 +80,7 @@ Nothing is removed unless you enable **Delete all data on uninstall** in Chatlum
 * Settings: rate limits, trusted proxy, streaming limits, response cache with one-click clearing, privacy and retention, optional debug logging, settings import and export, a Health check with plain-language fixes and a live streaming test, and a provider error log.
 * Chatbot page: starting points (support, sales, FAQ, blank), instructions with variables, welcome message, starter questions, quick action buttons, answer settings, language, guardrails, quick answer matching, cost controls with current usage, fallback messages, and a live preview.
 * Conversations: search and filter by date, rating, answer type, lead, and language; full transcripts with sources, tokens, and estimated cost per message; single and bulk delete; CSV and JSON export.
+* Dashboard: conversations, questions, tokens, estimated cost, and money saved for today, 7, or 30 days; a daily chart; connection and budget status; questions your bot could not answer with one-click quick answers; recent conversations; and a setup checklist.
 
 == External services ==
 

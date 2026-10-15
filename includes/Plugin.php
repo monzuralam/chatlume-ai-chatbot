@@ -22,6 +22,7 @@ use Chatlume\REST\HealthController;
 use Chatlume\REST\ProvidersController;
 use Chatlume\REST\QuickAnswersController;
 use Chatlume\REST\SettingsController;
+use Chatlume\REST\StatsController;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -115,6 +116,7 @@ final class Plugin {
 		( new HealthController() )->register_routes();
 		( new ChatbotController() )->register_routes();
 		( new ConversationsController() )->register_routes();
+		( new StatsController() )->register_routes();
 	}
 
 	/**

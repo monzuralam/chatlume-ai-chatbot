@@ -566,7 +566,7 @@ Implementation decisions (for review):
 - Empty text fields keep using the built-in, translated defaults of the chosen starting point; the defaults are shown in grey so the admin sees exactly what visitors get.
 - The admin screen loads the widget script without page configuration, so it shows no floating button there and only provides `window.Chatlume.mountPreview()` for previews.
 
-Module 5.3 – Conversations ✅ (2026-10-15, awaiting review)
+Module 5.3 – Conversations ✅ (2026-10-15)
 - [x] Searchable, filterable list (search in messages, lead names, and emails; date range in the site's timezone; rating; answer type; has lead; language), 25 per page; filters, page, and the open transcript are kept in the address
 - [x] Transcript panel: page, language, AI model, estimated cost, lead, visitor type, and every message with its answer type, tokens, cost, response time, feedback, stop or provider error, and source links
 - [x] Delete one conversation or many at once (with confirmation)
@@ -578,6 +578,21 @@ Implementation decisions (for review):
 - CSV cells that start with `=`, `+`, `-`, `@`, a tab, or a carriage return get a leading apostrophe, so visitor messages cannot run as spreadsheet formulas.
 - Empty date filters use fixed boundary dates, because strict SQL modes reject comparing a DATETIME column with an empty string.
 - Filter changes build on the address the page last requested, so quick successive changes (or a delayed search) never undo each other.
+
+Module 5.4 – Dashboard ✅ (2026-10-15, awaiting review)
+- [x] Today / 7 days / 30 days: conversations, questions, tokens, estimated cost, and money saved by quick answers and the cache
+- [x] Questions per day chart with tooltips and an accessible data table
+- [x] Connection: primary (and fallback) provider with status, no-key explanation, daily and monthly budget usage, and a link to the Health check when something needs attention
+- [x] "Questions your bot couldn't answer" (site-search fallback, rated not helpful, no knowledge match, "Ask AI" overruling a quick answer), grouped by question, with "Create quick answer"
+- [x] Recent conversations linking to their transcripts
+- [x] Setup checklist (hidden once complete); steps link only to pages that exist
+- [x] Cards registered by add-ons (`window.chatlume.admin.registerDashboardCard()`)
+- [x] REST: `GET /stats?days=1|7|30`
+
+Implementation decisions (for review):
+- "Saved" is estimated as the number of quick answers and cached answers multiplied by the average cost of an AI answer in the same period (or over all time when the period had none).
+- The chart is a small built-in SVG instead of a charting library: one bar series does not justify a ~100 KB dependency, and it uses the admin's light and dark theme colors directly.
+- Days follow the site's timezone; the Home page became the Dashboard (installation details live in the Health check).
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

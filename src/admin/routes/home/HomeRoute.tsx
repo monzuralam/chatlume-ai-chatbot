@@ -1,22 +1,13 @@
-import { __, sprintf } from '@wordpress/i18n';
-import {
-	CircleCheck,
-	CircleX,
-	Command,
-	Database,
-	KeyRound,
-	Network,
-	Search,
-	Server,
-	Sparkles,
-	TriangleAlert,
-	Type,
-	type LucideIcon,
-} from 'lucide-react';
-import type { ReactNode } from 'react';
+/**
+ * Dashboard: key numbers for today / 7 / 30 days, a daily chart,
+ * connection health, unanswered questions, recent conversations, the setup
+ * checklist, and cards registered by add-ons.
+ */
+import { __, _n, sprintf } from '@wordpress/i18n';
+import { useState } from 'react';
 
+import { BarChart } from '../../components/charts/BarChart';
 import { PageHeader } from '../../components/layout/PageHeader';
-import { Badge } from '../../components/ui/badge';
 import {
 	Card,
 	CardContent,
@@ -24,299 +15,144 @@ import {
 	CardHeader,
 	CardTitle,
 } from '../../components/ui/card';
+import { Skeleton } from '../../components/ui/skeleton';
 import { dashboardCardRegistry } from '../../extensions/registry';
 import { useRegistry } from '../../extensions/useRegistry';
+import { useStats } from '../../hooks/useStats';
 import { getBootstrap } from '../../lib/bootstrap';
+import type { Period, StatsResponse } from '../../lib/stats';
 import { cn } from '../../lib/utils';
+import { formatCost } from '../conversations/format';
+import {
+	ChecklistCard,
+	HealthCard,
+	RecentCard,
+	UnansweredCard,
+} from './DashboardCards';
 
-type Tone = 'success' | 'warning' | 'danger' | 'neutral';
+const PERIODS: Array< { days: Period; label: () => string } > = [
+	{ days: 1, label: () => __( 'Today', 'chatlume-ai-chatbot' ) },
+	{ days: 7, label: () => __( '7 days', 'chatlume-ai-chatbot' ) },
+	{ days: 30, label: () => __( '30 days', 'chatlume-ai-chatbot' ) },
+];
 
-interface StatusRowProps {
-	icon: LucideIcon;
-	label: string;
-	value: ReactNode;
-	tone: Tone;
-	statusLabel: string;
-	help?: string;
-}
-
-const TONE_ICON: Record< Tone, LucideIcon > = {
-	success: CircleCheck,
-	warning: TriangleAlert,
-	danger: CircleX,
-	neutral: CircleCheck,
+const CARD_SIZE = {
+	sm: 'chatlume:lg:col-span-1',
+	md: 'chatlume:lg:col-span-1',
+	lg: 'chatlume:lg:col-span-2',
 };
 
-function StatusRow( {
-	icon: Icon,
+function Stat( {
 	label,
 	value,
-	tone,
-	statusLabel,
-	help,
-}: StatusRowProps ) {
-	const ToneIcon = TONE_ICON[ tone ];
-
+	detail,
+	loading,
+}: {
+	label: string;
+	value: string;
+	detail?: string;
+	loading: boolean;
+} ) {
 	return (
-		<li className="chatlume:flex chatlume:items-start chatlume:gap-3 chatlume:py-3">
-			<span className="chatlume:mt-0.5 chatlume:flex chatlume:size-8 chatlume:shrink-0 chatlume:items-center chatlume:justify-center chatlume:rounded-lg chatlume:bg-surface-muted chatlume:text-fg-muted">
-				<Icon aria-hidden="true" className="chatlume:size-4" />
-			</span>
-			<div className="chatlume:min-w-0 chatlume:flex-1">
-				<div className="chatlume:flex chatlume:flex-wrap chatlume:items-center chatlume:justify-between chatlume:gap-2">
-					<span className="chatlume:text-sm chatlume:font-medium chatlume:text-fg">
-						{ label }
-					</span>
-					<Badge tone={ tone }>
-						<ToneIcon aria-hidden="true" />
-						{ statusLabel }
-					</Badge>
-				</div>
-				<div className="chatlume:mt-0.5 chatlume:text-[13px] chatlume:text-fg-muted">
+		<Card className="chatlume:p-5">
+			<p className="chatlume:text-[13px] chatlume:text-fg-muted">
+				{ label }
+			</p>
+			{ loading ? (
+				<Skeleton className="chatlume:mt-2 chatlume:h-8 chatlume:w-20" />
+			) : (
+				<p className="chatlume:mt-1 chatlume:text-2xl chatlume:font-semibold chatlume:tabular-nums chatlume:tracking-tight chatlume:text-fg">
 					{ value }
-				</div>
-				{ help && (
-					<p className="chatlume:mt-1.5 chatlume:text-[13px] chatlume:text-fg">
-						{ help }
-					</p>
-				) }
-			</div>
-		</li>
+				</p>
+			) }
+			{ detail && ! loading && (
+				<p className="chatlume:mt-1 chatlume:text-xs chatlume:text-fg-muted">
+					{ detail }
+				</p>
+			) }
+		</Card>
 	);
 }
 
-function InstallationCard() {
-	const { system, version } = getBootstrap();
-	const dbReady = system.dbVersion >= system.dbVersionExpected;
+/**
+ * Short day label for the chart.
+ *
+ * @param date Y-m-d.
+ * @param days Period.
+ * @return Label.
+ */
+function dayLabel( date: string, days: Period ): string {
+	const value = new Date( `${ date }T12:00:00` );
+	return new Intl.DateTimeFormat(
+		undefined,
+		days <= 7 ? { weekday: 'short' } : { day: 'numeric', month: 'short' }
+	).format( value );
+}
 
-	const encryption = {
-		ok: {
-			tone: 'success' as Tone,
-			status: __( 'Working', 'chatlume-ai-chatbot' ),
-			help: undefined,
-		},
-		key_changed: {
-			tone: 'warning' as Tone,
-			status: __( 'Re-enter keys', 'chatlume-ai-chatbot' ),
-			help: __(
-				"Your site's security keys (salts) changed, so previously saved API keys can no longer be read. Re-enter them, or define them in wp-config.php so they survive future changes.",
+function ActivityChart( { stats }: { stats?: StatsResponse } ) {
+	const data = ( stats?.series ?? [] ).map( ( day ) => ( {
+		key: day.date,
+		label: dayLabel( day.date, stats?.days ?? 7 ),
+		title: new Intl.DateTimeFormat( undefined, {
+			dateStyle: 'medium',
+		} ).format( new Date( `${ day.date }T12:00:00` ) ),
+		value: day.questions,
+		detail: sprintf(
+			/* translators: 1: Number of questions, 2: Number of conversations, 3: Cost. */
+			__(
+				'%1$d questions · %2$d conversations · %3$s',
 				'chatlume-ai-chatbot'
 			),
-		},
-		unavailable: {
-			tone: 'danger' as Tone,
-			status: __( 'Unavailable', 'chatlume-ai-chatbot' ),
-			help: __(
-				'This server has no libsodium support, so API keys cannot be stored encrypted. Ask your host to enable the PHP sodium extension, or define API keys in wp-config.php.',
-				'chatlume-ai-chatbot'
-			),
-		},
-	}[ system.encryption ];
+			day.questions,
+			day.conversations,
+			formatCost( day.cost )
+		),
+	} ) );
 
 	return (
-		<Card>
+		<Card className="chatlume:lg:col-span-2">
 			<CardHeader>
 				<CardTitle>
-					{ __( 'Installation', 'chatlume-ai-chatbot' ) }
+					{ __( 'Questions per day', 'chatlume-ai-chatbot' ) }
 				</CardTitle>
 				<CardDescription>
 					{ __(
-						'The building blocks Chatlume needs on this site.',
+						'Messages visitors sent to your bot.',
 						'chatlume-ai-chatbot'
 					) }
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
-				<ul className="chatlume:divide-y chatlume:divide-border">
-					<StatusRow
-						icon={ Database }
-						label={ __( 'Database tables', 'chatlume-ai-chatbot' ) }
-						value={ sprintf(
-							/* translators: 1: Plugin version, 2: Database schema version. */
-							__(
-								'Chatlume %1$s · schema version %2$d',
-								'chatlume-ai-chatbot'
-							),
-							version,
-							system.dbVersion
-						) }
-						tone={ dbReady ? 'success' : 'warning' }
-						statusLabel={
-							dbReady
-								? __( 'Up to date', 'chatlume-ai-chatbot' )
-								: __( 'Update pending', 'chatlume-ai-chatbot' )
-						}
-						help={
-							dbReady
-								? undefined
-								: __(
-										'The database update did not finish. Reload this page to run it again.',
-										'chatlume-ai-chatbot'
-									)
-						}
-					/>
-					<StatusRow
-						icon={ KeyRound }
+				{ ! stats ? (
+					<Skeleton className="chatlume:h-48 chatlume:w-full" />
+				) : (
+					<BarChart
+						data={ data }
 						label={ __(
-							'Secure key storage',
+							'Questions per day',
 							'chatlume-ai-chatbot'
 						) }
-						value={ __(
-							'API keys are encrypted with a key derived from your site’s security keys.',
-							'chatlume-ai-chatbot'
-						) }
-						tone={ encryption.tone }
-						statusLabel={ encryption.status }
-						help={ encryption.help }
+						columns={ [
+							__( 'Day', 'chatlume-ai-chatbot' ),
+							__( 'Activity', 'chatlume-ai-chatbot' ),
+						] }
 					/>
-					<StatusRow
-						icon={ Search }
-						label={ __(
-							'Keyword search index',
-							'chatlume-ai-chatbot'
-						) }
-						value={
-							system.fulltext
-								? __(
-										'Your database supports fast full-text search for the knowledge base.',
-										'chatlume-ai-chatbot'
-									)
-								: __(
-										'Your database has no full-text search, so Chatlume uses its built-in search instead. It works everywhere but is slower on very large sites.',
-										'chatlume-ai-chatbot'
-									)
-						}
-						tone={ system.fulltext ? 'success' : 'neutral' }
-						statusLabel={
-							system.fulltext
-								? __( 'Available', 'chatlume-ai-chatbot' )
-								: __( 'Using fallback', 'chatlume-ai-chatbot' )
-						}
-					/>
-					<StatusRow
-						icon={ Server }
-						label={ __( 'Server', 'chatlume-ai-chatbot' ) }
-						value={ sprintf(
-							/* translators: 1: WordPress version, 2: PHP version. */
-							__(
-								'WordPress %1$s · PHP %2$s',
-								'chatlume-ai-chatbot'
-							),
-							system.wpVersion,
-							system.phpVersion
-						) }
-						tone="success"
-						statusLabel={ __( 'Supported', 'chatlume-ai-chatbot' ) }
-					/>
-				</ul>
+				) }
 			</CardContent>
 		</Card>
 	);
 }
-
-function FeaturesCard() {
-	const { features, isMultisite } = getBootstrap().system;
-
-	const rows: Array< {
-		icon: LucideIcon;
-		label: string;
-		description: string;
-		available: boolean;
-	} > = [
-		{
-			icon: Sparkles,
-			label: __( 'AI services in WordPress', 'chatlume-ai-chatbot' ),
-			description: __(
-				'The AI Client and Settings > Connectors, added in WordPress 7.0.',
-				'chatlume-ai-chatbot'
-			),
-			available: features.aiClient && features.connectors,
-		},
-		{
-			icon: Network,
-			label: __( 'Abilities API', 'chatlume-ai-chatbot' ),
-			description: __(
-				'A shared registry of site actions for AI agents, added in WordPress 6.9.',
-				'chatlume-ai-chatbot'
-			),
-			available: features.abilitiesApi,
-		},
-		{
-			icon: Type,
-			label: __( 'Font Library', 'chatlume-ai-chatbot' ),
-			description: __(
-				'Site-wide font management, added in WordPress 6.5.',
-				'chatlume-ai-chatbot'
-			),
-			available: features.fontLibrary,
-		},
-		{
-			icon: Command,
-			label: __( 'Command Palette', 'chatlume-ai-chatbot' ),
-			description: __(
-				'Quick navigation with Ctrl+K or ⌘K, added in WordPress 6.3.',
-				'chatlume-ai-chatbot'
-			),
-			available: features.commandPalette,
-		},
-	];
-
-	return (
-		<Card>
-			<CardHeader>
-				<CardTitle>
-					{ __( 'WordPress features', 'chatlume-ai-chatbot' ) }
-				</CardTitle>
-				<CardDescription>
-					{ isMultisite
-						? __(
-								'Core features Chatlume detects on this site. Each site in your network keeps its own Chatlume settings and data.',
-								'chatlume-ai-chatbot'
-							)
-						: __(
-								'Core features Chatlume detects on this site and builds on when present.',
-								'chatlume-ai-chatbot'
-							) }
-				</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<ul className="chatlume:divide-y chatlume:divide-border">
-					{ rows.map( ( row ) => (
-						<StatusRow
-							key={ row.label }
-							icon={ row.icon }
-							label={ row.label }
-							value={ row.description }
-							tone={ row.available ? 'success' : 'neutral' }
-							statusLabel={
-								row.available
-									? __( 'Available', 'chatlume-ai-chatbot' )
-									: __(
-											'Not available',
-											'chatlume-ai-chatbot'
-										)
-							}
-						/>
-					) ) }
-				</ul>
-			</CardContent>
-		</Card>
-	);
-}
-
-const CARD_SIZE = {
-	sm: 'chatlume:md:col-span-1',
-	md: 'chatlume:md:col-span-1',
-	lg: 'chatlume:md:col-span-2',
-};
 
 /**
- * Home: welcome, installation status, detected WordPress features, and
- * cards registered by add-ons.
+ * The Dashboard.
  */
 export default function HomeRoute() {
 	const { user } = getBootstrap();
+	const [ days, setDays ] = useState< Period >( 7 );
+	const stats = useStats( days );
 	const cards = useRegistry( dashboardCardRegistry );
+	const totals = stats.data?.totals;
+	const loading = ! totals;
 
 	return (
 		<>
@@ -325,41 +161,134 @@ export default function HomeRoute() {
 					user.displayName
 						? sprintf(
 								/* translators: %s: The current user's display name. */
-								__( 'Welcome, %s', 'chatlume-ai-chatbot' ),
+								__( 'Welcome back, %s', 'chatlume-ai-chatbot' ),
 								user.displayName
 							)
-						: __( 'Welcome to Chatlume', 'chatlume-ai-chatbot' )
+						: __( 'Dashboard', 'chatlume-ai-chatbot' )
 				}
 				description={ __(
-					'Chatlume is installed. Here is the status of everything it relies on.',
+					'How your chatbot is doing.',
 					'chatlume-ai-chatbot'
 				) }
+				actions={
+					<div
+						role="group"
+						aria-label={ __( 'Period', 'chatlume-ai-chatbot' ) }
+						className="chatlume:inline-flex chatlume:rounded-control chatlume:border chatlume:border-border chatlume:bg-surface chatlume:p-0.5"
+					>
+						{ PERIODS.map( ( period ) => (
+							<button
+								key={ period.days }
+								type="button"
+								aria-pressed={ days === period.days }
+								onClick={ () => setDays( period.days ) }
+								className={ cn(
+									'chatlume:rounded-[8px] chatlume:px-3 chatlume:py-1.5 chatlume:text-sm chatlume:font-medium chatlume:transition-colors chatlume:focus-visible:outline-none chatlume:focus-visible:ring-[3px] chatlume:focus-visible:ring-ring',
+									days === period.days
+										? 'chatlume:bg-accent chatlume:text-accent-fg'
+										: 'chatlume:text-fg-muted chatlume:hover:text-fg'
+								) }
+							>
+								{ period.label() }
+							</button>
+						) ) }
+					</div>
+				}
 			/>
 
-			<div className="chatlume:grid chatlume:items-start chatlume:gap-6 chatlume:md:grid-cols-2">
-				<InstallationCard />
-				<FeaturesCard />
+			{ stats.isError && (
+				<p
+					role="alert"
+					className="chatlume:mb-6 chatlume:rounded-control chatlume:bg-danger-soft chatlume:px-4 chatlume:py-3 chatlume:text-sm chatlume:text-danger"
+				>
+					{ stats.error.message }
+				</p>
+			) }
 
-				{ cards.map( ( card ) => {
-					const CardComponent = card.component;
-					return (
-						<Card
-							key={ card.id }
-							className={ cn( CARD_SIZE[ card.size ?? 'md' ] ) }
-						>
-							{ card.title && (
-								<CardHeader>
-									<CardTitle>{ card.title }</CardTitle>
-								</CardHeader>
-							) }
-							<CardContent
-								className={ card.title ? '' : 'chatlume:pt-6' }
+			<div className="chatlume:flex chatlume:flex-col chatlume:gap-6">
+				{ stats.data && (
+					<ChecklistCard steps={ stats.data.checklist } />
+				) }
+
+				<div
+					className={ cn(
+						'chatlume:grid chatlume:gap-4 chatlume:sm:grid-cols-2 chatlume:xl:grid-cols-5',
+						stats.isPlaceholderData && 'chatlume:opacity-60'
+					) }
+				>
+					<Stat
+						loading={ loading }
+						label={ __( 'Conversations', 'chatlume-ai-chatbot' ) }
+						value={ (
+							totals?.conversations ?? 0
+						).toLocaleString() }
+					/>
+					<Stat
+						loading={ loading }
+						label={ __( 'Questions', 'chatlume-ai-chatbot' ) }
+						value={ ( totals?.questions ?? 0 ).toLocaleString() }
+					/>
+					<Stat
+						loading={ loading }
+						label={ __( 'Tokens used', 'chatlume-ai-chatbot' ) }
+						value={ ( totals?.tokens ?? 0 ).toLocaleString() }
+					/>
+					<Stat
+						loading={ loading }
+						label={ __( 'Estimated cost', 'chatlume-ai-chatbot' ) }
+						value={ formatCost( totals?.cost ?? 0 ) }
+					/>
+					<Stat
+						loading={ loading }
+						label={ __( 'Saved', 'chatlume-ai-chatbot' ) }
+						value={ formatCost( totals?.saved ?? 0 ) }
+						detail={ sprintf(
+							/* translators: %d: Number of answers. */
+							_n(
+								'%d free answer (quick answers and cache)',
+								'%d free answers (quick answers and cache)',
+								totals?.free_answers ?? 0,
+								'chatlume-ai-chatbot'
+							),
+							totals?.free_answers ?? 0
+						) }
+					/>
+				</div>
+
+				<div className="chatlume:grid chatlume:items-start chatlume:gap-6 chatlume:lg:grid-cols-3">
+					<ActivityChart stats={ stats.data } />
+					<HealthCard stats={ stats.data } />
+				</div>
+
+				<div className="chatlume:grid chatlume:items-start chatlume:gap-6 chatlume:lg:grid-cols-2">
+					<UnansweredCard stats={ stats.data } />
+					<RecentCard stats={ stats.data } />
+
+					{ cards.map( ( card ) => {
+						const CardComponent = card.component;
+						return (
+							<Card
+								key={ card.id }
+								className={ cn(
+									CARD_SIZE[ card.size ?? 'md' ]
+								) }
 							>
-								<CardComponent />
-							</CardContent>
-						</Card>
-					);
-				} ) }
+								{ card.title && (
+									<CardHeader>
+										<CardTitle>{ card.title }</CardTitle>
+									</CardHeader>
+								) }
+								<CardContent
+									className={
+										card.title ? '' : 'chatlume:pt-6'
+									}
+								>
+									<CardComponent />
+								</CardContent>
+							</Card>
+						);
+					} ) }
+				</div>
 			</div>
 		</>
 	);
