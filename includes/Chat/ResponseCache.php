@@ -37,6 +37,12 @@ class ResponseCache {
 	public const KNOWLEDGE_VERSION_OPTION = 'chatlume_knowledge_version';
 
 	/**
+	 * Option bumped by "Clear cached answers": part of every key, so all
+	 * earlier entries stop matching at once (they expire on their own).
+	 */
+	public const GENERATION_OPTION = 'chatlume_cache_generation';
+
+	/**
 	 * Whether a request may use the cache.
 	 *
 	 * @param bool $first_turn Whether this is the conversation's first question.
@@ -69,6 +75,7 @@ class ResponseCache {
 					hash( 'sha256', $system_prompt ),
 					$target,
 					(string) get_option( self::KNOWLEDGE_VERSION_OPTION, '0' ),
+					(string) get_option( self::GENERATION_OPTION, '0' ),
 				)
 			)
 		);
@@ -106,5 +113,14 @@ class ResponseCache {
 		} else {
 			set_transient( $key, $value, $ttl );
 		}
+	}
+
+	/**
+	 * Invalidates every cached answer.
+	 *
+	 * @return void
+	 */
+	public static function flush(): void {
+		update_option( self::GENERATION_OPTION, (string) ( (int) get_option( self::GENERATION_OPTION, '0' ) + 1 ), false );
 	}
 }

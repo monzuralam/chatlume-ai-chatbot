@@ -14,6 +14,7 @@ use Chatlume\Providers\ProviderRegistry;
 use Chatlume\QuickAnswers\Matcher;
 use Chatlume\Security\RateLimiter;
 use Chatlume\Settings\Settings;
+use Chatlume\Support\DebugLog;
 use Chatlume\Support\Text;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -233,6 +234,22 @@ class ChatService {
 		 * @param array<string, mixed> $context         Request context.
 		 */
 		do_action( 'chatlume_response_sent', $public, $conversation['id'], $context );
+
+		DebugLog::record(
+			'reply',
+			array(
+				'source'        => $reply['source'],
+				'provider'      => $reply['provider'] ?? '',
+				'model'         => $reply['model'] ?? '',
+				'input_tokens'  => (int) ( $reply['input_tokens'] ?? 0 ),
+				'output_tokens' => (int) ( $reply['output_tokens'] ?? 0 ),
+				'cost'          => (float) ( $reply['cost'] ?? 0 ),
+				'latency_ms'    => $reply['latency_ms'],
+				'error_type'    => $reply['error_type'] ?? '',
+				'interrupted'   => (string) ( $reply['meta']['interrupted'] ?? '' ),
+				'streamed'      => isset( $this->stream['on_token'] ),
+			)
+		);
 
 		return array(
 			'conversation_id' => $conversation['id'],

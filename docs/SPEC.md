@@ -418,8 +418,8 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started. Approved deviati
 1. ✅ **Foundation** (done 2026-10-14): bootstrap, plugin identity and prefixes, Composer + Strauss setup, autoloader, multisite-aware activation with the redirect rules, schema and migrations, settings storage, encryption with fingerprint, wp-scripts build setup, and the admin shell with the design system foundation, sidebar navigation, and extension registry.
 2. ✅ **Providers** (done 2026-10-14): interface, HTTP API transport and streamer, OpenAI-compatible base with presets, Anthropic and Gemini adapters, embeddings support, error normalization, live model lists with suggestions, test connection, primary/fallback, Providers page.
 3. ✅ **Chat backend** (done 2026-10-14): session manager, conversation state, IP resolver, rate limiter, cost guard, quick answers, response cache, site-search fallback, no-key mode, prompt builder, non-streaming endpoint, logging.
-4. ✅ **Widget** (done 2026-10-15, awaiting review): full widget UI, design token system, widget styles (floating, side panel, modal, inline), message styles, CSS parts, preview mode, streaming with stream limiter and abort handling, markdown sanitizer, source cards, quick actions, tab sync, mobile, accessibility, shortcode, block, JS API.
-5. ⬜ **Admin experience**: setup wizard with provider guides, Dashboard, Chatbot, Playground, the Customizer with always-on live preview (presets, Simple/Advanced modes, colors, typography, layout, draft/publish, versions, real-site backdrop, context-aware states, click-to-edit, interactive preview, before/after, devices, Developer styling panel), Display & triggers, Conversations, Settings with Health check, core Command Palette commands.
+4. ✅ **Widget** (done 2026-10-15): full widget UI, design token system, widget styles (floating, side panel, modal, inline), message styles, CSS parts, preview mode, streaming with stream limiter and abort handling, markdown sanitizer, source cards, quick actions, tab sync, mobile, accessibility, shortcode, block, JS API.
+5. 🚧 **Admin experience** (in progress): setup wizard with provider guides, Dashboard, Chatbot, Playground, the Customizer with always-on live preview (presets, Simple/Advanced modes, colors, typography, layout, draft/publish, versions, real-site backdrop, context-aware states, click-to-edit, interactive preview, before/after, devices, Developer styling panel), Display & triggers, Conversations, Settings with Health check, core Command Palette commands.
 6. ⬜ **Knowledge base**: indexer, document uploads, embeddings storage and re-embedding, two-stage retrieval with n-gram fallback, source links, WooCommerce sync, multilingual filtering, Knowledge page.
 7. ⬜ **Engagement, integrations, and platform**: proactive triggers, voice, lead capture, handoff, webhooks, email notifications, analytics events, cache purging, optimization-plugin compatibility, WPML/Polylang, "Match my website", WordPress Font Library and theme.json integration, "Preview on my site", per-language content, WordPress Connectors bridge and core AI Client, Abilities registration.
 8. ⬜ **Hardening and release**: privacy integrations, uninstall, full test suite, i18n, readme with all required sections, Plugin Check fixes, release zip.
@@ -497,7 +497,7 @@ Implementation decisions (for review):
 - `POST /feedback` and `POST /chat` set `Cache-Control: no-store`. Public routes require a matching Origin or Referer (`chatlume_allowed_origins` filter for future external embedding).
 - Unstored conversations (storage off) use IDs starting with `t_` and live in a transient bound to the session for 30 idle minutes.
 
-**Phase 4 – Widget ✅ (2026-10-15, awaiting review)**
+**Phase 4 – Widget ✅ (2026-10-15)**
 - [x] Design token system: versioned theme schema with PHP validation and clamping; resolved light/dark tokens stored in the autoloaded `chatlume_widget_config` (about 3 KB) with a version hash
 - [x] Launcher: vanilla TypeScript, loaded with `defer`, Shadow DOM `<chatlume-widget>`, tokens applied on first paint, 12 built-in icons, circle/square/pill shapes, unread dot, badge, pulse or bounce, dismissible teaser
 - [x] Chat app (Preact through `preact/compat`), loaded with `import()` on first open, or when idle if preload is on
@@ -529,6 +529,27 @@ Implementation decisions (for review):
 - The teaser shows when its text is set and can be dismissed. Timed, scroll, and exit-intent triggers come in Phase 7, as do the mic, read-aloud, and "Email transcript" (with handoff).
 - Sample content for the preview states is supplied by the Customizer (Phase 5), so it is translated there.
 - The admin app's strict settings schema now includes the new `display` and `streaming` sections (without them every settings save failed with "Unrecognized key"). A Jest test compares its sections with `SettingsSchema::definition()`, so the two can no longer drift apart.
+
+**Phase 5 – Admin experience 🚧 (in progress)**
+
+Approved decisions:
+- Delivered module by module, each committed after review, in this order: Settings and Health check, Chatbot, Conversations, Dashboard, Playground, Display, Customizer, setup wizard, Command Palette commands.
+- The Display & triggers page builds the display rules and business hours now; proactive triggers (time on page, scroll depth, exit intent, frequency caps) come in Phase 7 with the rest of engagement.
+- The bundled open-license fonts (Inter, DM Sans, Manrope, Plus Jakarta Sans, Lora, Noto Sans Bengali, Noto Sans Arabic) and woff2 uploads are part of the Customizer in Phase 5.
+
+Module 5.1 – Settings and Health check ✅ (2026-10-15, awaiting review)
+- [x] General tab: rate limits, chat session length, trusted proxy (none, Cloudflare, custom IP list with inline validation), streaming toggle and limits, response cache with "Clear cached answers", conversation storage and retention, delete data on uninstall, debug logging
+- [x] Import and export of settings as JSON (API keys and the widget appearance are never included; `setup` is never imported)
+- [x] Health check tab: PHP version, database tables, API key encryption, HTTP transport, REST API reachability (loopback), WP-Cron, FULLTEXT, request time limit, object cache, caching and optimization plugins, WordPress AI Client, each with a plain-language fix; live streaming test run from the browser
+- [x] Logs tab: provider error log with the same explanations and fix links as the Providers page, and the debug log
+- [x] REST: `GET /health`, `POST /health/stream-test`, `DELETE /health/errors`, `DELETE /health/debug-log`, `POST /cache/clear`
+- [x] Settings tabs are kept in the address (`#/settings?tab=health`) so other pages can link to them
+
+Implementation decisions (for review):
+- Debug logging records only summaries (reply source, provider and model, tokens, cost, latency, error codes, whether it streamed or was stopped) in one capped, non-autoloaded option (latest 100). Message text, visitor details, IP addresses, and keys are never recorded, and no log files are written.
+- "Clear cached answers" bumps a cache generation number that is part of every cache key, so all earlier answers stop matching at once and expire on their own.
+- The streaming test sends six events a quarter second apart from an admin-only route; the browser judges the result by when the events arrive, because only the browser can see buffering by proxies and CDNs.
+- Recommended PHP version is 8.2 or newer (the oldest PHP line still receiving security fixes on 2026-10-15); 8.0 and 8.1 still work and get a "recommended" notice.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

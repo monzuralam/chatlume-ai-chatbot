@@ -2,7 +2,8 @@ import { readFileSync } from 'fs';
 import { join } from 'path';
 
 import {
-	dataPrivacyFormSchema,
+	generalSettingsFormSchema,
+	importableSettings,
 	mergeSettings,
 	settingsSchema,
 	type Settings,
@@ -17,10 +18,17 @@ const settings: Settings = {
 	},
 	chatbot: { bot_name: '' },
 	quick_answers: { enabled: true },
-	security: { rate_limit_messages: 20 },
+	security: {
+		rate_limit_messages: 20,
+		rate_limit_minutes: 10,
+		session_hours: 24,
+		trusted_proxy: 'none',
+		trusted_proxy_ips: [],
+	},
 	costs: { daily_budget: 0 },
-	cache: { enabled: true },
+	cache: { enabled: true, ttl_hours: 24 },
 	display: { enabled: true, preload: false },
+	debug: { enabled: false },
 	streaming: {
 		enabled: true,
 		max_concurrent: 3,
@@ -93,23 +101,78 @@ describe( 'settings schema', () => {
 				providers: { ...settings.providers, primary: { provider: 1 } },
 			} ).success
 		).toBe( false );
+	} );
+
+	it( 'validates the General settings form', () => {
+		const form = {
+			security: settings.security,
+			streaming: settings.streaming,
+			cache: settings.cache,
+			privacy: settings.privacy,
+			debug: settings.debug,
+		};
+		expect( generalSettingsFormSchema.parse( form ) ).toEqual( form );
 		expect(
-			dataPrivacyFormSchema.safeParse( {
-				privacy: { delete_data_on_uninstall: true, other: 1 },
+			generalSettingsFormSchema.safeParse( {
+				...form,
+				privacy: { ...form.privacy, other: 1 },
+			} ).success
+		).toBe( false );
+		expect(
+			generalSettingsFormSchema.safeParse( {
+				...form,
+				cache: { ...form.cache, ttl_hours: 0 },
 			} ).success
 		).toBe( false );
 	} );
 
-	it( 'validates the Data & privacy form', () => {
+	it( 'accepts IPv4 and IPv6 proxy addresses and ranges only', () => {
+		const withIps = ( ips: string[] ) =>
+			generalSettingsFormSchema.safeParse( {
+				security: { ...settings.security, trusted_proxy_ips: ips },
+				streaming: settings.streaming,
+				cache: settings.cache,
+				privacy: settings.privacy,
+				debug: settings.debug,
+			} ).success;
+
 		expect(
-			dataPrivacyFormSchema.parse( {
-				privacy: {
-					delete_data_on_uninstall: true,
-					store_conversations: false,
-					retention_days: 30,
+			withIps( [
+				'203.0.113.7',
+				'198.51.100.0/24',
+				'2001:db8::/32',
+				'::1',
+			] )
+		).toBe( true );
+		expect( withIps( [ 'example.com' ] ) ).toBe( false );
+		expect( withIps( [ '10.0.0.1; drop' ] ) ).toBe( false );
+	} );
+} );
+
+describe( 'importableSettings', () => {
+	it( 'reads exported files and bare settings, skipping setup and unknown keys', () => {
+		expect(
+			importableSettings( {
+				plugin: 'chatlume-ai-chatbot',
+				settings: {
+					setup: { completed: true },
+					cache: { enabled: false },
+					other: { a: 1 },
 				},
-			} ).privacy.retention_days
-		).toBe( 30 );
+			} )
+		).toEqual( { cache: { enabled: false } } );
+		expect(
+			importableSettings( { streaming: { enabled: false } } )
+		).toEqual( { streaming: { enabled: false } } );
+	} );
+
+	it( 'rejects files without settings', () => {
+		expect( importableSettings( null ) ).toBeNull();
+		expect( importableSettings( [ 1, 2 ] ) ).toBeNull();
+		expect(
+			importableSettings( { setup: { completed: true } } )
+		).toBeNull();
+		expect( importableSettings( { cache: 'yes' } ) ).toBeNull();
 	} );
 } );
 

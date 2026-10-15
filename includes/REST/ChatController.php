@@ -21,6 +21,7 @@ use Chatlume\Security\IpResolver;
 use Chatlume\Security\RateLimiter;
 use Chatlume\Security\SessionManager;
 use Chatlume\Settings\Settings;
+use Chatlume\Support\DebugLog;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -653,6 +654,14 @@ class ChatController {
 	 * @return WP_Error
 	 */
 	private static function error( ChatException $exception ): WP_Error {
+		DebugLog::record(
+			'rejected',
+			array(
+				'code'   => $exception->error_code(),
+				'status' => $exception->status(),
+			)
+		);
+
 		return new WP_Error(
 			'chatlume_' . $exception->error_code(),
 			$exception->visitor_message(),

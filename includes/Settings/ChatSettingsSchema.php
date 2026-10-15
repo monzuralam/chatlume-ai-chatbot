@@ -197,6 +197,21 @@ final class ChatSettingsSchema {
 	}
 
 	/**
+	 * Troubleshooting.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function debug(): array {
+		return self::section(
+			__( 'Troubleshooting.', 'chatlume-ai-chatbot' ),
+			array(
+				// Records chat pipeline summaries (no message text) in a capped log viewable in Settings.
+				'enabled' => self::boolean( false ),
+			)
+		);
+	}
+
+	/**
 	 * Response cache.
 	 *
 	 * @return array<string, mixed>

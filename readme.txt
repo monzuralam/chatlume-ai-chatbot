@@ -77,6 +77,7 @@ Nothing is removed unless you enable **Delete all data on uninstall** in Chatlum
 * AI providers: OpenAI-compatible services, Anthropic, and Google Gemini, with streaming, live model lists, connection tests, primary and fallback providers, a separate embeddings provider, and plain-language error explanations.
 * Chat backend: visitor sessions, quick answers, response cache, budgets with email alerts, rate limits, guardrails, site-search fallback that works without an API key, and conversation logging with automatic retention cleanup.
 * Chat widget: floating, side panel, modal, and inline styles; streaming replies with Stop; safe Markdown; source links; quick answers with "Ask AI"; starter questions and quick action buttons; feedback; mobile full screen; RTL and dark mode; tab sync; `[chatlume]` shortcode, Chatlume Chat block, and a JavaScript API.
+* Settings: rate limits, trusted proxy, streaming limits, response cache with one-click clearing, privacy and retention, optional debug logging, settings import and export, a Health check with plain-language fixes and a live streaming test, and a provider error log.
 
 == External services ==
 

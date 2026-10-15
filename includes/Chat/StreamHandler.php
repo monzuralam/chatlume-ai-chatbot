@@ -8,6 +8,7 @@
 namespace Chatlume\Chat;
 
 use Chatlume\Settings\Settings;
+use Chatlume\Support\DebugLog;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -188,6 +189,13 @@ class StreamHandler {
 		try {
 			$result = $this->service->handle( $request, $stream );
 		} catch ( ChatException $exception ) {
+			DebugLog::record(
+				'rejected',
+				array(
+					'code'   => $exception->error_code(),
+					'status' => $exception->status(),
+				)
+			);
 			$this->send(
 				'error',
 				array(
