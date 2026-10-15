@@ -2,7 +2,8 @@
  * The Customizer's settings sections.
  */
 import { __, sprintf } from '@wordpress/i18n';
-import { Wand2 } from 'lucide-react';
+import { Copy, Wand2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useState } from 'react';
 
 import { Button } from '../../components/ui/button';
@@ -14,7 +15,9 @@ import {
 	fixIssue,
 	pairLabel,
 } from '../../lib/theme/contrast';
+import { exampleCss, PARTS, tokensCss } from '../../lib/theme/devcss';
 import { brandColor, withBrandColor } from '../../lib/theme/presets';
+import { resolveTheme } from '../../lib/theme/resolve';
 import {
 	COLOR_TOKENS,
 	ILLUSTRATIONS,
@@ -1307,6 +1310,60 @@ export function MotionSection( { theme, set }: SectionProps ) {
 					'chatlume-ai-chatbot'
 				) }
 			</p>
+		</>
+	);
+}
+
+/**
+ * Developer styling: copy-ready CSS for WordPress's Additional CSS.
+ * Chatlume itself never stores or outputs custom CSS.
+ *
+ * @param props       Props.
+ * @param props.theme Theme.
+ * @param props.fonts Font catalog.
+ */
+export function DeveloperSection( { theme, fonts }: SectionProps ) {
+	const config = resolveTheme( theme, fonts.options );
+	const copy = async ( text: string ) => {
+		try {
+			await window.navigator.clipboard.writeText( text );
+			toast.success( __( 'Copied.', 'chatlume-ai-chatbot' ) );
+		} catch {
+			toast.error(
+				__(
+					'Copying failed. Select the text and copy it yourself.',
+					'chatlume-ai-chatbot'
+				)
+			);
+		}
+	};
+
+	return (
+		<>
+			<p className="chatlume:text-xs chatlume:text-fg-muted">
+				{ __(
+					'For developers: paste CSS into Appearance > Customize > Additional CSS (or Site Editor > Styles > Additional CSS). Custom properties set on chatlume-widget override these settings, and ::part() styles single elements.',
+					'chatlume-ai-chatbot'
+				) }
+			</p>
+			<Row label={ __( 'Example', 'chatlume-ai-chatbot' ) }>
+				<pre className="chatlume:max-h-48 chatlume:overflow-auto chatlume:rounded-control chatlume:bg-surface-muted chatlume:p-3 chatlume:font-mono chatlume:text-[11px] chatlume:text-fg">
+					{ exampleCss( config ) }
+				</pre>
+			</Row>
+			<Row label={ __( 'Parts you can style', 'chatlume-ai-chatbot' ) }>
+				<p className="chatlume:font-mono chatlume:text-[11px] chatlume:text-fg">
+					{ PARTS.join( ', ' ) }
+				</p>
+			</Row>
+			<Button
+				type="button"
+				size="sm"
+				onClick={ () => copy( tokensCss( config ) ) }
+			>
+				<Copy aria-hidden="true" />
+				{ __( 'Copy theme tokens as CSS', 'chatlume-ai-chatbot' ) }
+			</Button>
 		</>
 	);
 }

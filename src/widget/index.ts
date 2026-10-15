@@ -81,6 +81,7 @@ class Controller implements WidgetHost {
 	mount: HTMLElement;
 	inline: boolean;
 	preview: boolean;
+	site: boolean;
 	launcher: HTMLButtonElement | null = null;
 
 	private wrap: HTMLDivElement;
@@ -101,6 +102,7 @@ class Controller implements WidgetHost {
 		this.config = config;
 		this.inline = element.hasAttribute( 'data-inline' );
 		this.preview = element.hasAttribute( 'data-preview' );
+		this.site = this.preview && element.hasAttribute( 'data-site' );
 		this.root =
 			element.shadowRoot ?? element.attachShadow( { mode: 'open' } );
 		this.root.replaceChildren();
@@ -135,11 +137,11 @@ class Controller implements WidgetHost {
 
 		this.setTheme( config.theme );
 
-		if ( ! this.preview && ! primary ) {
+		if ( ( ! this.preview || this.site ) && ! primary ) {
 			primary = this;
 		}
 
-		if ( this.inline || this.preview ) {
+		if ( this.inline || ( this.preview && ! this.site ) ) {
 			this.startEmbedded();
 		} else if ( config.preload ) {
 			whenIdle( () => {
@@ -554,6 +556,32 @@ function mountPreview(
 }
 
 /**
+ * Draft preview on a real page: inside the Customizer's frame (pinned open,
+ * updated by the Customizer) or in a tab of its own (a normal floating
+ * widget with sample replies and a notice).
+ *
+ * @param config Page configuration.
+ */
+function startDraftPreview( config: WidgetConfig ): void {
+	const widget = document.createElement( TAG );
+	widget.setAttribute( 'data-preview', '' );
+	if ( config.previewMode === 'site' ) {
+		widget.setAttribute( 'data-site', '' );
+	}
+	document.body.append( widget );
+
+	const text = config.preview?.badge;
+	if ( text ) {
+		const badge = document.createElement( 'div' );
+		badge.setAttribute( 'role', 'status' );
+		badge.textContent = text;
+		badge.style.cssText =
+			'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:2147483647;padding:8px 14px;border-radius:999px;background:#111827;color:#fff;font:500 13px/1.4 system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.2);pointer-events:none;max-width:calc(100vw - 32px);text-align:center';
+		document.body.append( badge );
+	}
+}
+
+/**
  * Registers the custom element once.
  */
 function define(): void {
@@ -588,6 +616,12 @@ function start(): void {
 	};
 
 	define();
+
+	// Draft preview on the site (only the admin who asked gets this configuration).
+	if ( config?.previewMode ) {
+		startDraftPreview( config );
+		return;
+	}
 
 	// An inline chat on the page replaces the floating launcher.
 	const hasInline = !! document.querySelector( `${ TAG }[data-inline]` );

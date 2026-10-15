@@ -14,6 +14,86 @@ export interface AppearanceVersion {
 	current: boolean;
 }
 
+export interface SavedPreset {
+	id: string;
+	name: string;
+	theme: Theme;
+}
+
+export interface PreviewToken {
+	param: string;
+	token: string;
+	/** Unix time. */
+	expires: number;
+}
+
+export interface SiteBrandInfo {
+	site_name: string;
+	site_icon: string;
+	logo: string;
+	palette: Array< { slug: string; name: string; color: string } >;
+	/** Font keys of the theme's fonts. */
+	fonts: string[];
+	block_theme: boolean;
+}
+
+export const fetchPreviewToken = ( mode: 'frame' | 'site' | 'sample' ) =>
+	request< PreviewToken >( '/appearance/preview-token', {
+		method: 'POST',
+		data: { mode },
+	} );
+
+export const fetchBrand = () => request< SiteBrandInfo >( '/appearance/brand' );
+
+export const savePreset = ( name: string, theme: Theme ) =>
+	request< AppearanceState >( '/appearance/presets', {
+		method: 'POST',
+		data: { name, theme },
+	} );
+
+export const deletePreset = ( id: string ) =>
+	request< AppearanceState >(
+		`/appearance/presets/${ encodeURIComponent( id ) }`,
+		{ method: 'DELETE' }
+	);
+
+/**
+ * A theme as a downloadable JSON file.
+ *
+ * @param theme Theme.
+ * @return File contents.
+ */
+export function themeFile( theme: Theme ): string {
+	return JSON.stringify( { chatlume_theme: theme.version, theme }, null, 2 );
+}
+
+/**
+ * Reads a theme file (exported by Chatlume). The server validates and clamps
+ * every value when it is saved.
+ *
+ * @param  text File contents.
+ * @return Theme.
+ * @throws {Error} When the file is not a Chatlume theme.
+ */
+export function parseThemeFile( text: string ): Theme {
+	let data: unknown;
+	try {
+		data = JSON.parse( text );
+	} catch {
+		throw new Error( 'invalid' );
+	}
+	const theme = ( data as { theme?: unknown } )?.theme;
+	if (
+		! theme ||
+		typeof theme !== 'object' ||
+		typeof ( theme as Theme ).colors !== 'object' ||
+		typeof ( theme as Theme ).layout !== 'object'
+	) {
+		throw new Error( 'invalid' );
+	}
+	return theme as Theme;
+}
+
 export interface UploadedFont {
 	id: string;
 	name: string;
@@ -28,6 +108,7 @@ export interface AppearanceState {
 	has_changes: boolean;
 	defaults: Theme;
 	versions: AppearanceVersion[];
+	presets: SavedPreset[];
 	fonts: {
 		options: FontOption[];
 		uploaded: UploadedFont[];

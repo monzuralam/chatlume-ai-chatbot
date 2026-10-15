@@ -8,6 +8,9 @@
  *   - state      PreviewState      Forced preview state.
  *   - highlight  { part: string }  Briefly outlines an element.
  *   - direction  'ltr' | 'rtl'     Text direction.
+ *   - samples    PreviewSamples    Sample conversation texts.
+ *   - live       { url, nonce }    Real AI replies (null: samples).
+ *   - labels     { part: name }    Names shown when hovering elements.
  *
  * Widget → Customizer: `{ source: 'chatlume-preview', type, payload }`
  *   - ready      {}                The preview is listening.
@@ -24,6 +27,9 @@ export const PREVIEW_TYPES = [
 	'state',
 	'highlight',
 	'direction',
+	'samples',
+	'live',
+	'labels',
 ] as const;
 
 export type PreviewType = ( typeof PREVIEW_TYPES )[ number ];

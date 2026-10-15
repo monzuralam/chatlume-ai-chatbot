@@ -10,6 +10,8 @@ namespace Chatlume\REST;
 use Chatlume\Appearance\AppearanceStore;
 use Chatlume\Appearance\FontCatalog;
 use Chatlume\Appearance\FontUploads;
+use Chatlume\Appearance\PreviewMode;
+use Chatlume\Appearance\SiteBrand;
 use Chatlume\Appearance\ThemeSchema;
 use Chatlume\Appearance\TokenResolver;
 use Chatlume\Plugin;
@@ -93,6 +95,87 @@ class AppearanceController {
 				'callback'            => array( $this, 'publish' ),
 				'permission_callback' => $permission,
 				'args'                => array(),
+			)
+		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/appearance/preview-token',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'preview_token' ),
+				'permission_callback' => $permission,
+				'args'                => array(
+					'mode' => array(
+						'type'              => 'string',
+						'default'           => 'frame',
+						'enum'              => PreviewMode::MODES,
+						'validate_callback' => 'rest_validate_request_arg',
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/appearance/brand',
+			array(
+				'methods'             => WP_REST_Server::READABLE,
+				'callback'            => array( $this, 'get_brand' ),
+				'permission_callback' => $permission,
+				'args'                => array(),
+			)
+		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/appearance/presets',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_presets' ),
+					'permission_callback' => $permission,
+					'args'                => array(),
+				),
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'create_preset' ),
+					'permission_callback' => $permission,
+					'args'                => array(
+						'name'  => array(
+							'type'              => 'string',
+							'required'          => true,
+							'minLength'         => 1,
+							'maxLength'         => 40,
+							'sanitize_callback' => 'sanitize_text_field',
+							'validate_callback' => 'rest_validate_request_arg',
+						),
+						'theme' => array(
+							'type'              => 'object',
+							'required'          => true,
+							'validate_callback' => array( self::class, 'validate_theme' ),
+							'sanitize_callback' => array( ThemeSchema::class, 'sanitize' ),
+						),
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/appearance/presets/(?P<id>[a-f0-9]{12})',
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_preset' ),
+				'permission_callback' => $permission,
+				'args'                => array(
+					'id' => array(
+						'type'              => 'string',
+						'required'          => true,
+						'pattern'           => '^[a-f0-9]{12}$',
+						'validate_callback' => 'rest_validate_request_arg',
+					),
+				),
 			)
 		);
 
@@ -277,6 +360,74 @@ class AppearanceController {
 	}
 
 	/**
+	 * POST /appearance/preview-token: a 30-minute token for a draft preview
+	 * on the site, valid only for the current admin.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public function preview_token( WP_REST_Request $request ): WP_REST_Response {
+		$token = PreviewMode::token( get_current_user_id(), (string) $request->get_param( 'mode' ) );
+
+		return self::no_store(
+			new WP_REST_Response(
+				array(
+					'param'   => PreviewMode::PARAM,
+					'token'   => $token['token'],
+					'expires' => $token['expires'],
+				)
+			)
+		);
+	}
+
+	/**
+	 * GET /appearance/brand: the site's icon, logo, palette, and fonts.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function get_brand(): WP_REST_Response {
+		return self::no_store( new WP_REST_Response( SiteBrand::detect() ) );
+	}
+
+	/**
+	 * GET /appearance/presets.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function get_presets(): WP_REST_Response {
+		return self::no_store( new WP_REST_Response( AppearanceStore::presets() ) );
+	}
+
+	/**
+	 * POST /appearance/presets: saves a theme as a preset.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function create_preset( WP_REST_Request $request ) {
+		$preset = AppearanceStore::save_preset( (string) $request->get_param( 'name' ), (array) $request->get_param( 'theme' ) );
+		if ( null === $preset ) {
+			return new WP_Error( 'chatlume_preset_limit', __( 'You can keep up to 20 presets. Delete one first.', 'chatlume-ai-chatbot' ), array( 'status' => 400 ) );
+		}
+
+		return self::state();
+	}
+
+	/**
+	 * DELETE /appearance/presets/{id}.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function delete_preset( WP_REST_Request $request ) {
+		if ( ! AppearanceStore::delete_preset( (string) $request->get_param( 'id' ) ) ) {
+			return new WP_Error( 'chatlume_not_found', __( 'This preset no longer exists.', 'chatlume-ai-chatbot' ), array( 'status' => 404 ) );
+		}
+
+		return self::state();
+	}
+
+	/**
 	 * POST /appearance/fonts: a woff2 upload (multipart field "font").
 	 *
 	 * @param WP_REST_Request $request Request.
@@ -329,6 +480,7 @@ class AppearanceController {
 					'has_changes' => AppearanceStore::has_changes(),
 					'defaults'    => ThemeSchema::defaults(),
 					'versions'    => AppearanceStore::versions(),
+					'presets'     => AppearanceStore::presets(),
 					'fonts'       => array(
 						'options'     => array_values( FontCatalog::options() ),
 						'uploaded'    => FontCatalog::uploaded(),

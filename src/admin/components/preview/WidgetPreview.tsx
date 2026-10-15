@@ -4,19 +4,20 @@
  * through the origin-checked preview protocol.
  */
 import { __ } from '@wordpress/i18n';
-import { useEffect, useRef, useState } from 'react';
+import {
+	useCallback,
+	useEffect,
+	useRef,
+	useState,
+	type CSSProperties,
+} from 'react';
 
-import type {
-	BehaviorConfig,
-	PreviewSamples,
-	PreviewState,
-	ThemeConfig,
-} from '../../../widget/types';
 import { getBootstrap } from '../../lib/bootstrap';
 import { cn } from '../../lib/utils';
+import { usePreviewMessages, usePreviewSync, type PreviewInputs } from './sync';
 
 /**
- * Sends a message to the preview widget.
+ * Sends a message to the preview widget in this window.
  *
  * @param type    Message type.
  * @param payload Payload.
@@ -47,39 +48,23 @@ function widgetReady(): Promise< boolean > {
 	} );
 }
 
-interface WidgetPreviewProps {
-	behavior: BehaviorConfig;
-	samples: Partial< PreviewSamples >;
-	state?: PreviewState;
-	/** A theme to show instead of the published one (Customizer). */
-	theme?: ThemeConfig;
-	direction?: 'ltr' | 'rtl';
+interface WidgetPreviewProps extends PreviewInputs {
 	className?: string;
+	style?: CSSProperties;
 }
 
 /**
  * Live preview.
  *
- * @param props           Props.
- * @param props.behavior  Behavior settings to show.
- * @param props.samples   Sample conversation texts.
- * @param props.state     Forced state.
- * @param props.theme     Theme to show (defaults to the published one).
- * @param props.direction Text direction.
- * @param props.className Extra classes for the frame.
+ * @param props Props (see PreviewInputs), plus className and style for the frame.
  */
-export function WidgetPreview( {
-	behavior,
-	samples,
-	state,
-	theme,
-	direction,
-	className,
-}: WidgetPreviewProps ) {
+export function WidgetPreview( props: WidgetPreviewProps ) {
+	const { className, style, onSelect } = props;
 	const box = useRef< HTMLDivElement >( null );
-	const latest = useRef( { behavior, samples, state, theme } );
-	latest.current = { behavior, samples, state, theme };
+	const latest = useRef( props );
+	latest.current = props;
 	const [ failed, setFailed ] = useState( false );
+	const [ ready, setReady ] = useState( 0 );
 	const config = getBootstrap().widget;
 
 	// Mount once; later changes travel as preview messages.
@@ -90,54 +75,40 @@ export function WidgetPreview( {
 			return undefined;
 		}
 		let cancelled = false;
-		widgetReady().then( ( ready ) => {
+		widgetReady().then( ( available ) => {
 			if ( cancelled ) {
 				return;
 			}
-			if ( ! ready || ! window.Chatlume ) {
+			if ( ! available || ! window.Chatlume ) {
 				setFailed( true );
 				return;
 			}
+			const initial = latest.current;
 			window.Chatlume.mountPreview( element, {
 				...config,
-				theme: latest.current.theme ?? config.theme,
+				theme: initial.theme ?? config.theme,
 				preview: {
 					origin: window.location.origin,
-					behavior: latest.current.behavior,
-					samples: latest.current.samples,
-					state: latest.current.state,
+					behavior: initial.behavior,
+					samples: initial.samples,
+					state: initial.state,
+					live: initial.live ?? null,
 				},
 			} ).catch( () => setFailed( true ) );
 		} );
 		return () => {
 			cancelled = true;
+			setReady( 0 );
 			element.replaceChildren();
 		};
 	}, [ config ] );
 
-	const behaviorKey = JSON.stringify( behavior );
-	useEffect( () => {
-		postToPreview( 'behavior', JSON.parse( behaviorKey ) );
-	}, [ behaviorKey ] );
-
-	useEffect( () => {
-		if ( state ) {
-			postToPreview( 'state', state );
-		}
-	}, [ state ] );
-
-	// Every edit travels as tokens; the widget applies them once per frame.
-	useEffect( () => {
-		if ( theme ) {
-			postToPreview( 'theme', theme );
-		}
-	}, [ theme ] );
-
-	useEffect( () => {
-		if ( direction ) {
-			postToPreview( 'direction', direction );
-		}
-	}, [ direction ] );
+	usePreviewSync( postToPreview, ready, props );
+	usePreviewMessages(
+		useCallback( () => window, [] ),
+		useCallback( () => setReady( ( count ) => count + 1 ), [] ),
+		onSelect
+	);
 
 	if ( failed ) {
 		return (
@@ -146,6 +117,7 @@ export function WidgetPreview( {
 					'chatlume:flex chatlume:items-center chatlume:justify-center chatlume:rounded-card chatlume:border chatlume:border-dashed chatlume:border-border chatlume:p-6 chatlume:text-center chatlume:text-sm chatlume:text-fg-muted',
 					className
 				) }
+				style={ style }
 			>
 				{ __(
 					'The preview is not available because the widget files are missing. Rebuild the plugin with npm run build.',
@@ -161,9 +133,11 @@ export function WidgetPreview( {
 			role="region"
 			aria-label={ __( 'Widget preview', 'chatlume-ai-chatbot' ) }
 			className={ cn(
-				'chatlume:relative chatlume:overflow-hidden chatlume:rounded-card chatlume:border chatlume:border-border chatlume:bg-surface-muted',
+				'chatlume:relative chatlume:overflow-hidden chatlume:rounded-card chatlume:border chatlume:border-border',
+				! style?.background && 'chatlume:bg-surface-muted',
 				className
 			) }
+			style={ style }
 		/>
 	);
 }

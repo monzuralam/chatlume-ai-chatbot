@@ -641,7 +641,7 @@ Implementation decisions (for review):
 - Restoring a version loads it into the draft; it goes live only after Publish.
 - A draft equal to the published theme is deleted, so "Unpublished changes" disappears when edits are undone.
 
-Module 5.7b – Customizer typography and fonts ✅ (2026-10-15, awaiting review)
+Module 5.7b – Customizer typography and fonts ✅ (2026-10-15)
 - [x] Font sources: same as the site, system stacks, 7 bundled open-license variable fonts (Inter, DM Sans, Manrope, Plus Jakarta Sans, Lora, Noto Sans Bengali, Noto Sans Arabic), the active theme's theme.json fonts, the WordPress Font Library, and uploaded woff2 files
 - [x] Separate text and heading fonts; every stack ends with fallbacks for Bengali, Arabic, and CJK
 - [x] "Script support" note when the chosen font has no letters for the site's language; a deleted font falls back to the system font with a note
@@ -656,6 +656,23 @@ Implementation decisions (for review):
 - Uploads use Chatlume's own upload route instead of allowing woff2 in the Media Library, so no site-wide MIME change is needed.
 - The stored widget configuration is rebuilt automatically after a plugin update or a site move, because font URLs depend on both.
 - Phones keep the message field at 16 px or larger, whatever the base size (no iOS zoom).
+
+Module 5.7c – Customizer site preview and tools ✅ (2026-10-15, awaiting review)
+- [x] Real website backdrop: a same-origin frame of any page on the site (address picker), opened with a signed, user-bound, 30-minute preview token; the admin bar and the live widget are hidden there and a pinned preview widget takes the Customizer's updates; a skeleton while loading; automatic fallback to a neutral backdrop (light, dark, pattern, or custom color) with a short explanation when the page cannot be framed, redirects, uses another origin, or does not load the preview in time
+- [x] Devices: desktop, tablet (768×1024), and phone (375×812), scaled to fit; the phone frame shows the widget's real full-screen behavior
+- [x] Click to edit (hover shows the element's name; clicking opens and focuses its section) and context-aware states (focusing a section switches the preview and outlines the element), with an "Auto-switch preview" toggle
+- [x] "Compare with published" (before/after), "Sample replies" or "Live AI replies" (real answers through the admin-only Playground endpoint, as test chats)
+- [x] "Preview on my site": the draft on the real site in a new tab, only for the admin who asked (samples instead of AI, a "Draft preview" notice)
+- [x] "Match my website": site icon as avatar, custom logo, brand color from the theme.json palette or, for classic themes, the home page's button and link colors (sampled in a hidden same-origin frame), theme font; shown before and after; Apply or Cancel
+- [x] My presets (save the current look, apply, delete; up to 20), theme export and import as JSON (the server validates and clamps imports)
+- [x] Developer styling: copy-ready snippets with `--chatlume-*` custom properties and `::part()` selectors for WordPress's Additional CSS, the list of parts, and "Copy theme tokens as CSS"; Chatlume itself never stores or prints custom CSS
+- [x] REST: `POST /appearance/preview-token`, `GET /appearance/brand`, `GET/POST /appearance/presets`, `DELETE /appearance/presets/{id}`
+
+Implementation decisions (for review):
+- Preview pages are only for the admin whose user ID is in the token (and who can still manage Chatlume); they send no-cache headers, set DONOTCACHEPAGE, and are marked noindex, so a draft never reaches a cache or a visitor.
+- "Preview on my site" answers with samples (no AI cost, nothing in Conversations); live answers are available inside the Customizer.
+- The preview widget re-syncs every time a preview page connects, so reloading the page, renewing the token, or switching devices never shows stale settings.
+- When a site has no colorful brand color (neutral palette and buttons), "Match my website" keeps the colors and says so.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

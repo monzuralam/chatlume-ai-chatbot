@@ -35,6 +35,16 @@ final class AppearanceStore {
 	public const MAX_VERSIONS = 10;
 
 	/**
+	 * The admin's saved presets.
+	 */
+	public const PRESETS_OPTION = 'chatlume_theme_presets';
+
+	/**
+	 * Presets kept.
+	 */
+	public const MAX_PRESETS = 20;
+
+	/**
 	 * The theme being edited: the draft, or the published theme when there is
 	 * no draft.
 	 *
@@ -152,6 +162,74 @@ final class AppearanceStore {
 		}
 
 		return null;
+	}
+
+	/**
+	 * The admin's saved presets, newest first.
+	 *
+	 * @return array<int, array{id: string, name: string, theme: array<string, mixed>}>
+	 */
+	public static function presets(): array {
+		$stored  = get_option( self::PRESETS_OPTION, array() );
+		$presets = array();
+
+		foreach ( is_array( $stored ) ? $stored : array() as $preset ) {
+			if ( is_array( $preset ) && isset( $preset['id'], $preset['theme'] ) && preg_match( '/^[a-f0-9]{12}$/', (string) $preset['id'] ) ) {
+				$presets[] = array(
+					'id'    => (string) $preset['id'],
+					'name'  => (string) ( $preset['name'] ?? '' ),
+					'theme' => ThemeSchema::sanitize( $preset['theme'] ),
+				);
+			}
+		}
+
+		return $presets;
+	}
+
+	/**
+	 * Saves a theme as a named preset.
+	 *
+	 * @param string $name  Name.
+	 * @param mixed  $theme Theme.
+	 * @return array{id: string, name: string, theme: array<string, mixed>}|null Null when the limit is reached.
+	 */
+	public static function save_preset( string $name, $theme ): ?array {
+		$presets = self::presets();
+		if ( count( $presets ) >= self::MAX_PRESETS ) {
+			return null;
+		}
+
+		$preset = array(
+			'id'    => bin2hex( random_bytes( 6 ) ),
+			'name'  => mb_substr( sanitize_text_field( $name ), 0, 40 ),
+			'theme' => ThemeSchema::sanitize( $theme ),
+		);
+		array_unshift( $presets, $preset );
+		update_option( self::PRESETS_OPTION, $presets, false );
+
+		return $preset;
+	}
+
+	/**
+	 * Deletes a saved preset.
+	 *
+	 * @param string $id Preset ID.
+	 * @return bool Whether it existed.
+	 */
+	public static function delete_preset( string $id ): bool {
+		$presets = self::presets();
+		$kept    = array_values(
+			array_filter(
+				$presets,
+				static fn( array $preset ): bool => ! hash_equals( $preset['id'], $id )
+			)
+		);
+		if ( count( $kept ) === count( $presets ) ) {
+			return false;
+		}
+		update_option( self::PRESETS_OPTION, $kept, false );
+
+		return true;
 	}
 
 	/**

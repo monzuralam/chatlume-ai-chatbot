@@ -252,7 +252,7 @@ class ChatController {
 		$data    = array(
 			'token'   => $session['token'],
 			'expires' => $session['expires'],
-			'config'  => $this->behavior_config( (string) $request->get_param( 'language' ) ),
+			'config'  => self::behavior_config( (string) $request->get_param( 'language' ) ),
 		);
 
 		// A cached page may carry an older look: send the published theme when its version differs.
@@ -450,7 +450,7 @@ class ChatController {
 	 * @param string $language Page language.
 	 * @return array<string, mixed>
 	 */
-	private function behavior_config( string $language ): array {
+	public static function behavior_config( string $language ): array {
 		$starters = BotText::starters();
 
 		if ( Settings::get( 'quick_answers.enabled', true ) && Settings::get( 'quick_answers.show_as_starters', false ) ) {

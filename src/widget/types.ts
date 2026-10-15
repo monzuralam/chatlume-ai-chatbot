@@ -110,6 +110,8 @@ export interface WidgetConfig {
 	strings: WidgetStrings;
 	/** Set only in preview mode. */
 	preview?: PreviewOptions;
+	/** Draft preview on the site: inside the Customizer (frame) or in a tab (site). */
+	previewMode?: 'frame' | 'site';
 }
 
 export interface QuickAction {
@@ -182,6 +184,10 @@ export interface PreviewOptions {
 	state?: PreviewState;
 	behavior?: Partial< BehaviorConfig >;
 	samples?: Partial< PreviewSamples >;
+	/** Real AI replies through the admin-only Playground endpoint (Customizer "Live AI replies"). */
+	live?: { url: string; nonce: string } | null;
+	/** Notice shown on a draft preview of the site. */
+	badge?: string;
 }
 
 /** What the launcher hands to the lazily loaded chat app. */
@@ -193,6 +199,8 @@ export interface WidgetHost {
 	mount: HTMLElement;
 	inline: boolean;
 	preview: boolean;
+	/** Draft preview in a site tab: a normal floating widget with sample replies. */
+	site: boolean;
 	isOpen: () => boolean;
 	open: () => void;
 	close: () => void;

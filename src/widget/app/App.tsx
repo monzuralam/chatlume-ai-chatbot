@@ -7,6 +7,7 @@ import { isClosed } from '../lib/display';
 import { createPreviewChannel, type PreviewBatch } from '../lib/preview';
 import type {
 	BehaviorConfig,
+	PreviewSamples,
 	PreviewState,
 	ThemeConfig,
 	WidgetConfig,
@@ -48,6 +49,8 @@ export function App( {
 	const chat = useChat( host );
 	const dialog = useRef< HTMLDivElement >( null );
 	const input = useRef< HTMLTextAreaElement >( null );
+	// Names of elements for the preview's hover outline (sent by the Customizer).
+	const labels = useRef< Record< string, string > >( {} );
 
 	const ui = config.theme.ui;
 	const strings = config.strings;
@@ -140,7 +143,7 @@ export function App( {
 
 	// Preview mode: Customizer messages, highlight, and click to edit.
 	useEffect( () => {
-		if ( ! host.preview ) {
+		if ( ! host.preview || host.site ) {
 			return undefined;
 		}
 		const origin = config.preview?.origin || window.location.origin;
@@ -172,6 +175,35 @@ export function App( {
 				}
 				if ( batch.direction === 'rtl' || batch.direction === 'ltr' ) {
 					host.setDirection( batch.direction );
+				}
+				// Read when a reply is produced, so they apply to the next message.
+				if ( batch.samples && typeof batch.samples === 'object' ) {
+					host.config.preview = {
+						...host.config.preview,
+						samples: batch.samples as Partial< PreviewSamples >,
+					};
+				}
+				if ( batch.labels && typeof batch.labels === 'object' ) {
+					labels.current = Object.fromEntries(
+						Object.entries(
+							batch.labels as Record< string, unknown >
+						).filter( ( [ , value ] ) => typeof value === 'string' )
+					) as Record< string, string >;
+				}
+				if ( 'live' in batch ) {
+					const live = batch.live as {
+						url?: unknown;
+						nonce?: unknown;
+					} | null;
+					host.config.preview = {
+						...host.config.preview,
+						live:
+							live &&
+							typeof live.url === 'string' &&
+							typeof live.nonce === 'string'
+								? { url: live.url, nonce: live.nonce }
+								: null,
+					};
 				}
 				if ( batch.strings ) {
 					setConfig( ( current ) => ( {
@@ -211,6 +243,12 @@ export function App( {
 			if ( part !== hovered ) {
 				hovered?.classList.remove( 'cl-hover' );
 				part?.classList.add( 'cl-hover' );
+				const name = ( part?.getAttribute( 'part' ) ?? '' ).split(
+					' '
+				)[ 0 ];
+				if ( part && labels.current[ name ] ) {
+					part.setAttribute( 'title', labels.current[ name ] );
+				}
 				hovered = part;
 			}
 		};

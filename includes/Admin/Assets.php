@@ -130,6 +130,8 @@ class Assets {
 			'assetsUrl'     => CHATLUME_URL . 'build/admin/',
 			'adminUrl'      => admin_url( 'admin.php?page=' . Plugin::ADMIN_SLUG ),
 			'siteUrl'       => home_url( '/' ),
+			// For the live preview's AI replies, which run inside the widget (not apiFetch).
+			'restNonce'     => wp_create_nonce( 'wp_rest' ),
 			'docsUrl'       => 'https://wordpress.org/plugins/chatlume-ai-chatbot/',
 			'colorMode'     => AdminPage::get_color_mode( (int) $user->ID ),
 			'user'          => array(

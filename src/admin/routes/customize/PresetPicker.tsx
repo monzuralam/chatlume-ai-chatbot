@@ -1,5 +1,5 @@
 import { __, sprintf } from '@wordpress/i18n';
-import { Check, History, Palette } from 'lucide-react';
+import { Check, History, Palette, X } from 'lucide-react';
 import { useId, useMemo, useState } from 'react';
 
 import { Button } from '../../components/ui/button';
@@ -8,8 +8,9 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from '../../components/ui/popover';
+import { Input } from '../../components/ui/input';
 import { Switch } from '../../components/ui/switch';
-import type { AppearanceVersion } from '../../lib/appearance';
+import type { AppearanceVersion, SavedPreset } from '../../lib/appearance';
 import { applyPreset, themePresets } from '../../lib/theme/presets';
 import { headerFill } from '../../lib/theme/resolve';
 import type { Theme } from '../../lib/theme/types';
@@ -21,7 +22,7 @@ import { formatDateTime } from '../conversations/format';
  * @param props       Props.
  * @param props.theme Theme the preset produces.
  */
-function Thumbnail( { theme }: { theme: Theme } ) {
+export function Thumbnail( { theme }: { theme: Theme } ) {
 	const colors =
 		theme.mode === 'dark' ? theme.colors.dark : theme.colors.light;
 	const radius = Math.min( theme.shape.radii.window, 12 );
@@ -73,20 +74,31 @@ function Thumbnail( { theme }: { theme: Theme } ) {
 /**
  * Theme presets with thumbnails.
  *
- * @param props         Props.
- * @param props.theme   Current theme.
- * @param props.onApply Applies a preset.
+ * @param props          Props.
+ * @param props.theme    Current theme.
+ * @param props.onApply  Applies a preset.
+ * @param props.saved    The admin's saved presets.
+ * @param props.onSave   Saves the current look under a name.
+ * @param props.onDelete Deletes a saved preset.
  */
 export function PresetPicker( {
 	theme,
 	onApply,
+	saved,
+	onSave,
+	onDelete,
 }: {
 	theme: Theme;
 	onApply: ( theme: Theme ) => void;
+	saved: SavedPreset[];
+	onSave: ( name: string ) => Promise< boolean >;
+	onDelete: ( id: string ) => void;
 } ) {
 	const [ open, setOpen ] = useState( false );
 	const [ keepBrand, setKeepBrand ] = useState( false );
+	const [ name, setName ] = useState( '' );
 	const keepId = useId();
+	const nameId = useId();
 	const presets = useMemo( () => themePresets(), [] );
 	const previews = useMemo(
 		() =>
@@ -160,6 +172,105 @@ export function PresetPicker( {
 						'chatlume-ai-chatbot'
 					) }
 				</p>
+
+				<div className="chatlume:mt-4 chatlume:border-t chatlume:border-border chatlume:pt-4">
+					<p className="chatlume:mb-3 chatlume:text-sm chatlume:font-semibold chatlume:text-fg">
+						{ __( 'My presets', 'chatlume-ai-chatbot' ) }
+					</p>
+					{ saved.length > 0 && (
+						<div className="chatlume:mb-3 chatlume:grid chatlume:grid-cols-2 chatlume:gap-3 chatlume:sm:grid-cols-5">
+							{ saved.map( ( preset ) => (
+								<div
+									key={ preset.id }
+									className="chatlume:relative"
+								>
+									<button
+										type="button"
+										className="chatlume:flex chatlume:w-full chatlume:flex-col chatlume:gap-1.5 chatlume:rounded-control chatlume:p-1 chatlume:text-start chatlume:text-xs chatlume:font-medium chatlume:text-fg chatlume:hover:bg-surface-muted chatlume:focus-visible:outline-none chatlume:focus-visible:ring-[3px] chatlume:focus-visible:ring-ring"
+										aria-label={ sprintf(
+											/* translators: %s: Preset name. */
+											__(
+												'Apply my preset %s',
+												'chatlume-ai-chatbot'
+											),
+											preset.name
+										) }
+										onClick={ () => {
+											onApply( preset.theme );
+											setOpen( false );
+										} }
+									>
+										<Thumbnail theme={ preset.theme } />
+										<span className="chatlume:truncate">
+											{ preset.name }
+										</span>
+									</button>
+									<button
+										type="button"
+										className="chatlume:absolute chatlume:end-0 chatlume:top-0 chatlume:rounded-full chatlume:bg-surface chatlume:p-1 chatlume:text-fg-muted chatlume:shadow-card chatlume:hover:text-danger chatlume:focus-visible:outline-none chatlume:focus-visible:ring-[3px] chatlume:focus-visible:ring-ring"
+										aria-label={ sprintf(
+											/* translators: %s: Preset name. */
+											__(
+												'Delete my preset %s',
+												'chatlume-ai-chatbot'
+											),
+											preset.name
+										) }
+										onClick={ () => onDelete( preset.id ) }
+									>
+										<X
+											aria-hidden="true"
+											className="chatlume:size-3"
+										/>
+									</button>
+								</div>
+							) ) }
+						</div>
+					) }
+					<form
+						className="chatlume:flex chatlume:items-end chatlume:gap-2"
+						onSubmit={ async ( event ) => {
+							event.preventDefault();
+							if (
+								name.trim() &&
+								( await onSave( name.trim() ) )
+							) {
+								setName( '' );
+							}
+						} }
+					>
+						<div className="chatlume:flex chatlume:flex-1 chatlume:flex-col chatlume:gap-1">
+							<label
+								htmlFor={ nameId }
+								className="chatlume:text-xs chatlume:text-fg-muted"
+							>
+								{ __(
+									'Save the current look as a preset',
+									'chatlume-ai-chatbot'
+								) }
+							</label>
+							<Input
+								id={ nameId }
+								value={ name }
+								maxLength={ 40 }
+								placeholder={ __(
+									'Preset name',
+									'chatlume-ai-chatbot'
+								) }
+								onChange={ ( event ) =>
+									setName( event.target.value )
+								}
+							/>
+						</div>
+						<Button
+							type="submit"
+							size="sm"
+							disabled={ ! name.trim() }
+						>
+							{ __( 'Save preset', 'chatlume-ai-chatbot' ) }
+						</Button>
+					</form>
+				</div>
 			</PopoverContent>
 		</Popover>
 	);

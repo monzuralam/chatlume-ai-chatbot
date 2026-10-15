@@ -9,6 +9,7 @@ namespace Chatlume;
 
 use Chatlume\Admin\AdminPage;
 use Chatlume\Admin\Assets;
+use Chatlume\Appearance\PreviewMode;
 use Chatlume\Cron\RetentionCleanup;
 use Chatlume\Frontend\Shortcode;
 use Chatlume\Frontend\WidgetLoader;
@@ -92,6 +93,7 @@ final class Plugin {
 
 		if ( ! is_admin() ) {
 			( new WidgetLoader() )->register();
+			( new PreviewMode() )->register();
 		}
 
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );

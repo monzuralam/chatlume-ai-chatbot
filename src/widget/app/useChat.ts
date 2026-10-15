@@ -461,10 +461,67 @@ export function useChat( host: WidgetHost ): Chat {
 		[ config.rest, appendText, patch, strings.connection, strings.error ]
 	);
 
-	/** Sample reply typed out in the preview (no server, no cost). */
+	/**
+	 * Preview reply: a sample typed out (no server, no cost), or, with "Live
+	 * AI replies" in the Customizer, a real answer from the admin-only
+	 * Playground endpoint (a test chat). Options are read when the message is
+	 * sent, so Customizer changes apply right away.
+	 */
 	const previewReply = useCallback(
-		( id: string ) => {
-			const text = withDefaults( config.preview?.samples ).reply;
+		( id: string, question: string ) => {
+			const live = host.config.preview?.live;
+			if ( live ) {
+				const controller = new AbortController();
+				setBusy( true );
+				busyRef.current = true;
+				abortRef.current = () => controller.abort();
+				const done = () => {
+					abortRef.current = null;
+					setBusy( false );
+					busyRef.current = false;
+				};
+				window
+					.fetch( live.url, {
+						method: 'POST',
+						credentials: 'same-origin',
+						signal: controller.signal,
+						headers: {
+							'Content-Type': 'application/json',
+							'X-WP-Nonce': live.nonce,
+						},
+						body: JSON.stringify( {
+							message: question,
+							conversation_id: conversationRef.current,
+						} ),
+					} )
+					.then( async ( response ) => {
+						const data = await response.json();
+						if ( ! response.ok ) {
+							throw new Error(
+								typeof data?.message === 'string'
+									? data.message
+									: strings.error
+							);
+						}
+						done();
+						finalize( id, data );
+					} )
+					.catch( ( error: Error ) => {
+						done();
+						patch(
+							id,
+							error.name === 'AbortError'
+								? { status: 'stopped' }
+								: {
+										status: 'error',
+										error: error.message || strings.error,
+									}
+						);
+					} );
+				return;
+			}
+
+			const text = withDefaults( host.config.preview?.samples ).reply;
 			const words = text.split( /(\s+)/ );
 			let index = 0;
 			setBusy( true );
@@ -498,14 +555,14 @@ export function useChat( host: WidgetHost ): Chat {
 				busyRef.current = false;
 			};
 		},
-		[ config.preview, appendText, finalize, flushText, patch ]
+		[ host, appendText, finalize, flushText, patch, strings.error ]
 	);
 
 	/** Gets a reply for the bot message `id`. */
 	const perform = useCallback(
 		async ( id: string, question: string, extra: Extra ) => {
 			if ( preview ) {
-				previewReply( id );
+				previewReply( id, question );
 				return;
 			}
 
@@ -773,14 +830,14 @@ export function useChat( host: WidgetHost ): Chat {
 			abortRef.current?.( 'user' );
 			const sample = sampleMessages(
 				state,
-				withDefaults( config.preview?.samples ),
+				withDefaults( host.config.preview?.samples ),
 				strings
 			);
 			if ( sample ) {
 				commit( sample );
 			}
 		},
-		[ commit, config.preview, strings ]
+		[ commit, host, strings ]
 	);
 
 	useEffect(

@@ -85,6 +85,7 @@ Nothing is removed unless you enable **Delete all data on uninstall** in Chatlum
 * Display: show the chat button on all pages, only on chosen pages, or everywhere except them (pages, content types, and addresses with wildcards); by device, logged-in status, and role; business hours in your timezone with an offline message or a hidden button outside them; copy-ready shortcode and block instructions.
 * Customize: a live editor for the chat widget with Simple and Advanced modes, colors generated from your brand color with automatic contrast checks, 10 presets, layout, shape, launcher and motion options, undo and redo, private drafts, publishing, and the last 10 versions.
 * Customize fonts: seven bundled open-license fonts (including Bengali and Arabic), your theme's fonts, the WordPress Font Library, or your own woff2 upload, with separate heading fonts and readable fallbacks for every language.
+* Customize on your real site: preview the widget on any page at desktop, tablet, or phone size, click any part to edit it, compare with the published look, try live AI replies, preview the draft on your site, match your website's branding in one click, save your own presets, import and export themes, and copy CSS snippets for developers.
 
 == External services ==
 

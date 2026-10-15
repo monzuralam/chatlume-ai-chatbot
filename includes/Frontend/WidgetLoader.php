@@ -104,14 +104,32 @@ class WidgetLoader {
 		}
 
 		if ( ! self::$configured ) {
-			self::$configured = true;
-			wp_add_inline_script(
-				self::HANDLE,
-				'window.chatlumeWidgetConfig = ' . wp_json_encode( self::inline_config( $floating ) ) . ';',
-				'before'
-			);
+			self::configure( self::inline_config( $floating ) );
+			return;
 		}
 
+		wp_enqueue_script( self::HANDLE );
+	}
+
+	/**
+	 * Prints the page configuration (once) and enqueues the launcher. The
+	 * first configuration wins, so a draft preview is not replaced by an
+	 * inline chat rendered later on the page.
+	 *
+	 * @param array<string, mixed> $config Configuration.
+	 * @return void
+	 */
+	public static function configure( array $config ): void {
+		if ( self::$configured || ! self::register_script() ) {
+			return;
+		}
+
+		self::$configured = true;
+		wp_add_inline_script(
+			self::HANDLE,
+			'window.chatlumeWidgetConfig = ' . wp_json_encode( $config ) . ';',
+			'before'
+		);
 		wp_enqueue_script( self::HANDLE );
 	}
 

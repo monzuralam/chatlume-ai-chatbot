@@ -47,6 +47,7 @@ declare global {
  * @param props.open     Whether it is expanded.
  * @param props.onToggle Expands or collapses it.
  * @param props.onReset  Resets the section to defaults.
+ * @param props.onFocus  Focus moved into the section.
  * @param props.children Controls.
  */
 export function Section( {
@@ -55,6 +56,7 @@ export function Section( {
 	open,
 	onToggle,
 	onReset,
+	onFocus,
 	children,
 }: {
 	id: string;
@@ -62,6 +64,8 @@ export function Section( {
 	open: boolean;
 	onToggle: () => void;
 	onReset?: () => void;
+	/** Called when focus moves into the section (context-aware preview). */
+	onFocus?: () => void;
 	children: ReactNode;
 } ) {
 	const panel = `chatlume-section-${ id }`;
@@ -69,6 +73,7 @@ export function Section( {
 		<section
 			data-section={ id }
 			className="chatlume:border-b chatlume:border-border"
+			onFocusCapture={ onFocus }
 		>
 			<div className="chatlume:flex chatlume:items-center chatlume:gap-1 chatlume:pe-2">
 				<button

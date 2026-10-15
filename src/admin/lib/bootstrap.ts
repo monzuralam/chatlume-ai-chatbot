@@ -30,6 +30,7 @@ export interface ChatlumeBootstrap {
 	assetsUrl: string;
 	adminUrl: string;
 	siteUrl: string;
+	restNonce: string;
 	docsUrl: string;
 	colorMode: ColorMode;
 	user: {
@@ -48,6 +49,7 @@ const FALLBACK: ChatlumeBootstrap = {
 	assetsUrl: '',
 	adminUrl: '',
 	siteUrl: '',
+	restNonce: '',
 	docsUrl: '',
 	colorMode: 'system',
 	user: { id: 0, displayName: '' },
