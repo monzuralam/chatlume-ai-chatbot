@@ -11,6 +11,7 @@
  */
 import launcherCss from './styles/launcher.css?inline';
 import { CLOSE_ICON, LAUNCHER_ICONS, svgIcon } from './launcher/icons';
+import { showFloating } from './lib/display';
 import { read, write } from './lib/storage';
 import { pageDirection, resolveMode, safeUrl, themeCss } from './lib/theme';
 import type { ChatApp, ThemeConfig, WidgetConfig, WidgetHost } from './types';
@@ -584,7 +585,12 @@ function start(): void {
 
 	// An inline chat on the page replaces the floating launcher.
 	const hasInline = !! document.querySelector( `${ TAG }[data-inline]` );
-	if ( config?.floating && ! hasInline && ! primary ) {
+	if (
+		config?.floating &&
+		! hasInline &&
+		! primary &&
+		showFloating( config.display, window.innerWidth )
+	) {
 		document.body.append( document.createElement( TAG ) );
 	}
 }

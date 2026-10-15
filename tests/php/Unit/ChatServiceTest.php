@@ -621,6 +621,42 @@ class ChatServiceTest extends TestCase {
 		$this->assertSame( 'site_search', $this->service()->handle( $this->request( array( 'debug' => true ) ) )['details']['trace']['route'] );
 	}
 
+	public function test_outside_business_hours_the_bot_sends_the_offline_message(): void {
+		Functions\when( 'wp_timezone' )->justReturn( new \DateTimeZone( 'UTC' ) );
+		$closed = array(
+			'open'  => false,
+			'start' => '09:00',
+			'end'   => '17:00',
+		);
+		$this->settings(
+			array(
+				'display' => array(
+					'hours' => array(
+						'enabled' => true,
+						'days'    => array_fill_keys( array( 'mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun' ), $closed ),
+					),
+				),
+				'chatbot' => array( 'offline_message' => 'Back tomorrow.' ),
+			)
+		);
+
+		$result = $this->service()->handle(
+			$this->request(
+				array(
+					'message' => 'what are your opening hours',
+					'debug'   => true,
+				)
+			)
+		);
+
+		$this->assertSame( 'offline', $result['reply']['source'] );
+		$this->assertSame( 'Back tomorrow.', $result['reply']['text'] );
+		$this->assertTrue( $result['details']['meta']['closed'] );
+		$this->assertSame( 'offline', $result['details']['trace']['route'] );
+		$this->assertSame( 0, $this->quick_answers->counts['hit'], 'Quick answers wait for opening hours too.' );
+		$this->assertSame( array(), $this->provider->calls );
+	}
+
 	public function test_admin_tests_can_skip_the_visitor_rate_limit(): void {
 		$this->settings( array( 'security' => array( 'rate_limit_messages' => 1 ) ) );
 		$service = $this->service();

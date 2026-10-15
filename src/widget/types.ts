@@ -66,12 +66,31 @@ export interface ThemeConfig {
 
 export type WidgetStrings = Record< string, string >;
 
+export interface DayHours {
+	open: boolean;
+	start: string;
+	end: string;
+}
+
+/** Rules applied in the browser (see `Chatlume\Frontend\DisplayRules::client_config()`). */
+export interface DisplayConfig {
+	devices: 'all' | 'desktop' | 'mobile';
+	hours: {
+		enabled: boolean;
+		behavior: 'offline' | 'hide';
+		timezone: string;
+		days: Partial< Record< string, DayHours > >;
+	};
+}
+
 export interface WidgetConfig {
 	rest: string;
 	assets: string;
 	version: string;
 	floating: boolean;
 	preload: boolean;
+	/** Missing in previews. */
+	display?: DisplayConfig;
 	streaming: {
 		enabled: boolean;
 		firstTokenTimeout: number;

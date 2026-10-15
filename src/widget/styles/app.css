@@ -275,6 +275,11 @@
 	box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
 }
 
+.cl-dot-away {
+	background: currentcolor;
+	opacity: 0.55;
+}
+
 .cl-header-actions {
 	position: relative;
 	display: flex;

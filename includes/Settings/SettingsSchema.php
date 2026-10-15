@@ -7,6 +7,7 @@
 
 namespace Chatlume\Settings;
 
+use Chatlume\Frontend\DisplayRules;
 use Chatlume\Providers\ProviderRegistry;
 use Chatlume\Security\IpResolver;
 use WP_Error;
@@ -264,6 +265,12 @@ final class SettingsSchema {
 				if ( 'email' === ( $schema['format'] ?? '' ) && '' !== trim( $value ) && ! is_email( trim( $value ) ) ) {
 					return self::error( $path, __( 'must be a valid email address', 'chatlume-ai-chatbot' ) );
 				}
+				if ( 'time' === ( $schema['format'] ?? '' ) && ! self::is_time( $value ) ) {
+					return self::error( $path, __( 'must be a time such as 09:30', 'chatlume-ai-chatbot' ) );
+				}
+				if ( 'url-pattern' === ( $schema['format'] ?? '' ) && '' === self::url_pattern( $value ) ) {
+					return self::error( $path, __( 'must be a page address such as /shop/*', 'chatlume-ai-chatbot' ) );
+				}
 				return true;
 		}
 	}
@@ -393,6 +400,12 @@ final class SettingsSchema {
 			case 'key':
 				$value = sanitize_key( $value );
 				break;
+			case 'time':
+				$value = self::is_time( trim( $value ) ) ? trim( $value ) : (string) self::defaults( $schema );
+				break;
+			case 'url-pattern':
+				$value = self::url_pattern( $value );
+				break;
 			default:
 				$value = sanitize_text_field( $value );
 		}
@@ -447,6 +460,26 @@ final class SettingsSchema {
 	 */
 	private static function is_http_url( string $url ): bool {
 		return false !== filter_var( $url, FILTER_VALIDATE_URL ) && in_array( strtolower( (string) wp_parse_url( $url, PHP_URL_SCHEME ) ), array( 'http', 'https' ), true );
+	}
+
+	/**
+	 * Whether a string is a 24-hour time (HH:MM).
+	 *
+	 * @param string $value Value.
+	 * @return bool
+	 */
+	private static function is_time( string $value ): bool {
+		return 1 === preg_match( '/^([01]\d|2[0-3]):[0-5]\d$/', $value );
+	}
+
+	/**
+	 * A page address pattern, normalized (see DisplayRules::normalize_pattern()).
+	 *
+	 * @param string $value Value.
+	 * @return string Empty when unusable.
+	 */
+	private static function url_pattern( string $value ): string {
+		return DisplayRules::normalize_pattern( $value );
 	}
 
 	/**

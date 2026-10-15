@@ -13,6 +13,8 @@ interface Props {
 	ui: ThemeUi;
 	strings: WidgetStrings;
 	maxLength: number;
+	/** Outside business hours: no input. */
+	closed?: boolean;
 }
 
 /**
@@ -39,10 +41,13 @@ export function format(
 }
 
 export const Composer = forwardRef< HTMLTextAreaElement, Props >(
-	function ComposerField( { chat, ui, strings, maxLength }, ref ) {
+	function ComposerField(
+		{ chat, ui, strings, maxLength, closed = false },
+		ref
+	) {
 		const [ text, setText ] = useState( '' );
 		const area = useRef< HTMLTextAreaElement | null >( null );
-		const blocked = chat.busy || chat.otherTabBusy;
+		const blocked = chat.busy || chat.otherTabBusy || closed;
 		const length = Array.from( text ).length;
 		const near = length >= Math.floor( maxLength * 0.8 );
 
@@ -55,7 +60,7 @@ export const Composer = forwardRef< HTMLTextAreaElement, Props >(
 		}, [ text ] );
 
 		const submit = () => {
-			if ( text.trim() && chat.send( text ) ) {
+			if ( ! closed && text.trim() && chat.send( text ) ) {
 				setText( '' );
 			}
 		};
@@ -86,7 +91,10 @@ export const Composer = forwardRef< HTMLTextAreaElement, Props >(
 					rows={ 1 }
 					value={ text }
 					maxLength={ maxLength }
-					placeholder={ strings.placeholder }
+					placeholder={
+						closed ? strings.closed : strings.placeholder
+					}
+					disabled={ closed }
 					enterKeyHint="send"
 					autoComplete="off"
 					onInput={ ( event ) =>

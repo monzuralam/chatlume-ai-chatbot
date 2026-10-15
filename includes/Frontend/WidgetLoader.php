@@ -70,7 +70,8 @@ class WidgetLoader {
 			&& ! is_embed()
 			&& ! is_robots()
 			&& ! wp_is_json_request()
-			&& self::is_built();
+			&& self::is_built()
+			&& DisplayRules::matches_request();
 
 		/**
 		 * Filters whether the floating chat widget is shown on the current request.
@@ -165,6 +166,7 @@ class WidgetLoader {
 				'version'   => CHATLUME_VERSION,
 				'floating'  => $floating,
 				'preload'   => (bool) Settings::get( 'display.preload', false ),
+				'display'   => DisplayRules::client_config(),
 				'streaming' => array(
 					'enabled'           => (bool) Settings::get( 'streaming.enabled', true ),
 					'firstTokenTimeout' => (int) Settings::get( 'streaming.first_token_timeout', 20 ),

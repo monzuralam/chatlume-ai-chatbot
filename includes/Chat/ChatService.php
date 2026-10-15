@@ -8,6 +8,7 @@
 namespace Chatlume\Chat;
 
 use Chatlume\Data\QuickAnswerRepository;
+use Chatlume\Frontend\DisplayRules;
 use Chatlume\Knowledge\SiteSearchFallback;
 use Chatlume\Providers\ProviderError;
 use Chatlume\Providers\ProviderRegistry;
@@ -29,7 +30,7 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Answers one visitor message, in this order:
  *
  * 1. Validate: rate limits (per hashed IP and per session), message length,
- *    conversation cap, blocked words.
+ *    conversation cap, business hours (offline message when closed), blocked words.
  * 2. Quick answers: a clear match is served instantly without the AI.
  * 3. Response cache: a recent AI answer to the same first question.
  * 4. Knowledge context (filled by the knowledge base through `chatlume_retrieved_context`).
@@ -216,7 +217,8 @@ class ChatService {
 			$meta['ask_ai_miss'] = (int) $request['quick_answer_id'];
 		}
 
-		$reply = $this->blocked_word_reply( $message )
+		$reply = $this->closed_reply()
+			?? $this->blocked_word_reply( $message )
 			?? $this->quick_answer_reply( $message, $context, ! empty( $request['skip_quick_answers'] ) )
 			?? $this->ai_or_fallback_reply( $message, $conversation, $context );
 
@@ -360,6 +362,22 @@ class ChatService {
 			'user_messages' => 0,
 			'new'           => true,
 		);
+	}
+
+	/**
+	 * Offline message outside business hours (the widget also shows the
+	 * offline state; this covers cached pages and direct requests).
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function closed_reply(): ?array {
+		if ( ! DisplayRules::is_closed_now() ) {
+			return null;
+		}
+
+		$this->trace['route'] = 'offline';
+
+		return self::reply( BotText::offline(), self::SOURCE_OFFLINE, array( 'meta' => array( 'closed' => true ) ) );
 	}
 
 	/**

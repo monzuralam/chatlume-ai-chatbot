@@ -400,6 +400,7 @@ function QuickActionChip( {
  * @param props.ui       Theme options.
  * @param props.strings  Widget strings.
  * @param props.botName  Bot name.
+ * @param props.closed
  * @return Conversation.
  */
 export function Messages( {
@@ -408,12 +409,14 @@ export function Messages( {
 	ui,
 	strings,
 	botName,
+	closed = false,
 }: {
 	chat: Chat;
 	behavior: BehaviorConfig;
 	ui: ThemeUi;
 	strings: WidgetStrings;
 	botName: string;
+	closed?: boolean;
 } ) {
 	const scroller = useRef< HTMLDivElement >( null );
 	const pinned = useRef( true );
@@ -482,28 +485,52 @@ export function Messages( {
 						botName={ botName }
 					/>
 				) ) }
+				{ closed && (
+					<li
+						className="cl-msg cl-msg-bot cl-offline"
+						part="message-bot"
+						role="status"
+					>
+						{ ui.messages.avatar && (
+							<Avatar
+								brand={ ui.brand }
+								name={ botName }
+								size="sm"
+							/>
+						) }
+						<div className="cl-msg-body">
+							<div className="cl-bubble">
+								<div className="cl-md">
+									<p>{ strings.offline }</p>
+								</div>
+							</div>
+						</div>
+					</li>
+				) }
 			</ol>
 
 			{ empty &&
-				( behavior.starter_questions.length > 0 ||
+				( ( ! closed && behavior.starter_questions.length > 0 ) ||
 					behavior.quick_actions.length > 0 ) && (
 					<div className="cl-starters" part="starters">
-						{ behavior.starter_questions.map( ( question ) => (
-							<button
-								key={ question }
-								type="button"
-								className="cl-chip"
-								disabled={ disabled }
-								onClick={ () => chat.send( question ) }
-							>
-								{ question }
-							</button>
-						) ) }
+						{ ( closed ? [] : behavior.starter_questions ).map(
+							( question ) => (
+								<button
+									key={ question }
+									type="button"
+									className="cl-chip"
+									disabled={ disabled }
+									onClick={ () => chat.send( question ) }
+								>
+									{ question }
+								</button>
+							)
+						) }
 						{ behavior.quick_actions.map( ( action ) => (
 							<QuickActionChip
 								key={ action.label }
 								action={ action }
-								disabled={ disabled }
+								disabled={ disabled || closed }
 								onSend={ chat.send }
 							/>
 						) ) }

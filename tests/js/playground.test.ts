@@ -90,6 +90,17 @@ describe( 'explainReply', () => {
 		).toMatch( /provider failed/ );
 	} );
 
+	it( 'explains offline replies outside business hours', () => {
+		expect(
+			explainReply(
+				reply( 'offline', { route: 'offline' }, { closed: true } )
+			)
+		).toMatch( /outside your business hours/ );
+		expect(
+			explainReply( reply( 'offline', { route: 'offline' } ) )
+		).toMatch( /budget is used up/ );
+	} );
+
 	it( 'counts knowledge passages for AI answers', () => {
 		expect(
 			explainReply(

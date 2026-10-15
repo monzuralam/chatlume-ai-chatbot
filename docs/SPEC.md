@@ -594,7 +594,7 @@ Implementation decisions (for review):
 - The chart is a small built-in SVG instead of a charting library: one bar series does not justify a ~100 KB dependency, and it uses the admin's light and dark theme colors directly.
 - Days follow the site's timezone; the Home page became the Dashboard (installation details live in the Health check).
 
-Module 5.5 – Playground ("Test your bot") ✅ (2026-10-15, awaiting review)
+Module 5.5 – Playground ("Test your bot") ✅ (2026-10-15)
 - [x] Chat with the real bot inside the admin; replies render with the same allowlist Markdown as the widget
 - [x] "Why this answer" panel per reply: plain-language explanation, source, provider and model, tokens, estimated cost, time, matched quick answer with its score, response cache state, error type, knowledge passages with scores, and the final prompt sent to the AI (never keys)
 - [x] "Ask AI instead" on quick answers, "Save as quick answer", "Improve this answer" (edit the reply into a quick answer), and "New conversation"
@@ -605,6 +605,21 @@ Implementation decisions (for review):
 - Playground chats run as a logged-out visitor (no user ID or name), so caching and personalization behave exactly as visitors experience them.
 - They are stored as test conversations (hidden from Conversations and statistics) and skip visitor rate limits; AI replies still count toward the budget because they cost real money.
 - The pipeline builds its trace only when the admin-only route asks for it; visitor routes never return it.
+
+Module 5.6 – Display & business hours ✅ (2026-10-15, awaiting review)
+- [x] Chat button on/off and "Open instantly" (preload)
+- [x] Pages: all, only on…, or everywhere except…, matching chosen pages and posts (title search), content types (single items and archives), and page addresses with `*` wildcards
+- [x] Devices (computers and phones, computers only, phones only), visitors (everyone, logged out, logged in) and roles
+- [x] Business hours per day in the site timezone, including hours past midnight and all-day; "Copy Monday" shortcuts; "Open now / Closed now"; outside hours either the offline message (input disabled, header shows "Away", contact buttons still work) or a hidden chat button; the offline message is editable here
+- [x] Copy-ready shortcode and block instructions
+- [x] REST: `GET /display` (post types, roles, chosen page titles, timezone, open now)
+
+Implementation decisions (for review, chosen 2026-10-15):
+- One rule list with a mode (only on / everywhere except) instead of separate include and exclude lists.
+- Page, address, and visitor rules are decided on the server; device and business-hours rules in the browser, because a cached page would otherwise keep the state from when it was cached. The chat endpoints also enforce business hours, so the closed bot never calls the AI or serves quick answers.
+- Outside hours the admin chooses between the offline message (default) and hiding the button; chats placed inside pages always show the offline message.
+- Phones are screens narrower than 768 pixels. "/shop/*" also matches "/shop"; addresses are compared without case, query string, or trailing slash, relative to the site address.
+- Proactive triggers (time on page, scroll depth, exit intent, frequency caps) remain in Phase 7, as agreed.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

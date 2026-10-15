@@ -122,10 +122,56 @@ export const debugSettingsSchema = z
 	} )
 	.strict();
 
+const timeSchema = z.string().regex( /^([01]\d|2[0-3]):[0-5]\d$/ );
+
+export const dayHoursSchema = z
+	.object( {
+		open: z.boolean(),
+		start: timeSchema,
+		end: timeSchema,
+	} )
+	.strict();
+
+export const DAY_KEYS = [
+	'mon',
+	'tue',
+	'wed',
+	'thu',
+	'fri',
+	'sat',
+	'sun',
+] as const;
+
+export type DayKey = ( typeof DAY_KEYS )[ number ];
+
 export const displaySettingsSchema = z
 	.object( {
 		enabled: z.boolean(),
 		preload: z.boolean(),
+		pages_mode: z.enum( [ 'all', 'include', 'exclude' ] ),
+		page_ids: z.array( z.number().int().min( 0 ) ).max( 200 ),
+		post_types: z.array( z.string().max( 20 ) ).max( 50 ),
+		url_patterns: z.array( z.string().min( 1 ).max( 200 ) ).max( 50 ),
+		devices: z.enum( [ 'all', 'desktop', 'mobile' ] ),
+		visitors: z.enum( [ 'all', 'logged_in', 'logged_out' ] ),
+		roles: z.array( z.string().max( 60 ) ).max( 50 ),
+		hours: z
+			.object( {
+				enabled: z.boolean(),
+				behavior: z.enum( [ 'offline', 'hide' ] ),
+				days: z
+					.object( {
+						mon: dayHoursSchema,
+						tue: dayHoursSchema,
+						wed: dayHoursSchema,
+						thu: dayHoursSchema,
+						fri: dayHoursSchema,
+						sat: dayHoursSchema,
+						sun: dayHoursSchema,
+					} )
+					.strict(),
+			} )
+			.strict(),
 	} )
 	.strict();
 

@@ -3,6 +3,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { isClosed } from '../lib/display';
 import { createPreviewChannel, type PreviewBatch } from '../lib/preview';
 import type {
 	BehaviorConfig,
@@ -59,6 +60,21 @@ export function App( {
 	const titleId = 'cl-title';
 
 	useEffect( () => host.onToggle( setOpen ), [ host ] );
+
+	// Outside business hours the chat shows the offline message; checked every minute.
+	const [ closed, setClosed ] = useState(
+		() => ! host.preview && isClosed( config.display )
+	);
+	useEffect( () => {
+		if ( host.preview || ! config.display?.hours.enabled ) {
+			return undefined;
+		}
+		const timer = window.setInterval(
+			() => setClosed( isClosed( config.display ) ),
+			60_000
+		);
+		return () => window.clearInterval( timer );
+	}, [ host.preview, config.display ] );
 
 	useEffect( () => {
 		if ( dialog.current ) {
@@ -302,6 +318,7 @@ export function App( {
 					titleId={ titleId }
 					closable={ ! inline }
 					onClose={ () => host.close() }
+					closed={ closed }
 					onNewChat={ () => {
 						chat.reset();
 						focus();
@@ -313,12 +330,14 @@ export function App( {
 					ui={ ui }
 					strings={ strings }
 					botName={ chat.behavior.bot_name || title }
+					closed={ closed }
 				/>
 				<Composer
 					ref={ input }
 					chat={ chat }
 					ui={ ui }
 					strings={ strings }
+					closed={ closed }
 					maxLength={ chat.behavior.max_message_length || 1000 }
 				/>
 				{ ui.brand.poweredBy && (

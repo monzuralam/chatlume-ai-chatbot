@@ -169,10 +169,91 @@ final class ChatSettingsSchema {
 			__( 'Where the widget appears.', 'chatlume-ai-chatbot' ),
 			array(
 				// Floating launcher on every page; the shortcode and block work regardless.
-				'enabled' => self::boolean( true ),
+				'enabled'      => self::boolean( true ),
 				// Load the chat app while the browser is idle instead of on the first click.
-				'preload' => self::boolean( false ),
+				'preload'      => self::boolean( false ),
+				// Which pages show the floating launcher: all, only matching, or all except matching.
+				'pages_mode'   => self::choice( 'all', array( 'all', 'include', 'exclude' ) ),
+				'page_ids'     => array(
+					'type'     => 'array',
+					'maxItems' => 200,
+					'items'    => self::integer( 0, 0, PHP_INT_MAX ),
+				),
+				'post_types'   => array(
+					'type'     => 'array',
+					'maxItems' => 50,
+					'items'    => self::text( '', 20, 'key' ),
+				),
+				// Paths such as /shop/* (the * matches anything).
+				'url_patterns' => array(
+					'type'     => 'array',
+					'maxItems' => 50,
+					'items'    => self::text( '', 200, 'url-pattern' ),
+				),
+				// Checked in the browser, so cached pages stay correct.
+				'devices'      => self::choice( 'all', array( 'all', 'desktop', 'mobile' ) ),
+				'visitors'     => self::choice( 'all', array( 'all', 'logged_in', 'logged_out' ) ),
+				// Logged-in visitors with any of these roles (empty: any role).
+				'roles'        => array(
+					'type'     => 'array',
+					'maxItems' => 50,
+					'items'    => self::text( '', 60, 'key' ),
+				),
+				'hours'        => self::section(
+					__( 'Business hours in the site timezone.', 'chatlume-ai-chatbot' ),
+					array(
+						'enabled'  => self::boolean( false ),
+						// Outside the hours: show the offline message, or hide the floating launcher.
+						'behavior' => self::choice( 'offline', array( 'offline', 'hide' ) ),
+						'days'     => self::section(
+							__( 'Opening hours per day.', 'chatlume-ai-chatbot' ),
+							array(
+								'mon' => self::day( true ),
+								'tue' => self::day( true ),
+								'wed' => self::day( true ),
+								'thu' => self::day( true ),
+								'fri' => self::day( true ),
+								'sat' => self::day( false ),
+								'sun' => self::day( false ),
+							)
+						),
+					)
+				),
 			)
+		);
+	}
+
+	/**
+	 * One day of business hours. An end before the start runs past midnight;
+	 * equal times mean open all day.
+	 *
+	 * @param bool $open Open by default.
+	 * @return array<string, mixed>
+	 */
+	private static function day( bool $open ): array {
+		return self::section(
+			__( 'Opening hours.', 'chatlume-ai-chatbot' ),
+			array(
+				'open'  => self::boolean( $open ),
+				'start' => self::text( '09:00', 5, 'time' ),
+				'end'   => self::text( '17:00', 5, 'time' ),
+			)
+		);
+	}
+
+	/**
+	 * Choice from a fixed list.
+	 *
+	 * @param string   $fallback Default.
+	 * @param string[] $choices  Allowed values.
+	 * @return array<string, mixed>
+	 */
+	private static function choice( string $fallback, array $choices ): array {
+		return array(
+			'type'    => 'string',
+			'format'  => 'key',
+			'default' => $fallback,
+			'enum'    => $choices,
 		);
 	}
 

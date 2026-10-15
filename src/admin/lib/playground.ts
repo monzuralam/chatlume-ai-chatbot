@@ -116,10 +116,15 @@ export function explainReply( data: PlaygroundReply ): string {
 				'chatlume-ai-chatbot'
 			);
 		case 'offline':
-			return __(
-				'Your AI budget is used up and the bot is set to go offline.',
-				'chatlume-ai-chatbot'
-			);
+			return meta.closed
+				? __(
+						'It is outside your business hours, so the bot sent your offline message.',
+						'chatlume-ai-chatbot'
+					)
+				: __(
+						'Your AI budget is used up and the bot is set to go offline.',
+						'chatlume-ai-chatbot'
+					);
 		case 'site_search':
 			if ( meta.no_provider ) {
 				return __(

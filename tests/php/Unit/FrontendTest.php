@@ -59,9 +59,12 @@ class FrontendTest extends TestCase {
 		$configured->setAccessible( true );
 		$configured->setValue( null, false );
 
-		foreach ( array( 'is_admin', 'is_feed', 'is_embed', 'is_robots', 'wp_is_json_request' ) as $function ) {
+		foreach ( array( 'is_admin', 'is_feed', 'is_embed', 'is_robots', 'wp_is_json_request', 'is_singular', 'is_home', 'is_front_page', 'is_post_type_archive', 'is_user_logged_in' ) as $function ) {
 			Functions\when( $function )->justReturn( false );
 		}
+		Functions\when( 'wp_get_current_user' )->justReturn( (object) array( 'roles' => array() ) );
+		Functions\when( 'home_url' )->justReturn( 'https://example.test/' );
+		Functions\when( 'wp_timezone_string' )->justReturn( 'UTC' );
 		Functions\when( 'rest_url' )->alias(
 			static function ( $path = '' ) {
 				return 'https://example.test/wp-json/' . $path;
@@ -137,7 +140,7 @@ class FrontendTest extends TestCase {
 		$config = WidgetLoader::inline_config( true );
 
 		$this->assertSame(
-			array( 'rest', 'assets', 'version', 'floating', 'preload', 'streaming', 'theme', 'strings' ),
+			array( 'rest', 'assets', 'version', 'floating', 'preload', 'display', 'streaming', 'theme', 'strings' ),
 			array_keys( $config )
 		);
 		$this->assertSame( 'https://example.test/wp-json/chatlume/v1/', $config['rest'] );

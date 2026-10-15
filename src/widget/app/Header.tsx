@@ -16,6 +16,8 @@ interface Props {
 	closable: boolean;
 	onClose: () => void;
 	onNewChat: () => void;
+	/** Outside business hours. */
+	closed?: boolean;
 }
 
 /**
@@ -29,6 +31,7 @@ interface Props {
  * @param props.closable  Whether the window can be closed.
  * @param props.onClose   Closes the window.
  * @param props.onNewChat Starts a new conversation.
+ * @param props.closed    Outside business hours.
  * @return Header.
  */
 export function Header( {
@@ -39,13 +42,14 @@ export function Header( {
 	closable,
 	onClose,
 	onNewChat,
+	closed = false,
 }: Props ) {
 	const [ menuOpen, setMenuOpen ] = useState( false );
 	const menu = useRef< HTMLDivElement >( null );
 	const toggle = useRef< HTMLButtonElement >( null );
 	const brand = ui.brand;
 	const logo = brand.showLogo ? safeUrl( brand.logoUrl ) : '';
-	const status = brand.statusText || strings.online;
+	const status = closed ? strings.away : brand.statusText || strings.online;
 
 	useEffect( () => {
 		if ( ! menuOpen ) {
@@ -92,9 +96,14 @@ export function Header( {
 				{ ( brand.headerSubtitle || brand.showStatus ) && (
 					<p className="cl-subtitle">
 						{ brand.showStatus && (
-							<span className="cl-dot" aria-hidden="true" />
+							<span
+								className={
+									closed ? 'cl-dot cl-dot-away' : 'cl-dot'
+								}
+								aria-hidden="true"
+							/>
 						) }
-						{ brand.headerSubtitle || status }
+						{ closed ? status : brand.headerSubtitle || status }
 					</p>
 				) }
 			</div>

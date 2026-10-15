@@ -4,6 +4,7 @@ import {
 	FlaskConical,
 	LayoutDashboard,
 	MessagesSquare,
+	MonitorSmartphone,
 	Plug,
 	Settings,
 } from 'lucide-react';
@@ -31,6 +32,12 @@ const ConversationsRoute = lazy(
 	() =>
 		import(
 			/* webpackChunkName: "route-conversations" */ './conversations/ConversationsRoute'
+		)
+);
+const DisplayRoute = lazy(
+	() =>
+		import(
+			/* webpackChunkName: "route-display" */ './display/DisplayRoute'
 		)
 );
 const PlaygroundRoute = lazy(
@@ -76,6 +83,15 @@ export function registerBuiltInPages(): void {
 		icon: Bot,
 		component: ChatbotRoute,
 		order: 200,
+	} );
+
+	pageRegistry.register( {
+		id: 'display',
+		title: __( 'Display', 'chatlume-ai-chatbot' ),
+		path: '/display',
+		icon: MonitorSmartphone,
+		component: DisplayRoute,
+		order: 230,
 	} );
 
 	pageRegistry.register( {

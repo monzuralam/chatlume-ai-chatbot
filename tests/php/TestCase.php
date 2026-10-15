@@ -188,6 +188,7 @@ abstract class TestCase extends PolyfillTestCase {
 			}
 		);
 		Functions\when( 'get_locale' )->justReturn( 'en_US' );
+		Functions\when( 'wp_unslash' )->returnArg();
 
 		ProviderRegistry::reset();
 		ModelSuggestions::set_data( null );
