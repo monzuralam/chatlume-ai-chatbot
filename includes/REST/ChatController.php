@@ -10,6 +10,9 @@ namespace Chatlume\REST;
 use Chatlume\Chat\BotText;
 use Chatlume\Chat\ChatException;
 use Chatlume\Chat\ChatService;
+use Chatlume\Chat\StopSignal;
+use Chatlume\Chat\StreamHandler;
+use Chatlume\Appearance\TokenResolver;
 use Chatlume\Data\ConversationRepository;
 use Chatlume\Data\MessageRepository;
 use Chatlume\Data\QuickAnswerRepository;
@@ -31,6 +34,8 @@ if ( ! defined( 'ABSPATH' ) ) {
  * Visitor routes under chatlume/v1:
  * - POST /session  Creates or renews a visitor session (signed token) and returns fresh bot settings.
  * - POST /chat     Answers a message (non-streaming).
+ * - POST /chat/stream  Answers a message as Server-Sent Events.
+ * - POST /chat/stop    Stops a reply that is still streaming.
  * - POST /feedback Thumbs up/down on a reply.
  *
  * These routes are public by design (`__return_true` permission callbacks):
@@ -79,6 +84,15 @@ class ChatController {
 				'args'                => array(
 					'token'    => $token + array( 'default' => '' ),
 					'language' => self::language_arg(),
+					// Version of the widget config the page was served with (detects stale cached pages).
+					'v'        => array(
+						'type'              => 'string',
+						'default'           => '',
+						'maxLength'         => 32,
+						'pattern'           => '^[a-f0-9]*$',
+						'sanitize_callback' => 'sanitize_key',
+						'validate_callback' => 'rest_validate_request_arg',
+					),
 				),
 			)
 		);
@@ -91,51 +105,37 @@ class ChatController {
 				'callback'            => array( $this, 'chat' ),
 				// Public: protected by the signed session token, rate limits, same-origin check, honeypot, and budget caps.
 				'permission_callback' => '__return_true',
+				'args'                => self::chat_args( $token ),
+			)
+		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/chat/stream',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'stream' ),
+				// Public: the same protections as /chat, plus a cap on concurrent streams.
+				'permission_callback' => '__return_true',
+				'args'                => self::chat_args( $token ),
+			)
+		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/chat/stop',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'stop' ),
+				// Public: only the session that started a stream can stop it (signed token); rate limited.
+				'permission_callback' => '__return_true',
 				'args'                => array(
-					'token'              => $token + array( 'required' => true ),
-					'message'            => array(
+					'token'     => $token + array( 'required' => true ),
+					'stream_id' => array(
 						'type'              => 'string',
 						'required'          => true,
-						'minLength'         => 1,
-						'maxLength'         => 8000,
-						'sanitize_callback' => 'sanitize_textarea_field',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
-					'conversation_id'    => self::conversation_arg(),
-					'page_url'           => array(
-						'type'              => 'string',
-						'default'           => '',
-						'maxLength'         => 2048,
-						'sanitize_callback' => array( self::class, 'sanitize_page_url' ),
-						'validate_callback' => 'rest_validate_request_arg',
-					),
-					'page_title'         => array(
-						'type'              => 'string',
-						'default'           => '',
-						'maxLength'         => 300,
-						'sanitize_callback' => 'sanitize_text_field',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
-					'language'           => self::language_arg(),
-					'skip_quick_answers' => array(
-						'type'              => 'boolean',
-						'default'           => false,
-						'sanitize_callback' => 'rest_sanitize_boolean',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
-					'quick_answer_id'    => array(
-						'type'              => 'integer',
-						'default'           => 0,
-						'minimum'           => 0,
-						'sanitize_callback' => 'absint',
-						'validate_callback' => 'rest_validate_request_arg',
-					),
-					// Honeypot: a field hidden from people; bots that fill it are rejected.
-					'website'            => array(
-						'type'              => 'string',
-						'default'           => '',
-						'maxLength'         => 500,
-						'sanitize_callback' => 'sanitize_text_field',
+						'pattern'           => StopSignal::ID_PATTERN,
+						'sanitize_callback' => 'sanitize_key',
 						'validate_callback' => 'rest_validate_request_arg',
 					),
 				),
@@ -173,6 +173,63 @@ class ChatController {
 	}
 
 	/**
+	 * Arguments of /chat and /chat/stream.
+	 *
+	 * @param array<string, mixed> $token Token argument definition.
+	 * @return array<string, array<string, mixed>>
+	 */
+	private static function chat_args( array $token ): array {
+		return array(
+			'token'              => $token + array( 'required' => true ),
+			'message'            => array(
+				'type'              => 'string',
+				'required'          => true,
+				'minLength'         => 1,
+				'maxLength'         => 8000,
+				'sanitize_callback' => 'sanitize_textarea_field',
+				'validate_callback' => 'rest_validate_request_arg',
+			),
+			'conversation_id'    => self::conversation_arg(),
+			'page_url'           => array(
+				'type'              => 'string',
+				'default'           => '',
+				'maxLength'         => 2048,
+				'sanitize_callback' => array( self::class, 'sanitize_page_url' ),
+				'validate_callback' => 'rest_validate_request_arg',
+			),
+			'page_title'         => array(
+				'type'              => 'string',
+				'default'           => '',
+				'maxLength'         => 300,
+				'sanitize_callback' => 'sanitize_text_field',
+				'validate_callback' => 'rest_validate_request_arg',
+			),
+			'language'           => self::language_arg(),
+			'skip_quick_answers' => array(
+				'type'              => 'boolean',
+				'default'           => false,
+				'sanitize_callback' => 'rest_sanitize_boolean',
+				'validate_callback' => 'rest_validate_request_arg',
+			),
+			'quick_answer_id'    => array(
+				'type'              => 'integer',
+				'default'           => 0,
+				'minimum'           => 0,
+				'sanitize_callback' => 'absint',
+				'validate_callback' => 'rest_validate_request_arg',
+			),
+			// Honeypot: a field hidden from people; bots that fill it are rejected.
+			'website'            => array(
+				'type'              => 'string',
+				'default'           => '',
+				'maxLength'         => 500,
+				'sanitize_callback' => 'sanitize_text_field',
+				'validate_callback' => 'rest_validate_request_arg',
+			),
+		);
+	}
+
+	/**
 	 * POST /session.
 	 *
 	 * @param WP_REST_Request $request Request.
@@ -191,16 +248,20 @@ class ChatController {
 		}
 
 		$session = ( new SessionManager() )->start( (string) $request->get_param( 'token' ) );
-
-		return self::no_store(
-			new WP_REST_Response(
-				array(
-					'token'   => $session['token'],
-					'expires' => $session['expires'],
-					'config'  => $this->behavior_config( (string) $request->get_param( 'language' ) ),
-				)
-			)
+		$data    = array(
+			'token'   => $session['token'],
+			'expires' => $session['expires'],
+			'config'  => $this->behavior_config( (string) $request->get_param( 'language' ) ),
 		);
+
+		// A cached page may carry an older look: send the published theme when its version differs.
+		$theme   = TokenResolver::config();
+		$version = (string) $request->get_param( 'v' );
+		if ( '' !== $version && $version !== (string) $theme['v'] ) {
+			$data['theme'] = $theme;
+		}
+
+		return self::no_store( new WP_REST_Response( $data ) );
 	}
 
 	/**
@@ -210,6 +271,105 @@ class ChatController {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function chat( WP_REST_Request $request ) {
+		$prepared = $this->prepare_chat( $request );
+		if ( is_wp_error( $prepared ) ) {
+			return $prepared;
+		}
+
+		try {
+			$result = ( new ChatService() )->handle( $prepared );
+		} catch ( ChatException $exception ) {
+			return self::error( $exception );
+		}
+
+		return self::no_store(
+			new WP_REST_Response(
+				array(
+					'conversation_id' => $result['conversation_id'],
+					'message_id'      => $result['message_id'],
+					'reply'           => $result['reply'],
+				)
+			)
+		);
+	}
+
+	/**
+	 * POST /chat/stream: the reply as Server-Sent Events (see StreamHandler).
+	 *
+	 * Validation errors are normal JSON REST errors; once the stream starts,
+	 * errors arrive as `error` events and the request ends here.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_Error Only when the request is rejected before streaming.
+	 */
+	public function stream( WP_REST_Request $request ) {
+		if ( ! Settings::get( 'streaming.enabled', true ) ) {
+			return new WP_Error( 'chatlume_streaming_disabled', __( 'Streaming is turned off.', 'chatlume-ai-chatbot' ), array( 'status' => 409 ) );
+		}
+
+		$prepared = $this->prepare_chat( $request );
+		if ( is_wp_error( $prepared ) ) {
+			return $prepared;
+		}
+
+		$this->stream_handler()->run( $prepared );
+		$this->finish();
+
+		return new WP_Error( 'chatlume_stream_ended', '', array( 'status' => 200 ) );
+	}
+
+	/**
+	 * POST /chat/stop: asks a running stream of this session to stop.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function stop( WP_REST_Request $request ) {
+		$origin = $this->check_origin( $request );
+		if ( is_wp_error( $origin ) ) {
+			return $origin;
+		}
+
+		$session = ( new SessionManager() )->verify( (string) $request->get_param( 'token' ) );
+		if ( null === $session ) {
+			return self::error( new ChatException( 'invalid_session', __( 'Your chat session expired.', 'chatlume-ai-chatbot' ), 401 ) );
+		}
+
+		$limited = ( new RateLimiter() )->hit( 'stop:' . $session['sid'], 60, 10 * MINUTE_IN_SECONDS );
+		if ( ! $limited['allowed'] ) {
+			return self::error( new ChatException( 'rate_limited', BotText::rate_limited(), 429, $limited['retry_after'] ) );
+		}
+
+		( new StopSignal() )->request( StopSignal::key( $session['sid'], (string) $request->get_param( 'stream_id' ) ) );
+
+		return self::no_store( new WP_REST_Response( array( 'stopping' => true ) ) );
+	}
+
+	/**
+	 * Stream handler (replaceable in tests).
+	 *
+	 * @return StreamHandler
+	 */
+	protected function stream_handler(): StreamHandler {
+		return new StreamHandler();
+	}
+
+	/**
+	 * Ends the request after a stream, so the REST server adds nothing to it.
+	 *
+	 * @return void
+	 */
+	protected function finish(): void {
+		exit;
+	}
+
+	/**
+	 * Shared checks for /chat and /chat/stream, and the pipeline request.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return array<string, mixed>|WP_Error
+	 */
+	private function prepare_chat( WP_REST_Request $request ) {
 		$origin = $this->check_origin( $request );
 		if ( is_wp_error( $origin ) ) {
 			return $origin;
@@ -226,34 +386,18 @@ class ChatController {
 
 		$user = wp_get_current_user();
 
-		try {
-			$result = ( new ChatService() )->handle(
-				array(
-					'session_id'         => $session['sid'],
-					'message'            => (string) $request->get_param( 'message' ),
-					'conversation_id'    => (string) $request->get_param( 'conversation_id' ),
-					'page_url'           => (string) $request->get_param( 'page_url' ),
-					'page_title'         => (string) $request->get_param( 'page_title' ),
-					'language'           => self::language( (string) $request->get_param( 'language' ) ),
-					'user_id'            => (int) $user->ID,
-					'user_name'          => $user->ID ? (string) $user->display_name : '',
-					'visitor_hash'       => IpResolver::visitor_hash(),
-					'skip_quick_answers' => (bool) $request->get_param( 'skip_quick_answers' ),
-					'quick_answer_id'    => (int) $request->get_param( 'quick_answer_id' ),
-				)
-			);
-		} catch ( ChatException $exception ) {
-			return self::error( $exception );
-		}
-
-		return self::no_store(
-			new WP_REST_Response(
-				array(
-					'conversation_id' => $result['conversation_id'],
-					'message_id'      => $result['message_id'],
-					'reply'           => $result['reply'],
-				)
-			)
+		return array(
+			'session_id'         => $session['sid'],
+			'message'            => (string) $request->get_param( 'message' ),
+			'conversation_id'    => (string) $request->get_param( 'conversation_id' ),
+			'page_url'           => (string) $request->get_param( 'page_url' ),
+			'page_title'         => (string) $request->get_param( 'page_title' ),
+			'language'           => self::language( (string) $request->get_param( 'language' ) ),
+			'user_id'            => (int) $user->ID,
+			'user_name'          => $user->ID ? (string) $user->display_name : '',
+			'visitor_hash'       => IpResolver::visitor_hash(),
+			'skip_quick_answers' => (bool) $request->get_param( 'skip_quick_answers' ),
+			'quick_answer_id'    => (int) $request->get_param( 'quick_answer_id' ),
 		);
 	}
 
@@ -323,9 +467,64 @@ class ChatController {
 			'bot_name'            => BotText::bot_name(),
 			'welcome_message'     => BotText::welcome(),
 			'starter_questions'   => array_slice( $starters, 0, 4 ),
+			'quick_actions'       => self::quick_actions(),
 			'max_message_length'  => (int) Settings::get( 'chatbot.max_message_length', 1000 ),
 			'store_conversations' => (bool) Settings::get( 'privacy.store_conversations', true ),
 		);
+	}
+
+	/**
+	 * Quick action buttons, resolved to safe links (or a preset message).
+	 * Actions with no label or an unusable value are left out.
+	 *
+	 * @return array<int, array{label: string, type: string, href?: string, message?: string}>
+	 */
+	public static function quick_actions(): array {
+		$actions = array();
+
+		foreach ( (array) Settings::get( 'chatbot.quick_actions', array() ) as $action ) {
+			$label = trim( (string) ( $action['label'] ?? '' ) );
+			$type  = (string) ( $action['type'] ?? 'url' );
+			$value = trim( (string) ( $action['value'] ?? '' ) );
+
+			if ( '' === $label || '' === $value ) {
+				continue;
+			}
+
+			switch ( $type ) {
+				case 'message':
+					$actions[] = array(
+						'label'   => $label,
+						'type'    => $type,
+						'message' => $value,
+					);
+					continue 2;
+				case 'email':
+					$email = sanitize_email( $value );
+					$href  = is_email( $email ) ? 'mailto:' . $email : '';
+					break;
+				case 'phone':
+					$digits = (string) preg_replace( '/[^0-9+]/', '', $value );
+					$href   = strlen( $digits ) >= 3 ? 'tel:' . $digits : '';
+					break;
+				case 'whatsapp':
+					$digits = (string) preg_replace( '/\D/', '', $value );
+					$href   = strlen( $digits ) >= 6 ? 'https://wa.me/' . $digits : '';
+					break;
+				default:
+					$href = esc_url_raw( $value, array( 'http', 'https' ) );
+			}
+
+			if ( '' !== $href ) {
+				$actions[] = array(
+					'label' => $label,
+					'type'  => $type,
+					'href'  => $href,
+				);
+			}
+		}
+
+		return $actions;
 	}
 
 	/**

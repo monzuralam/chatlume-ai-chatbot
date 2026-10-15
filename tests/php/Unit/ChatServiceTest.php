@@ -454,4 +454,72 @@ class ChatServiceTest extends TestCase {
 			$reply['sources']
 		);
 	}
+
+	public function test_streaming_forwards_tokens_and_reports_the_conversation(): void {
+		$tokens  = array();
+		$started = array();
+		$result  = $this->service()->handle(
+			$this->request(),
+			array(
+				'on_start'     => static function ( string $id ) use ( &$started ) {
+					$started[] = $id;
+				},
+				'on_token'     => static function ( string $text ) use ( &$tokens ) {
+					$tokens[] = $text;
+				},
+				'should_abort' => static function () {
+					return '';
+				},
+			)
+		);
+
+		$this->assertSame( array( 'ok' ), $tokens );
+		$this->assertSame( array( $result['conversation_id'] ), $started );
+		$this->assertSame( array( array( 'stream', 'm1' ) ), $this->provider->calls );
+		$this->assertArrayNotHasKey( 'interrupted', $result['reply'] );
+	}
+
+	public function test_quick_answers_are_not_streamed(): void {
+		$tokens = array();
+		$reply  = $this->service()->handle(
+			$this->request( array( 'message' => 'What are your opening hours?' ) ),
+			array(
+				'on_token' => static function ( string $text ) use ( &$tokens ) {
+					$tokens[] = $text;
+				},
+			)
+		)['reply'];
+
+		$this->assertSame( 'quick_answer', $reply['source'] );
+		$this->assertSame( array(), $tokens, 'The stream handler sends whole replies itself.' );
+	}
+
+	public function test_a_broken_stream_keeps_the_part_already_shown(): void {
+		$this->options[ Settings::OPTION ]['providers']['primary']['model'] = 'broken';
+		$this->provider->failing               = array( 'broken' => ProviderError::SERVER_ERROR );
+		$this->provider->tokens_before_failure = array( 'Half ', 'an answer' );
+
+		$result = $this->service()->handle(
+			$this->request(),
+			array( 'on_token' => static function () {} )
+		);
+
+		$this->assertSame( 'ai', $result['reply']['source'] );
+		$this->assertSame( 'Half an answer', $result['reply']['text'] );
+		$this->assertSame( 'error', $result['reply']['interrupted'] );
+		$this->assertSame( 'server_error', $result['details']['error_type'] );
+	}
+
+	public function test_stopped_replies_are_kept_but_never_cached(): void {
+		$this->provider->finish_reason = 'aborted';
+		$service                       = $this->service();
+
+		$first = $service->handle( $this->request( array( 'session_id' => 'a' ) ), array( 'on_token' => static function () {} ) );
+		$this->assertSame( 'stopped', $first['reply']['interrupted'] );
+
+		$this->provider->finish_reason = 'stop';
+		$second                        = $service->handle( $this->request( array( 'session_id' => 'b' ) ) );
+		$this->assertSame( 'ai', $second['reply']['source'], 'A stopped answer is not served from the cache.' );
+		$this->assertCount( 2, $this->provider->calls );
+	}
 }

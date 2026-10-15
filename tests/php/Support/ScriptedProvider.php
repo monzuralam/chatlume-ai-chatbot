@@ -45,6 +45,13 @@ class ScriptedProvider implements ProviderInterface {
 	public array $tokens_before_failure = array();
 
 	/**
+	 * Finish reason of successful answers (for example 'aborted').
+	 *
+	 * @var string
+	 */
+	public string $finish_reason = 'stop';
+
+	/**
 	 * Calls received: [method, model].
 	 *
 	 * @var array<int, array{0: string, 1: string}>
@@ -119,9 +126,10 @@ class ScriptedProvider implements ProviderInterface {
 
 		return new ChatResponse(
 			array(
-				'text'     => 'ok',
-				'provider' => $this->id,
-				'model'    => $model,
+				'text'          => 'ok',
+				'provider'      => $this->id,
+				'model'         => $model,
+				'finish_reason' => $this->finish_reason,
 			)
 		);
 	}

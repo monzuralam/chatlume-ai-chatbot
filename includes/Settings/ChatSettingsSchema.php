@@ -41,6 +41,24 @@ final class ChatSettingsSchema {
 					'maxItems' => 4,
 					'items'    => self::text( '', 120 ),
 				),
+				// Buttons in the empty chat: open a URL, email, call, WhatsApp, or send a preset message.
+				'quick_actions'       => array(
+					'type'     => 'array',
+					'maxItems' => 4,
+					'items'    => array(
+						'type'       => 'object',
+						'properties' => array(
+							'label' => self::text( '', 40 ),
+							'type'  => array(
+								'type'    => 'string',
+								'format'  => 'key',
+								'default' => 'url',
+								'enum'    => array( 'url', 'email', 'phone', 'whatsapp', 'message' ),
+							),
+							'value' => self::text( '', 500 ),
+						),
+					),
+				),
 				'temperature'         => self::number( 0.3, 0, 2 ),
 				'max_output_tokens'   => self::integer( 600, 50, 4000 ),
 				'history_window'      => self::integer( 10, 0, 30 ),
@@ -137,6 +155,43 @@ final class ChatSettingsSchema {
 					'enum'    => array( 'site_search', 'offline', 'fallback_model' ),
 				),
 				'alert_email'              => self::text( '', 100, 'email' ),
+			)
+		);
+	}
+
+	/**
+	 * Widget display.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function display(): array {
+		return self::section(
+			__( 'Where the widget appears.', 'chatlume-ai-chatbot' ),
+			array(
+				// Floating launcher on every page; the shortcode and block work regardless.
+				'enabled' => self::boolean( true ),
+				// Load the chat app while the browser is idle instead of on the first click.
+				'preload' => self::boolean( false ),
+			)
+		);
+	}
+
+	/**
+	 * Streaming and server capacity.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function streaming(): array {
+		return self::section(
+			__( 'Streaming replies.', 'chatlume-ai-chatbot' ),
+			array(
+				'enabled'             => self::boolean( true ),
+				// Protects small hosts: extra visitors get non-streaming replies.
+				'max_concurrent'      => self::integer( 3, 1, 20 ),
+				// Always kept below the host's max_execution_time.
+				'max_duration'        => self::integer( 60, 10, 300 ),
+				// The widget shows "Retry" if no text arrives in this time.
+				'first_token_timeout' => self::integer( 20, 5, 120 ),
 			)
 		);
 	}

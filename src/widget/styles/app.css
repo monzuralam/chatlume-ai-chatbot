@@ -1,0 +1,1011 @@
+/*
+ * Chat window styles (shadow root, loaded with the chat app).
+ * Inside the window, spacing uses logical properties so RTL pages mirror it.
+ */
+
+.cl-window {
+	position: fixed;
+	right: calc(var(--chatlume-offset-x) + env(safe-area-inset-right, 0px));
+	bottom: calc(var(--chatlume-offset-y) + var(--chatlume-launcher-size) + 16px + env(safe-area-inset-bottom, 0px));
+	z-index: var(--chatlume-z);
+	display: flex;
+	flex-direction: column;
+	width: min(var(--chatlume-width), calc(100vw - 2 * var(--chatlume-offset-x)));
+	height: min(var(--chatlume-height), calc(100vh - var(--chatlume-offset-y) - var(--chatlume-launcher-size) - 40px));
+	overflow: hidden;
+	border: 1px solid var(--chatlume-border);
+	border-radius: var(--chatlume-radius-window);
+	background: var(--chatlume-background);
+	color: var(--chatlume-bot-text);
+	box-shadow: var(--chatlume-shadow);
+	font-weight: var(--chatlume-message-weight);
+	opacity: 0;
+	visibility: hidden;
+	transform: translateY(12px) scale(0.96);
+	transform-origin: bottom right;
+	transition: opacity var(--chatlume-duration) ease, transform var(--chatlume-duration) cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s linear var(--chatlume-duration);
+	outline: none;
+}
+
+.cl-root[data-position="left"] .cl-window {
+	right: auto;
+	left: calc(var(--chatlume-offset-x) + env(safe-area-inset-left, 0px));
+	transform-origin: bottom left;
+}
+
+.cl-window[data-open] {
+	opacity: 1;
+	visibility: visible;
+	transform: none;
+	transition: opacity var(--chatlume-duration) ease, transform var(--chatlume-duration) cubic-bezier(0.2, 0.8, 0.2, 1), visibility 0s;
+}
+
+.cl-window[data-motion="slide"] {
+	transform: translateY(32px);
+}
+
+.cl-window[data-motion="none"] {
+	transform: none;
+	transition: none;
+}
+
+.cl-window[data-motion][data-open] {
+	transform: none;
+}
+
+/* Side panel. */
+.cl-root[data-style="panel"] .cl-window {
+	top: 0;
+	right: 0;
+	bottom: 0;
+	width: min(var(--chatlume-width), 100vw);
+	height: auto;
+	border-width: 0 0 0 1px;
+	border-radius: 0;
+	transform: translateX(100%);
+}
+
+.cl-root[data-style="panel"][data-position="left"] .cl-window {
+	right: auto;
+	left: 0;
+	border-width: 0 1px 0 0;
+	transform: translateX(-100%);
+}
+
+/* Centered modal. */
+.cl-root[data-style="modal"] .cl-window {
+	top: 50%;
+	right: auto;
+	bottom: auto;
+	left: 50%;
+	width: min(calc(var(--chatlume-width) + 140px), calc(100vw - 32px));
+	height: min(var(--chatlume-height), calc(100vh - 48px));
+	transform: translate(-50%, -46%) scale(0.97);
+	transform-origin: center;
+}
+
+.cl-root[data-style="panel"] .cl-window[data-open],
+.cl-root[data-style="modal"] .cl-window[data-open] {
+	transform: translate(0, 0);
+}
+
+.cl-root[data-style="modal"] .cl-window[data-open] {
+	transform: translate(-50%, -50%);
+}
+
+.cl-root[data-style="panel"] .cl-window[data-motion="none"],
+.cl-root[data-style="modal"] .cl-window[data-motion="none"] {
+	transition: none;
+}
+
+.cl-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: var(--chatlume-z);
+	background: rgba(10, 12, 20, 0.45);
+	opacity: 0;
+	visibility: hidden;
+	transition: opacity var(--chatlume-duration) ease, visibility 0s linear var(--chatlume-duration);
+}
+
+.cl-backdrop[data-open] {
+	opacity: 1;
+	visibility: visible;
+	transition: opacity var(--chatlume-duration) ease, visibility 0s;
+}
+
+/* Inline (shortcode and block). */
+.cl-root[data-inline] .cl-window {
+	position: relative;
+	inset: auto;
+	z-index: auto;
+	width: 100%;
+	height: 100%;
+	box-shadow: none;
+	opacity: 1;
+	visibility: visible;
+	transform: none;
+	transition: none;
+}
+
+/* Mobile full screen. */
+.cl-root[data-fullscreen] .cl-window {
+	inset: 0;
+	width: 100%;
+	height: var(--cl-vh, 100vh);
+	border: 0;
+	border-radius: 0;
+	padding-bottom: env(safe-area-inset-bottom, 0);
+	transform: translateY(24px);
+}
+
+.cl-root[data-fullscreen] .cl-window[data-open] {
+	transform: none;
+}
+
+.cl-root[data-fullscreen] .cl-header {
+	padding-top: max(var(--chatlume-space), env(safe-area-inset-top, 0px));
+}
+
+.cl-root[data-compact]:not([data-fullscreen]) .cl-window {
+	right: var(--chatlume-mobile-offset-x);
+	bottom: calc(var(--chatlume-mobile-offset-y) + var(--chatlume-launcher-size) + 12px);
+	width: calc(100vw - 2 * var(--chatlume-mobile-offset-x));
+}
+
+.cl-root[data-compact][data-position="left"]:not([data-fullscreen]) .cl-window {
+	right: auto;
+	left: var(--chatlume-mobile-offset-x);
+}
+
+/* Preview inside a container. */
+.cl-root[data-contained] .cl-window,
+.cl-root[data-contained] .cl-backdrop {
+	position: absolute;
+}
+
+/* Backgrounds. */
+.cl-window[data-bg="gradient"] {
+	background: linear-gradient(180deg, var(--chatlume-surface), var(--chatlume-background) 60%);
+}
+
+.cl-window[data-bg="pattern"] .cl-scroll {
+	background-repeat: repeat;
+}
+
+.cl-window[data-pattern="dots"] .cl-scroll {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16'%3E%3Ccircle cx='2' cy='2' r='1.2' fill='%23808080' fill-opacity='.22'/%3E%3C/svg%3E");
+}
+
+.cl-window[data-pattern="grid"] .cl-scroll {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24'%3E%3Cpath d='M24 0H0V24' fill='none' stroke='%23808080' stroke-opacity='.14'/%3E%3C/svg%3E");
+}
+
+.cl-window[data-pattern="waves"] .cl-scroll {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='20'%3E%3Cpath d='M0 10q10-10 20 0t20 0' fill='none' stroke='%23808080' stroke-opacity='.16'/%3E%3C/svg%3E");
+}
+
+.cl-window[data-pattern="diagonal"] .cl-scroll {
+	background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12'%3E%3Cpath d='M0 12L12 0' stroke='%23808080' stroke-opacity='.14'/%3E%3C/svg%3E");
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+
+	.cl-window[data-glass] {
+		background: color-mix(in srgb, var(--chatlume-background) 78%, transparent);
+		-webkit-backdrop-filter: blur(18px) saturate(1.4);
+		backdrop-filter: blur(18px) saturate(1.4);
+	}
+}
+
+/* Header. */
+.cl-header {
+	position: relative;
+	display: flex;
+	flex: none;
+	align-items: center;
+	gap: 10px;
+	padding: var(--chatlume-space) calc(var(--chatlume-space) + 2px);
+	background: var(--chatlume-header-fill);
+	color: var(--chatlume-header-ink);
+}
+
+.cl-header-minimal {
+	border-bottom: 1px solid var(--chatlume-border);
+}
+
+.cl-heading {
+	flex: 1;
+	min-width: 0;
+}
+
+.cl-logo {
+	display: block;
+	max-width: 120px;
+	max-height: 22px;
+	margin-bottom: 2px;
+	object-fit: contain;
+}
+
+.cl-title {
+	margin: 0;
+	overflow: hidden;
+	color: inherit;
+	font-family: var(--chatlume-font-heading);
+	font-size: 1.05em;
+	font-weight: var(--chatlume-title-weight);
+	line-height: 1.3;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.cl-subtitle {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	margin: 1px 0 0;
+	overflow: hidden;
+	font-size: 0.82em;
+	opacity: 0.85;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.cl-dot {
+	flex: none;
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--chatlume-success);
+	box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+}
+
+.cl-header-actions {
+	position: relative;
+	display: flex;
+	flex: none;
+	gap: 2px;
+}
+
+.cl-icon-button {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 34px;
+	height: 34px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: var(--chatlume-radius-button);
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+}
+
+.cl-icon-button:hover {
+	background: rgba(127, 127, 127, 0.18);
+}
+
+.cl-icon-button:focus-visible,
+.cl-window button:focus-visible,
+.cl-window a:focus-visible {
+	outline: 2px solid var(--chatlume-primary);
+	outline-offset: 2px;
+}
+
+.cl-header .cl-icon-button:focus-visible {
+	outline-color: currentcolor;
+}
+
+.cl-icon {
+	width: 18px;
+	height: 18px;
+	flex: none;
+}
+
+.cl-menu {
+	position: absolute;
+	top: calc(100% + 6px);
+	inset-inline-end: 0;
+	z-index: 2;
+	min-width: 190px;
+	padding: 6px;
+	border: 1px solid var(--chatlume-border);
+	border-radius: var(--chatlume-radius-card);
+	background: var(--chatlume-background);
+	color: var(--chatlume-bot-text);
+	box-shadow: var(--chatlume-shadow);
+}
+
+.cl-menu button {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	margin: 0;
+	padding: 9px 10px;
+	border: 0;
+	border-radius: calc(var(--chatlume-radius-card) - 4px);
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	text-align: start;
+	cursor: pointer;
+}
+
+.cl-menu button:hover,
+.cl-menu button:focus-visible {
+	background: var(--chatlume-surface);
+}
+
+/* Avatar. */
+.cl-avatar {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: 38px;
+	height: 38px;
+	overflow: hidden;
+	border-radius: 50%;
+	background: var(--chatlume-primary);
+	color: var(--chatlume-on-primary);
+	font-size: 15px;
+	font-weight: 600;
+}
+
+.cl-header .cl-avatar {
+	box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.4);
+}
+
+.cl-avatar-sm {
+	width: 28px;
+	height: 28px;
+	font-size: 12px;
+}
+
+.cl-avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+.cl-avatar svg {
+	width: 62%;
+	height: 62%;
+}
+
+/* Conversation. */
+.cl-scroll {
+	flex: 1;
+	min-height: 0;
+	padding: var(--chatlume-space);
+	overflow-x: hidden;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	scrollbar-width: thin;
+}
+
+.cl-messages {
+	display: flex;
+	flex-direction: column;
+	gap: var(--chatlume-space);
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.cl-msg {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+	max-width: 100%;
+}
+
+.cl-window[data-animate] .cl-msg {
+	animation: cl-in var(--chatlume-duration) ease both;
+}
+
+.cl-msg-user {
+	flex-direction: row-reverse;
+}
+
+.cl-msg-body {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 6px;
+	min-width: 0;
+	max-width: 84%;
+}
+
+.cl-msg-user .cl-msg-body {
+	align-items: flex-end;
+}
+
+.cl-bubble {
+	max-width: 100%;
+	padding: 9px 13px;
+	border-radius: var(--chatlume-radius-bubble);
+	background: var(--chatlume-bot-bubble);
+	color: var(--chatlume-bot-text);
+	overflow-wrap: anywhere;
+}
+
+.cl-msg-bot .cl-bubble {
+	border-end-start-radius: min(6px, var(--chatlume-radius-bubble));
+}
+
+.cl-msg-user .cl-bubble {
+	border-end-end-radius: min(6px, var(--chatlume-radius-bubble));
+	background: var(--chatlume-user-bubble);
+	color: var(--chatlume-user-text);
+}
+
+.cl-user-text {
+	white-space: pre-wrap;
+}
+
+.cl-window[data-messages="outlined"] .cl-bubble {
+	border: 1px solid var(--chatlume-border);
+	background: transparent;
+	color: var(--chatlume-bot-text);
+}
+
+.cl-window[data-messages="outlined"] .cl-msg-user .cl-bubble {
+	border-color: var(--chatlume-user-bubble);
+}
+
+.cl-window[data-messages="flat"] .cl-msg,
+.cl-window[data-messages="flat"] .cl-msg-user {
+	flex-direction: row;
+}
+
+.cl-window[data-messages="flat"] .cl-msg-body,
+.cl-window[data-messages="flat"] .cl-msg-user .cl-msg-body {
+	align-items: stretch;
+	max-width: 100%;
+	flex: 1;
+}
+
+.cl-window[data-messages="flat"] .cl-bubble {
+	padding: 2px 0;
+	border-radius: 0;
+	background: transparent;
+	color: var(--chatlume-bot-text);
+}
+
+.cl-window[data-messages="flat"] .cl-msg-user .cl-bubble {
+	padding: 8px 12px;
+	border-radius: var(--chatlume-radius-bubble);
+	background: var(--chatlume-surface);
+	color: var(--chatlume-bot-text);
+}
+
+/* Markdown. */
+.cl-md > * {
+	margin: 0;
+}
+
+.cl-md > * + * {
+	margin-top: 0.6em;
+}
+
+.cl-md a {
+	color: var(--chatlume-link);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.cl-msg-user .cl-md a {
+	color: inherit;
+}
+
+.cl-md ul,
+.cl-md ol {
+	padding-inline-start: 1.3em;
+}
+
+.cl-md li + li {
+	margin-top: 0.25em;
+}
+
+.cl-md blockquote {
+	padding-inline-start: 10px;
+	border-inline-start: 3px solid var(--chatlume-border);
+	color: var(--chatlume-muted);
+}
+
+.cl-md hr {
+	border: 0;
+	border-top: 1px solid var(--chatlume-border);
+}
+
+.cl-md code {
+	padding: 1px 5px;
+	border-radius: 5px;
+	background: rgba(127, 127, 127, 0.16);
+	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+	font-size: 0.88em;
+}
+
+.cl-h {
+	font-weight: 700;
+}
+
+.cl-h1 {
+	font-size: 1.15em;
+}
+
+.cl-h2 {
+	font-size: 1.07em;
+}
+
+.cl-code {
+	overflow: hidden;
+	border: 1px solid var(--chatlume-border);
+	border-radius: 10px;
+	background: var(--chatlume-surface);
+	color: var(--chatlume-bot-text);
+}
+
+.cl-code-bar {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 4px 6px 4px 10px;
+	border-bottom: 1px solid var(--chatlume-border);
+	color: var(--chatlume-muted);
+	font-size: 0.78em;
+}
+
+.cl-code-copy {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	margin: 0;
+	padding: 3px 6px;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+
+.cl-code-copy:hover {
+	background: rgba(127, 127, 127, 0.16);
+}
+
+.cl-code-copy .cl-icon {
+	width: 14px;
+	height: 14px;
+}
+
+.cl-code pre {
+	margin: 0;
+	padding: 10px;
+	overflow-x: auto;
+	direction: ltr;
+	text-align: left;
+}
+
+.cl-code pre code {
+	padding: 0;
+	background: none;
+	font-size: 0.85em;
+	white-space: pre;
+}
+
+/* Streaming caret. */
+.cl-status-streaming .cl-md > :last-child:not(ul, ol, .cl-code)::after,
+.cl-status-streaming .cl-md > :is(ul, ol):last-child > li:last-child::after {
+	content: "";
+	display: inline-block;
+	width: 0.45em;
+	height: 1em;
+	margin-inline-start: 2px;
+	border-radius: 2px;
+	background: currentcolor;
+	vertical-align: text-bottom;
+	opacity: 0.5;
+	animation: cl-blink 1s steps(2, start) infinite;
+}
+
+/* Typing indicator. */
+.cl-typing {
+	display: inline-flex;
+	gap: 4px;
+	padding: 4px 2px;
+}
+
+.cl-typing span {
+	width: 7px;
+	height: 7px;
+	border-radius: 50%;
+	background: currentcolor;
+	opacity: 0.4;
+	animation: cl-typing 1.2s ease-in-out infinite;
+}
+
+.cl-typing span:nth-child(2) {
+	animation-delay: 0.15s;
+}
+
+.cl-typing span:nth-child(3) {
+	animation-delay: 0.3s;
+}
+
+/* Sources. */
+.cl-sources {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	width: 100%;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+
+.cl-source {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 8px 11px;
+	border: 1px solid var(--chatlume-border);
+	border-radius: var(--chatlume-radius-card);
+	background: var(--chatlume-source-card);
+	color: var(--chatlume-bot-text);
+	text-decoration: none;
+	transition: border-color var(--chatlume-duration) ease;
+}
+
+.cl-source:hover {
+	border-color: var(--chatlume-primary);
+}
+
+.cl-source-title {
+	overflow: hidden;
+	font-size: 0.9em;
+	font-weight: 600;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.cl-source-domain {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	color: var(--chatlume-muted);
+	font-size: 0.78em;
+}
+
+.cl-source-domain .cl-icon {
+	width: 12px;
+	height: 12px;
+}
+
+/* Chips, notes, errors. */
+.cl-starters {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	margin-top: var(--chatlume-space);
+}
+
+.cl-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	max-width: 100%;
+	margin: 0;
+	padding: 7px 12px;
+	border: 1px solid var(--chatlume-primary);
+	border-radius: var(--chatlume-radius-button);
+	background: transparent;
+	color: var(--chatlume-link);
+	font: inherit;
+	font-size: 0.9em;
+	line-height: 1.3;
+	text-align: start;
+	text-decoration: none;
+	cursor: pointer;
+	transition: background var(--chatlume-duration) ease, color var(--chatlume-duration) ease;
+}
+
+.cl-chip:hover:not(:disabled) {
+	background: var(--chatlume-primary);
+	color: var(--chatlume-on-primary);
+}
+
+.cl-chip:disabled {
+	cursor: not-allowed;
+	opacity: 0.5;
+}
+
+.cl-chip .cl-icon {
+	width: 15px;
+	height: 15px;
+}
+
+.cl-note {
+	margin: 0;
+	color: var(--chatlume-muted);
+	font-size: 0.82em;
+}
+
+.cl-note-center {
+	margin-top: var(--chatlume-space);
+	text-align: center;
+}
+
+.cl-error {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+	padding: 9px 12px;
+	border: 1px solid var(--chatlume-error);
+	border-radius: var(--chatlume-radius-bubble);
+	color: var(--chatlume-error);
+	font-size: 0.92em;
+}
+
+.cl-error p {
+	margin: 0;
+}
+
+.cl-error .cl-chip {
+	border-color: currentcolor;
+	color: inherit;
+}
+
+.cl-error .cl-chip:hover {
+	background: var(--chatlume-error);
+	color: var(--chatlume-background);
+}
+
+/* Message meta: time and actions. */
+.cl-meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 4px 8px;
+	min-height: 18px;
+	color: var(--chatlume-muted);
+	font-size: 0.75em;
+}
+
+.cl-meta:empty {
+	display: none;
+}
+
+.cl-meta-hover time {
+	opacity: 0;
+	transition: opacity var(--chatlume-duration) ease;
+}
+
+.cl-msg:hover .cl-meta-hover time,
+.cl-msg:focus-within .cl-meta-hover time {
+	opacity: 1;
+}
+
+.cl-actions {
+	display: inline-flex;
+	gap: 2px;
+}
+
+.cl-action {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	width: 26px;
+	height: 26px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 6px;
+	background: transparent;
+	color: inherit;
+	cursor: pointer;
+}
+
+.cl-action:hover {
+	background: var(--chatlume-surface);
+	color: var(--chatlume-bot-text);
+}
+
+.cl-action[aria-pressed="true"] {
+	color: var(--chatlume-primary);
+}
+
+.cl-action .cl-icon {
+	width: 15px;
+	height: 15px;
+}
+
+.cl-thanks {
+	color: var(--chatlume-success);
+}
+
+/* Composer. */
+.cl-composer {
+	position: relative;
+	display: flex;
+	flex: none;
+	align-items: flex-end;
+	gap: 8px;
+	margin: 0 var(--chatlume-space) var(--chatlume-space);
+	padding: 6px 6px 6px 14px;
+	border: 1px solid var(--chatlume-border);
+	border-radius: var(--chatlume-radius-input);
+	background: var(--chatlume-input-background);
+	transition: border-color var(--chatlume-duration) ease, box-shadow var(--chatlume-duration) ease;
+}
+
+.cl-composer:focus-within {
+	border-color: var(--chatlume-primary);
+	box-shadow: 0 0 0 3px color-mix(in srgb, var(--chatlume-primary) 22%, transparent);
+}
+
+.cl-composer-bar {
+	margin: 0;
+	padding: 10px 10px 10px var(--chatlume-space);
+	border-width: 1px 0 0;
+	border-radius: 0;
+}
+
+.cl-composer-bar:focus-within {
+	box-shadow: none;
+}
+
+.cl-input {
+	flex: 1;
+	min-width: 0;
+	max-height: 140px;
+	margin: 0;
+	padding: 7px 0;
+	border: 0;
+	background: transparent;
+	color: var(--chatlume-input-text);
+	font: inherit;
+	line-height: 1.45;
+	resize: none;
+	outline: none;
+	box-shadow: none;
+}
+
+.cl-input::placeholder {
+	color: var(--chatlume-muted);
+	opacity: 1;
+}
+
+.cl-root[data-compact] .cl-input {
+	font-size: max(16px, 1em);
+}
+
+@media (pointer: coarse) {
+
+	.cl-input {
+		font-size: max(16px, 1em);
+	}
+}
+
+.cl-count {
+	align-self: center;
+	color: var(--chatlume-muted);
+	font-size: 0.72em;
+	white-space: nowrap;
+}
+
+.cl-send {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	min-width: 36px;
+	height: 36px;
+	margin: 0;
+	padding: 0 10px;
+	border: 0;
+	border-radius: var(--chatlume-radius-button);
+	background: var(--chatlume-primary);
+	color: var(--chatlume-on-primary);
+	font: inherit;
+	font-weight: 600;
+	cursor: pointer;
+	transition: opacity var(--chatlume-duration) ease, transform var(--chatlume-duration) ease;
+}
+
+.cl-send-icon {
+	width: 36px;
+	padding: 0;
+}
+
+.cl-send:disabled {
+	cursor: not-allowed;
+	opacity: 0.4;
+}
+
+.cl-send:not(:disabled):active {
+	transform: scale(0.94);
+}
+
+.cl-stop {
+	width: 36px;
+	padding: 0;
+	background: var(--chatlume-bot-text);
+	color: var(--chatlume-background);
+}
+
+.cl-stop .cl-icon {
+	width: 14px;
+	height: 14px;
+	fill: currentcolor;
+}
+
+[dir="rtl"] .cl-send-icon .cl-icon {
+	transform: scaleX(-1);
+}
+
+.cl-powered {
+	margin: calc(var(--chatlume-space) * -0.5) 0 8px;
+	color: var(--chatlume-muted);
+	font-size: 0.7em;
+	text-align: center;
+}
+
+/* Preview mode: hover outline and highlight pulse. */
+.cl-hover {
+	outline: 2px dashed var(--chatlume-primary) !important;
+	outline-offset: 2px;
+	cursor: pointer;
+}
+
+.cl-highlight {
+	animation: cl-highlight 1.4s ease-out;
+}
+
+/* Animations. */
+@keyframes cl-in {
+
+	from {
+		opacity: 0;
+		transform: translateY(6px);
+	}
+}
+
+@keyframes cl-blink {
+
+	to {
+		visibility: hidden;
+	}
+}
+
+@keyframes cl-typing {
+
+	0%,
+	60%,
+	100% {
+		transform: none;
+		opacity: 0.35;
+	}
+
+	30% {
+		transform: translateY(-4px);
+		opacity: 0.9;
+	}
+}
+
+@keyframes cl-highlight {
+
+	0% {
+		outline: 3px solid var(--chatlume-primary);
+		outline-offset: 0;
+	}
+
+	100% {
+		outline: 3px solid transparent;
+		outline-offset: 8px;
+	}
+}

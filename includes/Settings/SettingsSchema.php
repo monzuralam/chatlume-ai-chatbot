@@ -74,6 +74,8 @@ final class SettingsSchema {
 			'security'      => ChatSettingsSchema::security(),
 			'costs'         => ChatSettingsSchema::costs(),
 			'cache'         => ChatSettingsSchema::cache(),
+			'display'       => ChatSettingsSchema::display(),
+			'streaming'     => ChatSettingsSchema::streaming(),
 		);
 	}
 

@@ -10,6 +10,8 @@ namespace Chatlume;
 use Chatlume\Admin\AdminPage;
 use Chatlume\Admin\Assets;
 use Chatlume\Cron\RetentionCleanup;
+use Chatlume\Frontend\Shortcode;
+use Chatlume\Frontend\WidgetLoader;
 use Chatlume\Installer\Activation;
 use Chatlume\Installer\Migrations;
 use Chatlume\Installer\Multisite;
@@ -79,6 +81,11 @@ final class Plugin {
 		( new Multisite() )->register();
 		( new Activation() )->register();
 		( new RetentionCleanup() )->register();
+		( new Shortcode() )->register();
+
+		if ( ! is_admin() ) {
+			( new WidgetLoader() )->register();
+		}
 
 		add_action( 'rest_api_init', array( $this, 'register_rest_routes' ) );
 

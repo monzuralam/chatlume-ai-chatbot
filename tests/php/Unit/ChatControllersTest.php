@@ -13,6 +13,9 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 use Brain\Monkey\Filters;
 use Brain\Monkey\Functions;
+use Chatlume\Appearance\TokenResolver;
+use Chatlume\Chat\StopSignal;
+use Chatlume\Chat\StreamHandler;
 use Chatlume\REST\ChatController;
 use Chatlume\REST\QuickAnswersController;
 use Chatlume\Security\SessionManager;
@@ -119,12 +122,14 @@ class ChatControllersTest extends TestCase {
 		( new ChatController() )->register_routes();
 		( new QuickAnswersController() )->register_routes();
 
-		foreach ( array( '/session', '/chat', '/feedback' ) as $public ) {
+		foreach ( array( '/session', '/chat', '/chat/stream', '/chat/stop', '/feedback' ) as $public ) {
 			$this->assertSame( '__return_true', $routes[ $public ][0]['permission_callback'], $public );
 		}
 		$this->assertTrue( $routes['/chat'][0]['args']['token']['required'] );
 		$this->assertSame( 8000, $routes['/chat'][0]['args']['message']['maxLength'] );
 		$this->assertArrayHasKey( 'website', $routes['/chat'][0]['args'], 'Honeypot field.' );
+		$this->assertSame( array_keys( $routes['/chat'][0]['args'] ), array_keys( $routes['/chat/stream'][0]['args'] ) );
+		$this->assertSame( '^[a-f0-9]*$', $routes['/session'][0]['args']['v']['pattern'] );
 
 		foreach ( array( '/quick-answers', '/quick-answers/(?P<id>\d+)' ) as $admin ) {
 			foreach ( $routes[ $admin ] as $endpoint ) {
@@ -227,5 +232,242 @@ class ChatControllersTest extends TestCase {
 		$this->assertSame( 'Hi <strong>there</strong>x', $saved['chatbot']['welcome_message'] );
 		$this->assertEquals( 2.0, $saved['chatbot']['temperature'], 'Clamped.' );
 		$this->assertEquals( 0.0, $saved['costs']['daily_budget'], 'Clamped.' );
+	}
+
+	public function test_session_sends_the_theme_only_to_stale_pages(): void {
+		$current = TokenResolver::config()['v'];
+		$session = function ( string $version ) {
+			return ( new ChatController() )->session(
+				new HeaderRequest(
+					array(
+						'token' => '',
+						'v'     => $version,
+					),
+					array( 'origin' => 'https://shop.example.test' )
+				)
+			)->get_data();
+		};
+
+		$this->assertArrayNotHasKey( 'theme', $session( $current ) );
+		$this->assertArrayNotHasKey( 'theme', $session( '' ) );
+		$this->assertSame( $current, $session( 'abc123' )['theme']['v'] );
+	}
+
+	public function test_quick_actions_become_safe_links(): void {
+		$this->options[ Settings::OPTION ] = array(
+			'chatbot' => array(
+				'quick_actions' => array(
+					array(
+						'label' => 'Shop',
+						'type'  => 'url',
+						'value' => 'https://shop.example.test/store',
+					),
+					array(
+						'label' => 'Script',
+						'type'  => 'url',
+						'value' => 'javascript:alert(1)',
+					),
+					array(
+						'label' => 'Mail',
+						'type'  => 'email',
+						'value' => 'help@example.test',
+					),
+					array(
+						'label' => 'Call',
+						'type'  => 'phone',
+						'value' => '+44 (20) 1234-5678',
+					),
+					array(
+						'label' => 'WhatsApp',
+						'type'  => 'whatsapp',
+						'value' => '+44 7700 900123',
+					),
+					array(
+						'label' => 'Prices',
+						'type'  => 'message',
+						'value' => 'What are your prices?',
+					),
+					array(
+						'label' => '',
+						'type'  => 'url',
+						'value' => 'https://shop.example.test/',
+					),
+				),
+			),
+		);
+
+		$this->assertSame(
+			array(
+				array(
+					'label' => 'Shop',
+					'type'  => 'url',
+					'href'  => 'https://shop.example.test/store',
+				),
+				array(
+					'label' => 'Mail',
+					'type'  => 'email',
+					'href'  => 'mailto:help@example.test',
+				),
+				array(
+					'label' => 'Call',
+					'type'  => 'phone',
+					'href'  => 'tel:+442012345678',
+				),
+				array(
+					'label' => 'WhatsApp',
+					'type'  => 'whatsapp',
+					'href'  => 'https://wa.me/447700900123',
+				),
+				array(
+					'label'   => 'Prices',
+					'type'    => 'message',
+					'message' => 'What are your prices?',
+				),
+			),
+			ChatController::quick_actions()
+		);
+	}
+
+	public function test_stream_route_validates_before_streaming(): void {
+		$ran        = array();
+		$controller = new class( $ran ) extends ChatController {
+			/**
+			 * Requests that reached the stream handler.
+			 *
+			 * @var array
+			 */
+			public array $ran;
+
+			/**
+			 * Constructor.
+			 *
+			 * @param array $ran Collector.
+			 */
+			public function __construct( array &$ran ) {
+				$this->ran = &$ran;
+			}
+
+			/**
+			 * Records instead of streaming.
+			 *
+			 * @return StreamHandler
+			 */
+			protected function stream_handler(): StreamHandler {
+				$ran = &$this->ran;
+				return new class( $ran ) extends StreamHandler {
+					/**
+					 * Collector.
+					 *
+					 * @var array
+					 */
+					private array $seen;
+
+					/**
+					 * Constructor.
+					 *
+					 * @param array $seen Collector.
+					 */
+					public function __construct( array &$seen ) {
+						$this->seen = &$seen;
+					}
+
+					/**
+					 * Records the request.
+					 *
+					 * @param array $request Request.
+					 * @return void
+					 */
+					public function run( array $request ): void {
+						$this->seen[] = $request;
+					}
+				};
+			}
+
+			/**
+			 * Does not exit in tests.
+			 *
+			 * @return void
+			 */
+			protected function finish(): void {}
+		};
+		$origin     = array( 'origin' => 'https://shop.example.test' );
+		$token      = ( new SessionManager() )->start()['token'];
+		Functions\when( 'wp_get_current_user' )->justReturn(
+			(object) array(
+				'ID'           => 0,
+				'display_name' => '',
+			)
+		);
+
+		$this->assertSame( 'chatlume_forbidden_origin', $controller->stream( new HeaderRequest( array( 'token' => $token ), array( 'origin' => 'https://evil.test' ) ) )->get_error_code() );
+		$this->assertSame( 'chatlume_invalid_session', $controller->stream( new HeaderRequest( array( 'token' => 'bad' ), $origin ) )->get_error_code() );
+		$this->assertSame( array(), $ran );
+
+		$controller->stream(
+			new HeaderRequest(
+				array(
+					'token'   => $token,
+					'message' => 'Hello',
+				),
+				$origin
+			)
+		);
+		$this->assertCount( 1, $ran );
+		$this->assertSame( 'Hello', $ran[0]['message'] );
+
+		$this->options[ Settings::OPTION ] = array( 'streaming' => array( 'enabled' => false ) );
+		$disabled                          = $controller->stream( new HeaderRequest( array( 'token' => $token ), $origin ) );
+		$this->assertSame( 'chatlume_streaming_disabled', $disabled->get_error_code() );
+		$this->assertSame( 409, $disabled->get_error_data()['status'] );
+		$this->assertCount( 1, $ran );
+	}
+
+	public function test_stop_route_flags_only_the_callers_stream(): void {
+		$this->ext_object_cache = true;
+		$controller             = new ChatController();
+		$origin                 = array( 'origin' => 'https://shop.example.test' );
+		$session                = ( new SessionManager() )->start();
+		$sid                    = ( new SessionManager() )->verify( $session['token'] )['sid'];
+		$stream                 = 'abcdef0123456789';
+
+		$this->assertSame(
+			'chatlume_invalid_session',
+			$controller->stop(
+				new HeaderRequest(
+					array(
+						'token'     => 'bad',
+						'stream_id' => $stream,
+					),
+					$origin
+				)
+			)->get_error_code()
+		);
+		$this->assertSame(
+			'chatlume_forbidden_origin',
+			$controller->stop(
+				new HeaderRequest(
+					array(
+						'token'     => $session['token'],
+						'stream_id' => $stream,
+					),
+					array( 'origin' => 'https://evil.test' )
+				)
+			)->get_error_code()
+		);
+		$this->assertFalse( ( new StopSignal() )->requested( StopSignal::key( $sid, $stream ) ) );
+
+		$response = $controller->stop(
+			new HeaderRequest(
+				array(
+					'token'     => $session['token'],
+					'stream_id' => $stream,
+				),
+				$origin
+			)
+		);
+
+		$this->assertSame( array( 'stopping' => true ), $response->get_data() );
+		$this->assertTrue( ( new StopSignal() )->requested( StopSignal::key( $sid, $stream ) ) );
+		$this->assertFalse( ( new StopSignal() )->requested( StopSignal::key( 'someone-else', $stream ) ) );
 	}
 }

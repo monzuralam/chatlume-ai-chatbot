@@ -35,6 +35,22 @@ export const providersSettingsSchema = z
 	} )
 	.strict();
 
+export const displaySettingsSchema = z
+	.object( {
+		enabled: z.boolean(),
+		preload: z.boolean(),
+	} )
+	.strict();
+
+export const streamingSettingsSchema = z
+	.object( {
+		enabled: z.boolean(),
+		max_concurrent: z.number().int().min( 1 ).max( 20 ),
+		max_duration: z.number().int().min( 10 ).max( 300 ),
+		first_token_timeout: z.number().int().min( 5 ).max( 120 ),
+	} )
+	.strict();
+
 export const settingsSchema = z
 	.object( {
 		setup: setupSettingsSchema,
@@ -46,6 +62,8 @@ export const settingsSchema = z
 		security: z.record( z.string(), z.unknown() ),
 		costs: z.record( z.string(), z.unknown() ),
 		cache: z.record( z.string(), z.unknown() ),
+		display: displaySettingsSchema,
+		streaming: streamingSettingsSchema,
 	} )
 	.strict();
 

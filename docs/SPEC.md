@@ -416,9 +416,9 @@ This plugin is submitted to the WordPress.org Plugin Directory. Every rule below
 Status legend: ✅ done · 🚧 in progress · ⬜ not started. Approved deviations are listed under "Build log" below.
 
 1. ✅ **Foundation** (done 2026-10-14): bootstrap, plugin identity and prefixes, Composer + Strauss setup, autoloader, multisite-aware activation with the redirect rules, schema and migrations, settings storage, encryption with fingerprint, wp-scripts build setup, and the admin shell with the design system foundation, sidebar navigation, and extension registry.
-2. ✅ **Providers** (done 2026-10-14, awaiting review): interface, HTTP API transport and streamer, OpenAI-compatible base with presets, Anthropic and Gemini adapters, embeddings support, error normalization, live model lists with suggestions, test connection, primary/fallback, Providers page.
-3. ✅ **Chat backend** (done 2026-10-14, awaiting review): session manager, conversation state, IP resolver, rate limiter, cost guard, quick answers, response cache, site-search fallback, no-key mode, prompt builder, non-streaming endpoint, logging.
-4. ⬜ **Widget**: full widget UI, design token system, widget styles (floating, side panel, modal, inline), message styles, CSS parts, preview mode, streaming with stream limiter and abort handling, markdown sanitizer, source cards, quick actions, tab sync, mobile, accessibility, shortcode, block, JS API.
+2. ✅ **Providers** (done 2026-10-14): interface, HTTP API transport and streamer, OpenAI-compatible base with presets, Anthropic and Gemini adapters, embeddings support, error normalization, live model lists with suggestions, test connection, primary/fallback, Providers page.
+3. ✅ **Chat backend** (done 2026-10-14): session manager, conversation state, IP resolver, rate limiter, cost guard, quick answers, response cache, site-search fallback, no-key mode, prompt builder, non-streaming endpoint, logging.
+4. ✅ **Widget** (done 2026-10-15, awaiting review): full widget UI, design token system, widget styles (floating, side panel, modal, inline), message styles, CSS parts, preview mode, streaming with stream limiter and abort handling, markdown sanitizer, source cards, quick actions, tab sync, mobile, accessibility, shortcode, block, JS API.
 5. ⬜ **Admin experience**: setup wizard with provider guides, Dashboard, Chatbot, Playground, the Customizer with always-on live preview (presets, Simple/Advanced modes, colors, typography, layout, draft/publish, versions, real-site backdrop, context-aware states, click-to-edit, interactive preview, before/after, devices, Developer styling panel), Display & triggers, Conversations, Settings with Health check, core Command Palette commands.
 6. ⬜ **Knowledge base**: indexer, document uploads, embeddings storage and re-embedding, two-stage retrieval with n-gram fallback, source links, WooCommerce sync, multilingual filtering, Knowledge page.
 7. ⬜ **Engagement, integrations, and platform**: proactive triggers, voice, lead capture, handoff, webhooks, email notifications, analytics events, cache purging, optimization-plugin compatibility, WPML/Polylang, "Match my website", WordPress Font Library and theme.json integration, "Preview on my site", per-language content, WordPress Connectors bridge and core AI Client, Abilities registration.
@@ -447,7 +447,7 @@ Approved deviations and decisions:
 - The release zip ships `vendor/autoload.php`, `vendor/composer/`, and `vendor-prefixed/` built with `composer install --no-dev`.
 - Per-phase Plugin Check runs exclude dev-only files; the release zip is checked in Phase 8.
 
-**Phase 2 – Providers ✅ (2026-10-14, awaiting review)**
+**Phase 2 – Providers ✅ (2026-10-14)**
 - [x] Provider interface, normalized messages and `ChatResponse`
 - [x] HTTP API transport and `HttpStreamer` (WordPress `requests-request.progress` hook; abort through a cURL progress callback attached via `http_api_curl`, or an exception on fsockopen)
 - [x] OpenAI-compatible base with presets (OpenAI, OpenRouter, Groq, Mistral, DeepSeek, xAI, Together, Ollama, Custom endpoint)
@@ -470,7 +470,7 @@ Implementation decisions (for review):
 - OpenRouter app attribution headers (`HTTP-Referer`, `X-OpenRouter-Title`) are off by default because they share the site URL and name.
 - Plugin Check 2.1 warns about direct AI provider integrations (`PluginCheck.CodeAnalysis.AIProvider.DirectIntegration`); these are justified in code comments (WordPress versions without the AI Client, streaming, providers core does not cover).
 
-**Phase 3 – Chat backend ✅ (2026-10-14, awaiting review)**
+**Phase 3 – Chat backend ✅ (2026-10-14)**
 - [x] Settings: chatbot behavior, quick answers, security limits, cost controls, response cache, storage and retention
 - [x] IP resolver (trusted proxies, hashed IPs) and signed session manager
 - [x] Rate limiter (object cache or `chatlume_rate_limits` table)
@@ -496,6 +496,39 @@ Implementation decisions (for review):
 - Response-cache keys include the answering provider and model, so switching models never serves another model’s answer.
 - `POST /feedback` and `POST /chat` set `Cache-Control: no-store`. Public routes require a matching Origin or Referer (`chatlume_allowed_origins` filter for future external embedding).
 - Unstored conversations (storage off) use IDs starting with `t_` and live in a transient bound to the session for 30 idle minutes.
+
+**Phase 4 – Widget ✅ (2026-10-15, awaiting review)**
+- [x] Design token system: versioned theme schema with PHP validation and clamping; resolved light/dark tokens stored in the autoloaded `chatlume_widget_config` (about 3 KB) with a version hash
+- [x] Launcher: vanilla TypeScript, loaded with `defer`, Shadow DOM `<chatlume-widget>`, tokens applied on first paint, 12 built-in icons, circle/square/pill shapes, unread dot, badge, pulse or bounce, dismissible teaser
+- [x] Chat app (Preact through `preact/compat`), loaded with `import()` on first open, or when idle if preload is on
+- [x] Widget styles: floating, side panel, centered modal, inline. Message styles: bubbles, flat, outlined. Backgrounds: solid, pattern, gradient, glass
+- [x] CSS parts (launcher, teaser, window, header, message-bot, message-user, composer, source-card, starters); site CSS can override `--chatlume-*` tokens
+- [x] Streaming: `POST /chat/stream` (SSE events start, token, sources, done, error), stream limiter (answers without streaming when full), maximum duration below `max_execution_time`, heartbeats, stop requests (`POST /chat/stop`), buffering detection with automatic fallback to `/chat`, first-token timeout
+- [x] Allowlist Markdown renderer (model output is never parsed as HTML), code blocks with copy, safe links
+- [x] Source cards, typing indicator, Stop, Retry, copy, thumbs up/down, "Not what you meant? Ask AI", timestamps (hover, always, never)
+- [x] Empty state: welcome message, starter questions, quick actions (URL, email, phone, WhatsApp, preset message)
+- [x] Tab sync (BroadcastChannel or `storage` events) with one streaming tab at a time; localStorage restores the visible conversation
+- [x] Mobile full screen (configurable width), safe areas, body scroll lock, visual-viewport height, 16 px input
+- [x] Accessibility: dialog role, labelled controls, polite announcement of finished replies, focus management and return, Esc, focus trap in modal and full screen
+- [x] RTL (follows the page direction) and color modes (light, dark, auto)
+- [x] Preview mode: `window.Chatlume.mountPreview()`, origin-checked `postMessage` batched per animation frame, forced states, highlight, click to edit
+- [x] `[chatlume height="600"]` shortcode and `chatlume/chat` block (inline mode; the floating launcher is hidden on that page)
+- [x] JS API: `window.Chatlume.open()`, `.close()`, `.toggle()`, `.send( text )`, `.mountPreview( element, config )`
+- [x] Behavior settings always fresh from `/session`; pages served from an old cache receive the current theme
+
+Approved decisions:
+- The floating widget shows site-wide by default (`display.enabled`); page and device display rules come with "Display & triggers" in Phase 5.
+
+Implementation decisions (for review):
+- Stopping a stream: many servers (including Local on Windows) never tell PHP that the visitor disconnected, so aborting the request alone did not stop the AI. The widget therefore sends `POST /chat/stop` ("Stop generating"), or a beacon when the page closes. The running stream checks for it every 0.5 seconds and aborts the upstream request. Only the session that started a stream can stop it. Verified live: the upstream request closed about 0.3 seconds after Stop or after leaving the page. Stopped replies are saved with the conversation.
+- The SSE `start` event (conversation ID and stream ID) is an addition to the token/sources/done/error events.
+- When every stream slot is taken, `/chat/stream` answers without streaming in the same response, so the widget needs no second request.
+- New setting `chatbot.quick_actions` (up to 4); links are built and validated on the server.
+- Widget strings are printed with the page; behavior settings (bot name, welcome, starters, quick actions) come from `/session` and are kept in localStorage for the next first paint.
+- Sizes: launcher 6.7 KB gzipped; chat app 22.5 KB gzipped (Preact included), loaded on first open.
+- The teaser shows when its text is set and can be dismissed. Timed, scroll, and exit-intent triggers come in Phase 7, as do the mic, read-aloud, and "Email transcript" (with handoff).
+- Sample content for the preview states is supplied by the Customizer (Phase 5), so it is translated there.
+- The admin app's strict settings schema now includes the new `display` and `streaming` sections (without them every settings save failed with "Unrecognized key"). A Jest test compares its sections with `SettingsSchema::definition()`, so the two can no longer drift apart.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

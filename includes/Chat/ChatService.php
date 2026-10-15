@@ -106,6 +106,14 @@ class ChatService {
 	private PromptBuilder $prompts;
 
 	/**
+	 * Streaming callbacks for the current request: on_token (receives each text
+	 * fragment), should_abort (returns a non-empty reason to stop), and timeout (seconds).
+	 *
+	 * @var array<string, mixed>
+	 */
+	private array $stream = array();
+
+	/**
 	 * Constructor. Every collaborator can be replaced (tests).
 	 *
 	 * @param array<string, object> $deps Optional: state, matcher, quick_answers, cache, costs, site_search, limiter, prompts.
@@ -126,14 +134,17 @@ class ChatService {
 	 *
 	 * @param array<string, mixed> $request session_id, message, conversation_id, page_url, page_title, language,
 	 *                                      user_id, user_name, visitor_hash, skip_quick_answers, quick_answer_id, is_test.
+	 * @param array<string, mixed> $stream  Optional streaming callbacks: on_start, on_token, should_abort, timeout.
+	 *                                      Only AI replies stream; other replies are returned whole.
 	 * @return array{conversation_id: string, message_id: int, reply: array<string, mixed>, details: array<string, mixed>}
 	 * @throws ChatException When the request cannot be served.
 	 */
-	public function handle( array $request ): array {
-		$started    = microtime( true );
-		$message    = trim( (string) ( $request['message'] ?? '' ) );
-		$session_id = (string) $request['session_id'];
-		$context    = array(
+	public function handle( array $request, array $stream = array() ): array {
+		$this->stream = $stream;
+		$started      = microtime( true );
+		$message      = trim( (string) ( $request['message'] ?? '' ) );
+		$session_id   = (string) $request['session_id'];
+		$context      = array(
 			'page_url'   => (string) ( $request['page_url'] ?? '' ),
 			'page_title' => (string) ( $request['page_title'] ?? '' ),
 			'language'   => (string) ( $request['language'] ?? '' ),
@@ -162,6 +173,11 @@ class ChatService {
 
 		if ( $this->costs->conversation_capped( $conversation['user_messages'] ) ) {
 			throw new ChatException( 'conversation_limit', BotText::conversation_limit(), 403 );
+		}
+
+		if ( isset( $this->stream['on_start'] ) && is_callable( $this->stream['on_start'] ) ) {
+			// Lets a stream report the conversation before the reply, so a stopped reply keeps it.
+			( $this->stream['on_start'] )( $conversation['id'] );
 		}
 
 		/**
@@ -205,6 +221,9 @@ class ChatService {
 			'sources'         => $reply['sources'],
 			'quick_answer_id' => $reply['quick_answer_id'] ?? null,
 		);
+		if ( ! empty( $reply['meta']['interrupted'] ) ) {
+			$public['interrupted'] = (string) $reply['meta']['interrupted'];
+		}
 
 		/**
 		 * Fires after a reply was produced and logged.
@@ -394,34 +413,68 @@ class ChatService {
 
 		$messages = $this->prompts->messages( $system, $history, $message, $context );
 
+		$options  = array(
+			'temperature' => (float) Settings::get( 'chatbot.temperature', 0.3 ),
+			'max_tokens'  => (int) Settings::get( 'chatbot.max_output_tokens', 600 ),
+			'route'       => $route,
+		);
+		$on_token = null;
+		$streamed = '';
+
+		if ( isset( $this->stream['on_token'] ) && is_callable( $this->stream['on_token'] ) ) {
+			$forward  = $this->stream['on_token'];
+			$on_token = static function ( string $text ) use ( $forward, &$streamed ) {
+				$streamed .= $text;
+				$forward( $text );
+			};
+			if ( isset( $this->stream['should_abort'] ) && is_callable( $this->stream['should_abort'] ) ) {
+				$options['should_abort'] = $this->stream['should_abort'];
+			}
+			if ( ! empty( $this->stream['timeout'] ) ) {
+				$options['timeout'] = (int) $this->stream['timeout'];
+			}
+		}
+
 		try {
-			$response = ProviderRegistry::chat(
-				$messages,
-				array(
-					'temperature' => (float) Settings::get( 'chatbot.temperature', 0.3 ),
-					'max_tokens'  => (int) Settings::get( 'chatbot.max_output_tokens', 600 ),
-					'route'       => $route,
-				)
-			);
+			$response = ProviderRegistry::chat( $messages, $options, $on_token );
 		} catch ( ProviderError $error ) {
+			$partial = trim( '' !== $streamed ? $streamed : $error->partial_text() );
+			if ( '' !== $partial ) {
+				// The stream broke after the visitor already saw part of the answer: keep that part.
+				return self::reply(
+					$partial,
+					'fallback' === $route ? self::SOURCE_FALLBACK_MODEL : self::SOURCE_AI,
+					array(
+						'sources'    => $knowledge['sources'],
+						'provider'   => $error->provider(),
+						'error_type' => $error->type(),
+						'meta'       => array( 'interrupted' => 'error' ),
+					)
+				);
+			}
 			return $this->site_search_reply( $message, array( 'provider_error' => $error->type() ), $error->type() );
 		}
 
 		$cost = ProviderRegistry::estimate_cost( $response->provider, $response->model, $response->input_tokens, $response->output_tokens );
 		$this->costs->record( $response->input_tokens + $response->output_tokens, $cost );
 
-		$source = ( $response->used_fallback || 'fallback' === $route ) ? self::SOURCE_FALLBACK_MODEL : self::SOURCE_AI;
-		$text   = trim( $response->text );
+		$source  = ( $response->used_fallback || 'fallback' === $route ) ? self::SOURCE_FALLBACK_MODEL : self::SOURCE_AI;
+		$text    = trim( $response->text );
+		$aborted = 'aborted' === $response->finish_reason;
 
-		if ( '' === $text ) {
+		if ( '' === $text && ! $aborted ) {
 			return $this->site_search_reply( $message, array( 'empty_reply' => true ) );
 		}
 
-		if ( $cacheable && 'length' !== $response->finish_reason ) {
+		// Stopped or cut-off answers are never cached.
+		if ( $cacheable && ! $aborted && 'length' !== $response->finish_reason ) {
 			$this->cache->set( $cache_key, $text, $knowledge['sources'] );
 		}
 
 		$meta = array();
+		if ( $aborted ) {
+			$meta['interrupted'] = 'stopped';
+		}
 		if ( '' === $knowledge['text'] && has_filter( 'chatlume_retrieved_context' ) ) {
 			// Knowledge retrieval ran but found nothing: a "question your bot couldn't answer" signal.
 			$meta['no_knowledge_match'] = true;

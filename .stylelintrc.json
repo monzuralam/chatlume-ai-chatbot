@@ -4,12 +4,31 @@
 		"at-rule-no-unknown": [
 			true,
 			{
-				"ignoreAtRules": [ "theme", "custom-variant", "source", "utility", "variant", "layer", "apply", "reference" ]
+				"ignoreAtRules": [
+					"theme",
+					"custom-variant",
+					"source",
+					"utility",
+					"variant",
+					"layer",
+					"apply",
+					"reference"
+				]
 			}
 		],
 		"selector-class-pattern": null,
 		"selector-id-pattern": null,
 		"custom-property-pattern": null,
 		"import-notation": null
-	}
+	},
+	"overrides": [
+		{
+			"files": [
+				"src/widget/styles/*.css"
+			],
+			"rules": {
+				"no-descending-specificity": null
+			}
+		}
+	]
 }

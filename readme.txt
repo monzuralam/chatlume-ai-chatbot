@@ -13,8 +13,11 @@ Add a fast, brandable AI chatbot to your site using the AI provider of your choi
 
 Chatlume adds a smart AI chatbot to your WordPress site. Connect the AI provider you prefer, match the chat widget to your brand, and keep costs under control with quick answers, caching, rate limits, and budget caps.
 
-This is an early development version. It includes the Chatlume admin app and AI provider connections. The visitor chat widget is added in upcoming releases.
+This is an early development version. It includes the chat widget, the chat backend, AI provider connections, and the Chatlume admin app. The appearance Customizer and setup wizard are added in upcoming releases.
 
+* A fast, accessible chat widget with replies that appear word by word, a Stop button, source links, and copy and feedback buttons. It loads its chat window only when a visitor opens it.
+* Show the chat as a floating button on every page, or embed it in a page with the `[chatlume]` shortcode or the Chatlume Chat block.
+* Works on phones (full screen), in right-to-left languages, and in light or dark mode.
 * Connect OpenAI, Anthropic, Google Gemini, OpenRouter, Groq, Mistral AI, DeepSeek, xAI, Together AI, a local Ollama server, or any OpenAI-compatible endpoint.
 * Live model lists straight from each provider, so new models appear without a plugin update.
 * A fallback provider takes over automatically if the primary provider fails.
@@ -50,6 +53,14 @@ Encrypted in your site's database using a key derived from your WordPress securi
 
 Yes. Turn off conversation storage and conversations are kept only briefly (30 minutes of inactivity) to keep the chat flowing; nothing is written to the database. When storage is on, conversations are deleted automatically after the retention period (90 days by default). Visitor IP addresses are never stored; only a salted hash is used for rate limiting.
 
+= How do I put the chat inside a page instead of a floating button? =
+
+Add the **Chatlume Chat** block, or the shortcode `[chatlume height="600"]` (height in pixels, 320 to 1200). On pages with an embedded chat, the floating button is hidden. Developers can also open the chat from their own buttons with `window.Chatlume.open()`, `window.Chatlume.close()`, `window.Chatlume.toggle()`, and `window.Chatlume.send( 'Hello' )`.
+
+= Can I restyle the widget with my own CSS? =
+
+Chatlume stores no custom CSS, but the widget reads `--chatlume-*` CSS custom properties, so you can override them in Appearance > Customize > Additional CSS (or the Site Editor's Styles), for example `chatlume-widget { --chatlume-primary: #0a7d33; }`. Key elements can also be styled with `chatlume-widget::part(launcher)`, `::part(window)`, `::part(header)`, `::part(message-bot)`, `::part(message-user)`, `::part(composer)`, and `::part(source-card)`.
+
 = What happens to my data if I delete the plugin? =
 
 Nothing is removed unless you enable **Delete all data on uninstall** in Chatlume > Settings. With that option on, deleting the plugin removes Chatlume's database tables, settings, and stored API keys.
@@ -65,6 +76,7 @@ Nothing is removed unless you enable **Delete all data on uninstall** in Chatlum
 * Initial development release: plugin foundation, database tables, settings storage, encrypted key storage, and the admin app shell.
 * AI providers: OpenAI-compatible services, Anthropic, and Google Gemini, with streaming, live model lists, connection tests, primary and fallback providers, a separate embeddings provider, and plain-language error explanations.
 * Chat backend: visitor sessions, quick answers, response cache, budgets with email alerts, rate limits, guardrails, site-search fallback that works without an API key, and conversation logging with automatic retention cleanup.
+* Chat widget: floating, side panel, modal, and inline styles; streaming replies with Stop; safe Markdown; source links; quick answers with "Ask AI"; starter questions and quick action buttons; feedback; mobile full screen; RTL and dark mode; tab sync; `[chatlume]` shortcode, Chatlume Chat block, and a JavaScript API.
 
 == External services ==
 
@@ -95,7 +107,7 @@ Chatlume does not send any data to its authors, and it uses no analytics or trac
 
 == Source code and build ==
 
-The admin app ships compiled JavaScript and CSS in the `build` folder. The uncompiled source is included in the plugin in the `src` folder, together with `package.json`, `webpack.config.js`, `postcss.config.js`, `tsconfig.json`, and `composer.json`.
+The admin app, the chat widget, and the block ship compiled JavaScript and CSS in the `build` folder. The uncompiled source is included in the plugin in the `src` folder (`src/admin` and `src/widget`) and the `blocks` folder, together with `package.json`, `webpack.config.js`, `postcss.config.js`, `tsconfig.json`, and `composer.json`.
 
 To build from source:
 
@@ -105,8 +117,9 @@ To build from source:
 
 == Credits ==
 
-Chatlume bundles the following open-source libraries in its compiled admin app. All are compatible with the GPL.
+Chatlume bundles the following open-source libraries in its compiled admin app and chat widget. All are compatible with the GPL.
 
+* Preact (chat widget) – MIT License
 * TanStack Query – MIT License
 * React Router – MIT License
 * React Hook Form and @hookform/resolvers – MIT License
@@ -120,4 +133,4 @@ Chatlume bundles the following open-source libraries in its compiled admin app. 
 * tailwind-merge – MIT License
 * class-variance-authority – Apache License 2.0
 
-No third-party logos are included. Provider names are used only to identify the services Chatlume can connect to.
+The widget's icons and avatar illustrations are drawn for Chatlume. No third-party logos are included. Provider names are used only to identify the services Chatlume can connect to.

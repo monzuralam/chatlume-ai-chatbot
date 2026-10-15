@@ -1,0 +1,352 @@
+/*
+ * Launcher styles (shadow root). Everything visual reads a --chatlume-*
+ * token; tokens are declared on :host by the theme stylesheet.
+ */
+
+:host {
+	all: initial;
+	font-family: inherit;
+}
+
+:host([hidden]) {
+	display: none !important;
+}
+
+.cl-root {
+	font-family: var(--chatlume-font);
+	font-size: var(--chatlume-font-size);
+	line-height: var(--chatlume-line-height);
+	letter-spacing: var(--chatlume-letter-spacing);
+	color: var(--chatlume-bot-text);
+	-webkit-font-smoothing: antialiased;
+	-webkit-text-size-adjust: 100%;
+}
+
+.cl-root[data-inline],
+.cl-root[data-inline] .cl-mount {
+	height: 100%;
+}
+
+.cl-root *,
+.cl-root *::before,
+.cl-root *::after {
+	box-sizing: border-box;
+}
+
+.cl-launcher {
+	--cl-x: var(--chatlume-offset-x);
+	--cl-y: var(--chatlume-offset-y);
+	position: fixed;
+	right: calc(var(--cl-x) + env(safe-area-inset-right, 0px));
+	bottom: calc(var(--cl-y) + env(safe-area-inset-bottom, 0px));
+	z-index: var(--chatlume-z);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	width: var(--chatlume-launcher-size);
+	height: var(--chatlume-launcher-size);
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: 50%;
+	background: var(--chatlume-launcher-background);
+	color: var(--chatlume-launcher-icon);
+	font: inherit;
+	font-weight: 600;
+	box-shadow: 0 6px 18px rgba(15, 20, 40, 0.18), 0 2px 4px rgba(15, 20, 40, 0.12);
+	cursor: pointer;
+	transition: transform var(--chatlume-duration) ease, box-shadow var(--chatlume-duration) ease, opacity var(--chatlume-duration) ease;
+	-webkit-tap-highlight-color: transparent;
+}
+
+.cl-root[data-position="left"] .cl-launcher {
+	right: auto;
+	left: calc(var(--cl-x) + env(safe-area-inset-left, 0px));
+}
+
+.cl-root[data-compact] .cl-launcher {
+	--cl-x: var(--chatlume-mobile-offset-x);
+	--cl-y: var(--chatlume-mobile-offset-y);
+}
+
+.cl-root[data-contained] .cl-launcher {
+	position: absolute;
+}
+
+.cl-launcher:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 10px 24px rgba(15, 20, 40, 0.22), 0 3px 6px rgba(15, 20, 40, 0.12);
+}
+
+.cl-launcher:focus-visible {
+	outline: 3px solid var(--chatlume-primary);
+	outline-offset: 3px;
+}
+
+.cl-launcher[data-shape="square"] {
+	border-radius: 28%;
+}
+
+.cl-launcher[data-shape="pill"] {
+	width: auto;
+	padding: 0 20px 0 16px;
+	border-radius: 999px;
+}
+
+.cl-launcher-icons {
+	position: relative;
+	display: block;
+	width: 46%;
+	height: 46%;
+	flex: none;
+}
+
+.cl-launcher[data-shape="pill"] .cl-launcher-icons {
+	width: 24px;
+	height: 24px;
+}
+
+.cl-launcher-icons > * {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: transform var(--chatlume-duration) ease, opacity var(--chatlume-duration) ease;
+}
+
+.cl-launcher-icons svg {
+	width: 100%;
+	height: 100%;
+}
+
+.cl-launcher-icons img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	border-radius: inherit;
+}
+
+.cl-launcher[data-type="avatar"] .cl-launcher-icons,
+.cl-launcher[data-type="image"] .cl-launcher-icons {
+	width: 100%;
+	height: 100%;
+	border-radius: inherit;
+	overflow: hidden;
+}
+
+.cl-launcher[data-shape="pill"][data-type="avatar"] .cl-launcher-icons,
+.cl-launcher[data-shape="pill"][data-type="image"] .cl-launcher-icons {
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+}
+
+.cl-icon-close {
+	opacity: 0;
+	transform: rotate(-90deg) scale(0.6);
+}
+
+.cl-root[data-open] .cl-icon-open {
+	opacity: 0;
+	transform: rotate(90deg) scale(0.6);
+}
+
+.cl-root[data-open] .cl-icon-close {
+	opacity: 1;
+	transform: none;
+}
+
+.cl-root[data-open] .cl-launcher[data-shape="pill"] .cl-launcher-label {
+	display: none;
+}
+
+.cl-root[data-open] .cl-launcher[data-shape="pill"] {
+	width: var(--chatlume-launcher-size);
+	padding: 0;
+}
+
+/* The full-screen window covers the launcher; the header has its own close button. */
+.cl-root[data-open][data-fullscreen] .cl-launcher,
+.cl-root[data-open][data-style="modal"] .cl-launcher,
+.cl-root[data-open][data-style="panel"] .cl-launcher {
+	opacity: 0;
+	pointer-events: none;
+}
+
+.cl-launcher-label {
+	white-space: nowrap;
+	font-size: 15px;
+}
+
+.cl-unread,
+.cl-badge {
+	position: absolute;
+	top: -2px;
+	right: -2px;
+	min-width: 14px;
+	height: 14px;
+	border: 2px solid var(--chatlume-launcher-icon);
+	border-radius: 999px;
+	background: var(--chatlume-error);
+}
+
+.cl-badge {
+	min-width: 20px;
+	height: 20px;
+	padding: 0 4px;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	line-height: 16px;
+	text-align: center;
+}
+
+.cl-unread[hidden],
+.cl-badge[hidden],
+.cl-teaser[hidden] {
+	display: none;
+}
+
+.cl-launcher[data-attention="pulse"]::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: 0 0 0 0 var(--chatlume-launcher-background);
+	animation: cl-pulse 1.6s ease-out 1s 2;
+	pointer-events: none;
+}
+
+.cl-launcher[data-attention="bounce"] {
+	animation: cl-bounce 0.9s ease 1.2s 1;
+}
+
+@keyframes cl-pulse {
+
+	to {
+		box-shadow: 0 0 0 16px transparent;
+	}
+}
+
+@keyframes cl-bounce {
+
+	0%,
+	100% {
+		transform: none;
+	}
+
+	30% {
+		transform: translateY(-10px);
+	}
+
+	55% {
+		transform: translateY(0);
+	}
+
+	75% {
+		transform: translateY(-4px);
+	}
+}
+
+.cl-teaser {
+	position: fixed;
+	right: calc(var(--chatlume-offset-x) + env(safe-area-inset-right, 0px));
+	bottom: calc(var(--chatlume-offset-y) + var(--chatlume-launcher-size) + 14px + env(safe-area-inset-bottom, 0px));
+	z-index: var(--chatlume-z);
+	max-width: min(280px, calc(100vw - 32px));
+	margin: 0;
+	padding: 12px 36px 12px 14px;
+	border: 1px solid var(--chatlume-border);
+	border-radius: var(--chatlume-radius-card);
+	background: var(--chatlume-background);
+	color: var(--chatlume-bot-text);
+	box-shadow: var(--chatlume-shadow);
+	cursor: pointer;
+	animation: cl-rise var(--chatlume-duration) ease both;
+}
+
+.cl-root[data-position="left"] .cl-teaser {
+	right: auto;
+	left: calc(var(--chatlume-offset-x) + env(safe-area-inset-left, 0px));
+}
+
+.cl-root[data-compact] .cl-teaser {
+	right: var(--chatlume-mobile-offset-x);
+	bottom: calc(var(--chatlume-mobile-offset-y) + var(--chatlume-launcher-size) + 12px);
+}
+
+.cl-root[data-compact][data-position="left"] .cl-teaser {
+	right: auto;
+	left: var(--chatlume-mobile-offset-x);
+}
+
+.cl-root[data-contained] .cl-teaser {
+	position: absolute;
+}
+
+.cl-root[data-open] .cl-teaser {
+	display: none;
+}
+
+.cl-teaser-close {
+	position: absolute;
+	top: 6px;
+	right: 6px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 24px;
+	height: 24px;
+	margin: 0;
+	padding: 4px;
+	border: 0;
+	border-radius: 50%;
+	background: transparent;
+	color: var(--chatlume-muted);
+	cursor: pointer;
+}
+
+.cl-teaser-close:hover {
+	background: var(--chatlume-surface);
+}
+
+.cl-teaser-close:focus-visible {
+	outline: 2px solid var(--chatlume-primary);
+}
+
+.cl-teaser-close svg {
+	width: 14px;
+	height: 14px;
+}
+
+@keyframes cl-rise {
+
+	from {
+		opacity: 0;
+		transform: translateY(8px);
+	}
+}
+
+.cl-sr {
+	position: absolute !important;
+	width: 1px;
+	height: 1px;
+	margin: -1px;
+	padding: 0;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+	border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+	.cl-root *,
+	.cl-root *::before,
+	.cl-root *::after {
+		animation: none !important;
+		transition: none !important;
+	}
+}

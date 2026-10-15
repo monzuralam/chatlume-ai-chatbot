@@ -7,6 +7,7 @@
 
 namespace Chatlume\Installer;
 
+use Chatlume\Appearance\TokenResolver;
 use Chatlume\Security\Encryption;
 use Chatlume\Settings\Settings;
 
@@ -28,7 +29,7 @@ class Migrations {
 	/**
 	 * Current database structure version.
 	 */
-	public const DB_VERSION = 1;
+	public const DB_VERSION = 2;
 
 	/**
 	 * Option storing the installed database version for the current site.
@@ -95,6 +96,9 @@ class Migrations {
 		}
 
 		( new Encryption() )->ensure_fingerprint();
+
+		// Version 2: the widget's resolved design tokens (autoloaded for first paint).
+		TokenResolver::rebuild();
 
 		// Autoloaded on purpose: it is read on every admin request by needs_upgrade().
 		update_option( self::DB_VERSION_OPTION, self::DB_VERSION, true );

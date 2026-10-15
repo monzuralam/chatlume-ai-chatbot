@@ -1,3 +1,6 @@
+import { readFileSync } from 'fs';
+import { join } from 'path';
+
 import {
 	dataPrivacyFormSchema,
 	mergeSettings,
@@ -17,6 +20,13 @@ const settings: Settings = {
 	security: { rate_limit_messages: 20 },
 	costs: { daily_budget: 0 },
 	cache: { enabled: true },
+	display: { enabled: true, preload: false },
+	streaming: {
+		enabled: true,
+		max_concurrent: 3,
+		max_duration: 60,
+		first_token_timeout: 20,
+	},
 	providers: {
 		primary: { provider: '', model: '' },
 		fallback: { provider: '', model: '' },
@@ -35,6 +45,36 @@ const settings: Settings = {
 describe( 'settings schema', () => {
 	it( 'accepts the shape returned by GET /settings', () => {
 		expect( settingsSchema.parse( settings ) ).toEqual( settings );
+	} );
+
+	it( 'lists exactly the sections the PHP schema defines', () => {
+		// The strict schema rejects any section it does not know, so a section
+		// added in PHP without a matching entry here breaks every settings save.
+		const php = readFileSync(
+			join( __dirname, '../../includes/Settings/SettingsSchema.php' ),
+			'utf8'
+		);
+		const body = php.slice(
+			php.indexOf( 'public static function definition()' ),
+			php.indexOf( 'private static function providers_section()' )
+		);
+		const sections = [ ...body.matchAll( /^\t{3}'([a-z_]+)'\s+=>/gm ) ].map(
+			( match ) => match[ 1 ]
+		);
+
+		expect( sections.length ).toBeGreaterThan( 0 );
+		expect( Object.keys( settingsSchema.shape ).sort() ).toEqual(
+			sections.sort()
+		);
+	} );
+
+	it( 'rejects out-of-range streaming limits', () => {
+		expect(
+			settingsSchema.safeParse( {
+				...settings,
+				streaming: { ...settings.streaming, max_concurrent: 0 },
+			} ).success
+		).toBe( false );
 	} );
 
 	it( 'rejects wrong types and unknown keys', () => {

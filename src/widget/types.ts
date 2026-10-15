@@ -1,0 +1,203 @@
+/**
+ * Shapes shared by the widget launcher and the chat app.
+ *
+ * The theme part mirrors `Chatlume\Appearance\TokenResolver::resolve()`.
+ */
+
+export type ColorMode = 'light' | 'dark' | 'auto';
+export type WidgetStyle = 'floating' | 'panel' | 'modal';
+
+export interface ThemeUi {
+	mode: ColorMode;
+	style: WidgetStyle;
+	position: 'right' | 'left';
+	mobileFullscreen: boolean;
+	fullscreenBelow: number;
+	header: 'solid' | 'gradient' | 'minimal';
+	messages: {
+		style: 'bubbles' | 'flat' | 'outlined';
+		avatar: boolean;
+		timestamps: 'hover' | 'always' | 'never';
+		animate: boolean;
+	};
+	background: {
+		type: 'solid' | 'pattern' | 'gradient';
+		pattern: 'dots' | 'grid' | 'waves' | 'diagonal';
+		glass: boolean;
+	};
+	composer: {
+		style: 'rounded' | 'bar';
+		sendButton: 'icon' | 'text';
+	};
+	launcher: {
+		type: 'icon' | 'avatar' | 'image';
+		icon: string;
+		image: string;
+		shape: 'circle' | 'square' | 'pill';
+		size: 's' | 'm' | 'l';
+		label: string;
+		attention: 'none' | 'pulse' | 'bounce' | 'badge';
+		teaser: string;
+	};
+	motion: 'scale' | 'slide' | 'none';
+	brand: {
+		avatarType: 'initials' | 'image' | 'illustration';
+		avatarUrl: string;
+		illustration: string;
+		logoUrl: string;
+		showLogo: boolean;
+		headerTitle: string;
+		headerSubtitle: string;
+		statusText: string;
+		showAvatar: boolean;
+		showStatus: boolean;
+		poweredBy: boolean;
+	};
+}
+
+export interface ThemeConfig {
+	schema: number;
+	light: Record< string, string >;
+	dark: Record< string, string >;
+	vars: Record< string, string >;
+	ui: ThemeUi;
+	v: string;
+}
+
+export type WidgetStrings = Record< string, string >;
+
+export interface WidgetConfig {
+	rest: string;
+	assets: string;
+	version: string;
+	floating: boolean;
+	preload: boolean;
+	streaming: {
+		enabled: boolean;
+		firstTokenTimeout: number;
+	};
+	theme: ThemeConfig;
+	strings: WidgetStrings;
+	/** Set only in preview mode. */
+	preview?: PreviewOptions;
+}
+
+export interface QuickAction {
+	label: string;
+	type: 'url' | 'email' | 'phone' | 'whatsapp' | 'message';
+	href?: string;
+	message?: string;
+}
+
+/** Behavior settings from POST /session (never cached in page HTML). */
+export interface BehaviorConfig {
+	bot_name: string;
+	welcome_message: string;
+	starter_questions: string[];
+	quick_actions: QuickAction[];
+	max_message_length: number;
+	store_conversations: boolean;
+}
+
+export interface Source {
+	title: string;
+	url: string;
+}
+
+export type MessageStatus =
+	'pending' | 'streaming' | 'done' | 'error' | 'stopped';
+
+export interface ChatMessage {
+	id: string;
+	role: 'user' | 'bot';
+	text: string;
+	time: number;
+	status: MessageStatus;
+	source?: string;
+	sources?: Source[];
+	quickAnswerId?: number | null;
+	serverId?: number;
+	feedback?: -1 | 0 | 1;
+	/** Error text shown with a Retry button. */
+	error?: string;
+	/** The question a bot message answers (used by Retry and "Ask AI"). */
+	question?: string;
+}
+
+/** States the Customizer can force in preview mode. */
+export type PreviewState =
+	| 'launcher'
+	| 'empty'
+	| 'conversation'
+	| 'streaming'
+	| 'typing'
+	| 'error'
+	| 'offline';
+
+/** Sample content for the preview, supplied (translated) by the Customizer. */
+export interface PreviewSamples {
+	question: string;
+	/** Markdown answer showing formatting: bold, a list, a code block. */
+	answer: string;
+	sources: Source[];
+	quickQuestion: string;
+	quickAnswer: string;
+	/** Reply used when the admin types in the preview. */
+	reply: string;
+}
+
+export interface PreviewOptions {
+	/** Origin allowed to send preview messages (defaults to this page's origin). */
+	origin?: string;
+	state?: PreviewState;
+	behavior?: Partial< BehaviorConfig >;
+	samples?: Partial< PreviewSamples >;
+}
+
+/** What the launcher hands to the lazily loaded chat app. */
+export interface WidgetHost {
+	config: WidgetConfig;
+	element: HTMLElement;
+	root: ShadowRoot;
+	/** Element the app renders into. */
+	mount: HTMLElement;
+	inline: boolean;
+	preview: boolean;
+	isOpen: () => boolean;
+	open: () => void;
+	close: () => void;
+	/** Applies a (new) theme without re-rendering. */
+	setTheme: ( theme: ThemeConfig ) => void;
+	/** Shows the unread dot on the launcher while closed. */
+	notify: () => void;
+	/** Subscribes to open/close changes. */
+	onToggle: ( listener: ( open: boolean ) => void ) => () => void;
+	/** Element that receives focus back when the window closes. */
+	launcher: HTMLElement | null;
+}
+
+/** API the chat app returns once mounted. */
+export interface ChatApp {
+	send: ( text: string ) => void;
+	focus: () => void;
+	update: ( config: Partial< WidgetConfig > ) => void;
+	setState: ( state: PreviewState | null ) => void;
+	unmount: () => void;
+}
+
+declare global {
+	interface Window {
+		chatlumeWidgetConfig?: WidgetConfig;
+		Chatlume?: {
+			open: () => void;
+			close: () => void;
+			toggle: () => void;
+			send: ( text: string ) => void;
+			mountPreview: (
+				element: HTMLElement,
+				config: WidgetConfig
+			) => Promise< ChatApp >;
+		};
+		dataLayer?: unknown[];
+	}
+}
