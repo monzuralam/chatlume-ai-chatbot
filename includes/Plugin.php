@@ -17,6 +17,7 @@ use Chatlume\Installer\Migrations;
 use Chatlume\Installer\Multisite;
 use Chatlume\REST\ChatbotController;
 use Chatlume\REST\ChatController;
+use Chatlume\REST\ConversationsController;
 use Chatlume\REST\HealthController;
 use Chatlume\REST\ProvidersController;
 use Chatlume\REST\QuickAnswersController;
@@ -113,6 +114,7 @@ final class Plugin {
 		( new QuickAnswersController() )->register_routes();
 		( new HealthController() )->register_routes();
 		( new ChatbotController() )->register_routes();
+		( new ConversationsController() )->register_routes();
 	}
 
 	/**

@@ -551,7 +551,7 @@ Implementation decisions (for review):
 - The streaming test sends six events a quarter second apart from an admin-only route; the browser judges the result by when the events arrive, because only the browser can see buffering by proxies and CDNs.
 - Recommended PHP version is 8.2 or newer (the oldest PHP line still receiving security fixes on 2026-10-15); 8.0 and 8.1 still work and get a "recommended" notice.
 
-Module 5.2 – Chatbot page ✅ (2026-10-15, awaiting review)
+Module 5.2 – Chatbot page ✅ (2026-10-15)
 - [x] Personality: bot name, starting point (Customer support, Sales assistant, FAQ bot, Blank), system prompt editor with variable buttons inserted at the cursor, a character counter, and "Edit the starting instructions"
 - [x] First impression: welcome message, four starter question slots, up to four quick action buttons with per-type validation
 - [x] How it answers: creativity (temperature), longest answer, messages remembered, longest visitor message, reply language (visitor's or fixed)
@@ -565,6 +565,19 @@ Module 5.2 – Chatbot page ✅ (2026-10-15, awaiting review)
 Implementation decisions (for review):
 - Empty text fields keep using the built-in, translated defaults of the chosen starting point; the defaults are shown in grey so the admin sees exactly what visitors get.
 - The admin screen loads the widget script without page configuration, so it shows no floating button there and only provides `window.Chatlume.mountPreview()` for previews.
+
+Module 5.3 – Conversations ✅ (2026-10-15, awaiting review)
+- [x] Searchable, filterable list (search in messages, lead names, and emails; date range in the site's timezone; rating; answer type; has lead; language), 25 per page; filters, page, and the open transcript are kept in the address
+- [x] Transcript panel: page, language, AI model, estimated cost, lead, visitor type, and every message with its answer type, tokens, cost, response time, feedback, stop or provider error, and source links
+- [x] Delete one conversation or many at once (with confirmation)
+- [x] Export CSV (one row per message, UTF-8 with BOM) or JSON, using the current filters, up to the newest 2,000 conversations
+- [x] REST: `GET/DELETE /conversations`, `GET /conversations/export`, `GET/DELETE /conversations/{id}`
+
+Implementation decisions (for review):
+- Test conversations (`is_test`) are never listed or exported; session IDs and visitor hashes are never sent to the browser.
+- CSV cells that start with `=`, `+`, `-`, `@`, a tab, or a carriage return get a leading apostrophe, so visitor messages cannot run as spreadsheet formulas.
+- Empty date filters use fixed boundary dates, because strict SQL modes reject comparing a DATETIME column with an empty string.
+- Filter changes build on the address the page last requested, so quick successive changes (or a delayed search) never undo each other.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

@@ -124,6 +124,7 @@ class Assets {
 			'restNamespace' => Plugin::REST_NAMESPACE,
 			'assetsUrl'     => CHATLUME_URL . 'build/admin/',
 			'adminUrl'      => admin_url( 'admin.php?page=' . Plugin::ADMIN_SLUG ),
+			'siteUrl'       => home_url( '/' ),
 			'docsUrl'       => 'https://wordpress.org/plugins/chatlume-ai-chatbot/',
 			'colorMode'     => AdminPage::get_color_mode( (int) $user->ID ),
 			'user'          => array(

@@ -79,6 +79,7 @@
 		"@wordpress/jest-preset-default": "^14.2.0",
 		"@wordpress/postcss-plugins-preset": "^5.57.0",
 		"@wordpress/scripts": "^36.1.0",
+		"@wordpress/url": "^4.57.0",
 		"babel-jest": "^30.5.0",
 		"copy-webpack-plugin": "^10.2.4",
 		"cssnano": "^6.1.2",

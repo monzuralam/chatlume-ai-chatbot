@@ -1,5 +1,5 @@
 import { __ } from '@wordpress/i18n';
-import { Bot, House, Plug, Settings } from 'lucide-react';
+import { Bot, House, MessagesSquare, Plug, Settings } from 'lucide-react';
 import { lazy } from 'react';
 
 import { pageRegistry } from '../extensions/registry';
@@ -18,6 +18,12 @@ const ChatbotRoute = lazy(
 	() =>
 		import(
 			/* webpackChunkName: "route-chatbot" */ './chatbot/ChatbotRoute'
+		)
+);
+const ConversationsRoute = lazy(
+	() =>
+		import(
+			/* webpackChunkName: "route-conversations" */ './conversations/ConversationsRoute'
 		)
 );
 const SettingsRoute = lazy(
@@ -57,6 +63,15 @@ export function registerBuiltInPages(): void {
 		icon: Bot,
 		component: ChatbotRoute,
 		order: 200,
+	} );
+
+	pageRegistry.register( {
+		id: 'conversations',
+		title: __( 'Conversations', 'chatlume-ai-chatbot' ),
+		path: '/conversations',
+		icon: MessagesSquare,
+		component: ConversationsRoute,
+		order: 300,
 	} );
 
 	pageRegistry.register( {
