@@ -9,6 +9,7 @@ import {
 	Paintbrush,
 	Plug,
 	Settings,
+	Type,
 	Webhook,
 } from 'lucide-react';
 import { lazy } from 'react';
@@ -63,6 +64,9 @@ const PlaygroundRoute = lazy(
 		import(
 			/* webpackChunkName: "route-playground" */ './playground/PlaygroundRoute'
 		)
+);
+const TextsRoute = lazy(
+	() => import( /* webpackChunkName: "route-texts" */ './texts/TextsRoute' )
 );
 const IntegrationsRoute = lazy(
 	() =>
@@ -126,6 +130,15 @@ export function registerBuiltInPages(): void {
 		order: 5,
 		wide: true,
 		hidden: true,
+	} );
+
+	pageRegistry.register( {
+		id: 'texts',
+		title: __( 'Widget texts', 'chatlume-ai-chatbot' ),
+		path: '/texts',
+		icon: Type,
+		component: TextsRoute,
+		order: 215,
 	} );
 
 	pageRegistry.register( {

@@ -8,6 +8,7 @@
 namespace Chatlume\Engagement;
 
 use Chatlume\Chat\ConversationState;
+use Chatlume\Frontend\WidgetTexts;
 use Chatlume\Settings\Settings;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -57,7 +58,7 @@ class Leads {
 			'after'    => max( 1, (int) Settings::get( 'leads.after', 2 ) ),
 			'required' => 'before' === $timing && (bool) Settings::get( 'leads.required', false ),
 			'ask_name' => (bool) Settings::get( 'leads.ask_name', true ),
-			'consent'  => (string) Settings::get( 'leads.consent', '' ),
+			'consent'  => WidgetTexts::translate( 'leads.consent', (string) Settings::get( 'leads.consent', '' ) ),
 			'given'    => null !== self::for_session( $session_id ),
 		);
 	}

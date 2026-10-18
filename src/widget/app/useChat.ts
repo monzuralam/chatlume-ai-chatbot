@@ -124,6 +124,24 @@ function pageLanguage(): string {
 	return ( document.documentElement.lang || '' ).slice( 0, 20 );
 }
 
+/**
+ * Behavior saved by an earlier page, only when it is in this page's
+ * language (multilingual sites send texts per language).
+ *
+ * @return Saved behavior, or nothing.
+ */
+function cachedBehavior(): Partial< BehaviorConfig > {
+	const saved = read< Partial< BehaviorConfig > & { pageLanguage?: string } >(
+		'behavior',
+		{}
+	);
+	if ( ( saved.pageLanguage ?? '' ) !== pageLanguage() ) {
+		return {};
+	}
+	const { pageLanguage: _language, ...behavior } = saved;
+	return behavior;
+}
+
 export interface Chat {
 	messages: ChatMessage[];
 	behavior: BehaviorConfig;
@@ -173,9 +191,7 @@ export function useChat( host: WidgetHost ): Chat {
 	);
 	const [ behavior, setBehaviorState ] = useState< BehaviorConfig >( () => ( {
 		...DEFAULT_BEHAVIOR,
-		...( preview
-			? config.preview?.behavior
-			: read< Partial< BehaviorConfig > >( 'behavior', {} ) ),
+		...( preview ? config.preview?.behavior : cachedBehavior() ),
 	} ) );
 	const [ busy, setBusy ] = useState( false );
 	const [ otherTabBusy, setOtherTabBusy ] = useState( false );
@@ -335,7 +351,10 @@ export function useChat( host: WidgetHost ): Chat {
 						expires: data.expires,
 					} );
 					if ( data.config ) {
-						write( 'behavior', data.config );
+						write( 'behavior', {
+							...data.config,
+							pageLanguage: pageLanguage(),
+						} );
 						setBehaviorState( {
 							...DEFAULT_BEHAVIOR,
 							...data.config,

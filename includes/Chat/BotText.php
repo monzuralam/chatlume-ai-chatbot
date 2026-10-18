@@ -7,6 +7,7 @@
 
 namespace Chatlume\Chat;
 
+use Chatlume\Frontend\WidgetTexts;
 use Chatlume\Settings\Settings;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -72,6 +73,9 @@ final class BotText {
 	 */
 	public static function starters(): array {
 		$saved = array_values( array_filter( (array) Settings::get( 'chatbot.starter_questions', array() ), 'is_string' ) );
+		foreach ( $saved as $index => $question ) {
+			$saved[ $index ] = WidgetTexts::translate( 'chatbot.starter_questions.' . $index, $question );
+		}
 
 		return array() !== $saved ? $saved : self::default_starters( self::preset() );
 	}
@@ -230,14 +234,14 @@ final class BotText {
 	}
 
 	/**
-	 * A text setting, or the default when empty.
+	 * A text setting in the visitor's language, or the default when empty.
 	 *
 	 * @param string $path     Setting path.
 	 * @param string $fallback Default.
 	 * @return string
 	 */
 	private static function setting( string $path, string $fallback ): string {
-		$value = trim( (string) Settings::get( $path, '' ) );
+		$value = trim( WidgetTexts::translate( $path, trim( (string) Settings::get( $path, '' ) ) ) );
 
 		return '' !== $value ? $value : $fallback;
 	}

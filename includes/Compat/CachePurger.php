@@ -48,6 +48,8 @@ class CachePurger {
 	 */
 	public function register(): void {
 		add_action( 'chatlume_appearance_published', array( self::class, 'purge' ) );
+		// Labels and translated texts are printed into pages too.
+		add_action( 'chatlume_widget_texts_saved', array( self::class, 'purge' ) );
 		add_action( 'update_option_' . Settings::OPTION, array( self::class, 'on_settings_change' ), 10, 2 );
 	}
 

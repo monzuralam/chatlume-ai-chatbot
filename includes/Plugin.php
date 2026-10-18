@@ -39,6 +39,7 @@ use Chatlume\REST\ProvidersController;
 use Chatlume\REST\QuickAnswersController;
 use Chatlume\REST\SettingsController;
 use Chatlume\REST\StatsController;
+use Chatlume\REST\TextsController;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -147,6 +148,7 @@ final class Plugin {
 		( new DisplayController() )->register_routes();
 		( new EngagementController() )->register_routes();
 		( new IntegrationsController() )->register_routes();
+		( new TextsController() )->register_routes();
 		( new AppearanceController() )->register_routes();
 		( new KnowledgeController() )->register_routes();
 	}

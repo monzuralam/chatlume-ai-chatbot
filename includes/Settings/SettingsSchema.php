@@ -358,7 +358,7 @@ final class SettingsSchema {
 	 * @param array<string, mixed> $schema Schema node.
 	 * @return string
 	 */
-	private static function sanitize_string( string $value, array $schema ): string {
+	public static function sanitize_string( string $value, array $schema ): string {
 		switch ( $schema['format'] ?? 'text' ) {
 			case 'textarea':
 				$value = sanitize_textarea_field( $value );

@@ -13,11 +13,13 @@ use Chatlume\Chat\ChatService;
 use Chatlume\Chat\StopSignal;
 use Chatlume\Chat\StreamHandler;
 use Chatlume\Appearance\TokenResolver;
+use Chatlume\Compat\Multilingual;
 use Chatlume\Data\ConversationRepository;
 use Chatlume\Data\MessageRepository;
 use Chatlume\Data\QuickAnswerRepository;
 use Chatlume\Engagement\Handoff;
 use Chatlume\Engagement\Leads;
+use Chatlume\Frontend\WidgetTexts;
 use Chatlume\Plugin;
 use Chatlume\Security\IpResolver;
 use Chatlume\Security\RateLimiter;
@@ -252,6 +254,7 @@ class ChatController {
 		if ( is_wp_error( $origin ) ) {
 			return $origin;
 		}
+		WidgetTexts::use_language( Multilingual::from_tag( (string) $request->get_param( 'language' ) ) );
 
 		$visitor = IpResolver::visitor_hash();
 		$limited = ( new RateLimiter() )->hit( 'session-start:' . $visitor, self::SESSION_LIMIT, 10 * MINUTE_IN_SECONDS );
@@ -279,7 +282,7 @@ class ChatController {
 		);
 
 		// A cached page may carry an older look: send the published theme when its version differs.
-		$theme   = TokenResolver::config();
+		$theme   = WidgetTexts::theme( TokenResolver::config() );
 		$version = (string) $request->get_param( 'v' );
 		if ( '' !== $version && $version !== (string) $theme['v'] ) {
 			$data['theme'] = $theme;
@@ -398,6 +401,8 @@ class ChatController {
 		if ( is_wp_error( $origin ) ) {
 			return $origin;
 		}
+		// Replies, messages, and defaults in the visitor's language.
+		WidgetTexts::use_language( Multilingual::from_tag( (string) $request->get_param( 'language' ) ) );
 
 		if ( '' !== (string) $request->get_param( 'website' ) ) {
 			return new WP_Error( 'chatlume_invalid_request', BotText::error(), array( 'status' => 400 ) );
@@ -518,8 +523,8 @@ class ChatController {
 	public static function quick_actions(): array {
 		$actions = array();
 
-		foreach ( (array) Settings::get( 'chatbot.quick_actions', array() ) as $action ) {
-			$label = trim( (string) ( $action['label'] ?? '' ) );
+		foreach ( array_values( (array) Settings::get( 'chatbot.quick_actions', array() ) ) as $index => $action ) {
+			$label = trim( WidgetTexts::translate( 'chatbot.quick_actions.' . $index . '.label', trim( (string) ( $action['label'] ?? '' ) ) ) );
 			$type  = (string) ( $action['type'] ?? 'url' );
 			$value = trim( (string) ( $action['value'] ?? '' ) );
 
@@ -531,7 +536,7 @@ class ChatController {
 				$actions[] = array(
 					'label'   => $label,
 					'type'    => $type,
-					'message' => $value,
+					'message' => WidgetTexts::translate( 'chatbot.quick_actions.' . $index . '.value', $value ),
 				);
 				continue;
 			}

@@ -190,8 +190,9 @@ class WidgetLoader {
 					'enabled'           => (bool) Settings::get( 'streaming.enabled', true ),
 					'firstTokenTimeout' => (int) Settings::get( 'streaming.first_token_timeout', 20 ),
 				),
-				'theme'     => TokenResolver::config(),
-				'strings'   => WidgetStrings::all(),
+				// Texts in the page's language (WPML/Polylang), with the admin's own wording.
+				'theme'     => WidgetTexts::theme( TokenResolver::config() ),
+				'strings'   => WidgetTexts::labels(),
 				// Chat events for the site's own analytics (window.dataLayer and DOM events).
 				'analytics' => (bool) Settings::get( 'integrations.analytics', false ),
 				// Public Cloudflare Turnstile site key, only when Turnstile is on.

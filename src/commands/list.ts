@@ -75,6 +75,15 @@ export function chatlumeCommands(): ChatlumeCommand[] {
 			route: '/knowledge',
 		},
 		{
+			name: 'chatlume/texts',
+			label: __( 'Chatlume: Widget texts', 'chatlume-ai-chatbot' ),
+			searchLabel: __(
+				'chatbot labels wording translate language wpml polylang',
+				'chatlume-ai-chatbot'
+			),
+			route: '/texts',
+		},
+		{
 			name: 'chatlume/integrations',
 			label: __( 'Chatlume: Integrations', 'chatlume-ai-chatbot' ),
 			searchLabel: __(

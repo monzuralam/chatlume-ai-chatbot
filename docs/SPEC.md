@@ -825,7 +825,7 @@ Implementation decisions (for review):
 - The Turnstile verification address is marked for Plugin Check as a server-side API call; both Cloudflare addresses are disclosed in the readme.
 - Chat app: 26.9 KB gzipped (+0.5 KB); launcher 8.0 KB gzipped (+0.1 KB, Phase 8 item).
 
-Module 7.4 – Cache purging and optimization-plugin compatibility ✅ (2026-10-18, awaiting review)
+Module 7.4 – Cache purging and optimization-plugin compatibility ✅ (2026-10-18)
 - [x] `Compat\CachePurger`: clears the page cache of WP Rocket (`rocket_clean_domain()`), LiteSpeed Cache (`litespeed_purge_all`), W3 Total Cache (`w3tc_flush_all()`), WP Super Cache (`wp_cache_clear_cache()`), WP Fastest Cache (`wpfc_clear_all_cache`), and SiteGround Optimizer (`sg_cachepress_purge_cache()`), each only when its API exists, at most once per request; action `chatlume_page_cache_purged` for hosts and other caches
 - [x] Purged when a widget look is published and when a settings section printed into pages changes (display, streaming, integrations, chatbot texts); other settings never purge
 - [x] Publishing in the Customizer names the caches that were cleared and, when Cloudflare is detected (its plugin, a CF-Ray header, or the Cloudflare proxy setting; filter `chatlume_detected_cdn`), suggests purging it
@@ -838,6 +838,24 @@ Implementation decisions (for review):
 - Exclusion filters are registered unconditionally (a filter does nothing unless its plugin applies it, and this avoids plugin load-order issues); purge calls are guarded by existence checks.
 - Verified live with Autoptimize (JS aggregation including inline scripts) and LiteSpeed Cache (combine, minify, delayed JS): the button appears without interaction and chats work.
 
+Module 7.5 – Languages and widget texts ✅ (2026-10-18, awaiting review)
+
+Approved decision: per-language texts are edited in Chatlume's own "Widget texts" page (works with free Polylang and WPML without String Translation).
+
+- [x] `Compat\Multilingual`: the site's languages from Polylang (`pll_languages_list`, `pll_default_language`, `pll_current_language`) or WPML (`wpml_active_languages`, `wpml_default_language`, `wpml_current_language`), the main language first; the page language the widget sends ("bn-BD") is matched to a language by locale, code, then primary language, otherwise the main one
+- [x] `Frontend\WidgetTexts`: per-language interface labels (every widget label except the error and offline messages, which are the Chatbot page's, and the character counter) and translations of the admin's own texts: bot name, welcome message, starter questions, quick action button texts and messages, off-topic, offline, error, and site-search messages, the invitation message, the consent text, and the Customizer's button text, button message bubble, header title, subtitle, and status text
+- [x] Fallbacks: an empty label uses WordPress's translation for that language; an empty translation uses the main language's text; an empty main text uses the built-in default in the visitor's language
+- [x] Texts reach visitors in their language on the page (labels, invitation, theme texts) and through `/session` and `/chat`, which switch to the visitor's language and locale for the request; the theme version changes per language, and the widget only reuses saved settings from a page in the same language
+- [x] Widget texts page (sidebar after Knowledge) with a language switcher on multilingual sites, search, "Your texts" with the main-language text next to each translation, label groups (chat window, message box, messages, lead form, talk to a person, problems) with the current text in grey, a "Changed" mark, the sticky save bar, and a confirmation before switching language with unsaved changes; a "Chatlume: Widget texts" command
+- [x] REST `GET/POST /texts` (managers only; one language at a time; unknown keys dropped and every text sanitized like its setting); saving clears page caches
+- [x] Knowledge and quick answers were already filtered by the page language (Phase 6)
+
+Implementation decisions (for review):
+- Texts are stored in the non-autoloaded option `chatlume_widget_texts` (language code => labels and translations); the main language's own texts stay where they are written (Chatbot, Display, Customize pages).
+- Starter questions and quick actions are translated by position, so reordering them on the Chatbot page needs the translations to be checked.
+- Quick action links (pages, email, phone, WhatsApp) are the same in every language; only the button text and preset messages are translated.
+- Verified live with Polylang's public functions emulated by a temporary must-use plugin (English and Bengali), rather than installing Polylang on the shared test site.
+
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:
 - AI Actions via provider tool calling, using the Abilities API as the tool registry (lead qualification, quote requests, bookings).
@@ -849,6 +867,7 @@ Keep the architecture ready for these without rewrites:
 - White-label mode for agencies.
 - URL and sitemap crawler for external knowledge sources.
 - AI-generated weekly insights email.
+- More translation plugins as language sources for Widget texts: TranslatePress (its `trp_settings` option and current language) and Weglot (`weglot_get_original_language()`, `weglot_get_current_language()`, `weglot_get_destination_languages()`), each a small addition to `Compat\Multilingual`. MultilingualPress already works (one site per language); GTranslate's free browser-side translation cannot be supported because the server never knows the language.
 
 ## Output rules
 - Every file must be complete and runnable. No TODOs or placeholders.

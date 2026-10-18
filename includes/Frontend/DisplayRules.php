@@ -283,7 +283,7 @@ class DisplayRules {
 			return null;
 		}
 
-		$message = trim( (string) ( $triggers['message'] ?? '' ) );
+		$message = trim( WidgetTexts::translate( 'display.triggers.message', trim( (string) ( $triggers['message'] ?? '' ) ) ) );
 
 		return array(
 			'action'        => 'open' === ( $triggers['action'] ?? '' ) ? 'open' : 'teaser',

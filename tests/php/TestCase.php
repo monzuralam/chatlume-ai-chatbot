@@ -14,6 +14,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 use Brain\Monkey;
 use Brain\Monkey\Functions;
 use Chatlume\Appearance\FontCatalog;
+use Chatlume\Compat\Multilingual;
+use Chatlume\Frontend\WidgetTexts;
 use Chatlume\Providers\ModelSuggestions;
 use Chatlume\Providers\ProviderRegistry;
 use Yoast\PHPUnitPolyfills\TestCases\TestCase as PolyfillTestCase;
@@ -194,6 +196,13 @@ abstract class TestCase extends PolyfillTestCase {
 		FontCatalog::flush();
 
 		ProviderRegistry::reset();
+		Multilingual::reset();
+		WidgetTexts::reset();
+		// Once a test defines Polylang's functions they stay defined, so every
+		// test sees them, answering "no languages" unless a test sets them up.
+		Functions\when( 'pll_languages_list' )->justReturn( array() );
+		Functions\when( 'pll_default_language' )->justReturn( false );
+		Functions\when( 'pll_current_language' )->justReturn( false );
 		ModelSuggestions::set_data( null );
 	}
 
