@@ -13,6 +13,8 @@ import { request } from './api';
 import {
 	chatbotSettingsSchema,
 	costsSettingsSchema,
+	handoffSettingsSchema,
+	leadsSettingsSchema,
 	quickAnswersSettingsSchema,
 	type Settings,
 } from './settingsSchema';
@@ -126,6 +128,8 @@ export const chatbotFormSchema = z
 		chatbot: chatbotSettingsSchema,
 		quick_answers: quickAnswersSettingsSchema,
 		costs: costsSettingsSchema,
+		leads: leadsSettingsSchema,
+		handoff: handoffSettingsSchema,
 	} )
 	.superRefine( ( values, context ) => {
 		// The server leaves out unusable buttons; tell the admin instead.
@@ -187,6 +191,8 @@ export function toChatbotForm( settings: Settings ): ChatbotFormValues {
 		},
 		quick_answers: settings.quick_answers,
 		costs: settings.costs,
+		leads: settings.leads,
+		handoff: settings.handoff,
 	};
 }
 

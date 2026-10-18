@@ -92,6 +92,38 @@ class MessageRepository {
 	}
 
 	/**
+	 * The whole conversation for a transcript, oldest first.
+	 *
+	 * @param int $conversation_id Conversation ID.
+	 * @param int $limit           Most messages.
+	 * @return array<int, array{role: string, content: string}>
+	 */
+	public function transcript( int $conversation_id, int $limit = 200 ): array {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Chatlume's own table; read once per email.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT role, content FROM %i WHERE conversation_id = %d AND role IN ('user', 'assistant') ORDER BY id ASC LIMIT %d",
+				Schema::table( 'messages' ),
+				$conversation_id,
+				$limit
+			),
+			ARRAY_A
+		);
+
+		return array_map(
+			static function ( array $row ): array {
+				return array(
+					'role'    => (string) $row['role'],
+					'content' => (string) $row['content'],
+				);
+			},
+			is_array( $rows ) ? $rows : array()
+		);
+	}
+
+	/**
 	 * Stores visitor feedback on an assistant message of a conversation.
 	 *
 	 * @param int $message_id      Message ID.

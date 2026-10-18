@@ -79,6 +79,8 @@ final class SettingsSchema {
 			'streaming'     => ChatSettingsSchema::streaming(),
 			'debug'         => ChatSettingsSchema::debug(),
 			'knowledge'     => ChatSettingsSchema::knowledge(),
+			'leads'         => ChatSettingsSchema::leads(),
+			'handoff'       => ChatSettingsSchema::handoff(),
 		);
 	}
 

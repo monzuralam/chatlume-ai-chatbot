@@ -103,6 +103,8 @@ Nothing is removed unless you enable **Delete all data on uninstall** in Chatlum
 * Knowledge page: choose what the bot learns from, upload documents by drag and drop, manage quick answers with inline editing and CSV import and export, and follow the index size, re-indexing progress, and embeddings in one place.
 * Proactive invitations: invite visitors with a message bubble or an opened chat after some time on the page, after scrolling, or when they are about to leave, on every page or only chosen ones, as often as you allow.
 * Voice: visitors can speak their questions and have answers read aloud, using their browser's built-in speech features.
+* Lead capture: ask for a name and email before chatting or after a few messages, with an optional consent checkbox and an email to your team for each new lead.
+* Talk to a person: visitors can reach you through your contact page, email, phone, or WhatsApp, or send the conversation to your team, who can reply by email. Visitors can also email a conversation to themselves.
 
 == External services ==
 

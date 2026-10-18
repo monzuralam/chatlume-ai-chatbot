@@ -194,6 +194,39 @@ export const displaySettingsSchema = z
 	} )
 	.strict();
 
+const optionalEmail = z.union( [ z.literal( '' ), z.email().max( 100 ) ] );
+
+export const leadsSettingsSchema = z
+	.object( {
+		enabled: z.boolean(),
+		timing: z.enum( [ 'before', 'after' ] ),
+		after: z.number().int().min( 1 ).max( 20 ),
+		required: z.boolean(),
+		ask_name: z.boolean(),
+		consent: z.string().max( 300 ),
+		notify: z.boolean(),
+	} )
+	.strict();
+
+export const handoffSettingsSchema = z
+	.object( {
+		enabled: z.boolean(),
+		contact: z
+			.string()
+			.max( 500 )
+			.refine(
+				( value ) => value === '' || /^https?:\/\/\S+$/i.test( value ),
+				{ message: 'action:url' }
+			),
+		email: optionalEmail,
+		phone: z.string().max( 40 ),
+		whatsapp: z.string().max( 40 ),
+		email_team: z.boolean(),
+		transcript: z.boolean(),
+		team_email: optionalEmail,
+	} )
+	.strict();
+
 export const knowledgeSettingsSchema = z
 	.object( {
 		post_types: z.array( z.string().max( 20 ) ).max( 30 ),
@@ -230,6 +263,8 @@ export const settingsSchema = z
 		streaming: streamingSettingsSchema,
 		debug: debugSettingsSchema,
 		knowledge: knowledgeSettingsSchema,
+		leads: leadsSettingsSchema,
+		handoff: handoffSettingsSchema,
 	} )
 	.strict();
 
@@ -277,6 +312,8 @@ export const IMPORTABLE_SECTIONS = [
 	'streaming',
 	'debug',
 	'knowledge',
+	'leads',
+	'handoff',
 ] as const;
 
 /**

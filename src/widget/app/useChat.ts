@@ -114,6 +114,13 @@ export interface Chat {
 	reset: () => void;
 	setBehavior: ( behavior: Partial< BehaviorConfig > ) => void;
 	force: ( state: PreviewState ) => void;
+	/** Calls a public route with the session token and conversation ID. */
+	post: < T >(
+		path: string,
+		body: Record< string, unknown >
+	) => Promise< T >;
+	/** The current conversation ID ('' before the first message). */
+	conversationId: () => string;
 }
 
 /**
@@ -788,6 +795,25 @@ export function useChat( host: WidgetHost ): Chat {
 		[ patch, save, preview, ensureSession, config.rest, strings.error ]
 	);
 
+	const post = useCallback(
+		async < T >( path: string, body: Record< string, unknown > ) => {
+			const token = await ensureSession();
+			return postJson< T >(
+				config.rest,
+				path,
+				{
+					token,
+					conversation_id: conversationRef.current,
+					...body,
+				},
+				strings.error
+			);
+		},
+		[ ensureSession, config.rest, strings.error ]
+	);
+
+	const conversationId = useCallback( () => conversationRef.current, [] );
+
 	const stop = useCallback( () => {
 		if ( ! streamRef.current.id || stoppingRef.current ) {
 			abortRef.current?.( 'user' );
@@ -861,5 +887,7 @@ export function useChat( host: WidgetHost ): Chat {
 		reset,
 		setBehavior,
 		force,
+		post,
+		conversationId,
 	};
 }

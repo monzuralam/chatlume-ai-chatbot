@@ -207,6 +207,50 @@ class ConversationState {
 	}
 
 	/**
+	 * The whole conversation (up to 200 messages), oldest first.
+	 *
+	 * @param string $id Conversation ID (already checked against the session).
+	 * @return array<int, array{role: string, content: string}>
+	 */
+	public function transcript( string $id ): array {
+		if ( ctype_digit( $id ) ) {
+			return $this->messages->transcript( (int) $id );
+		}
+
+		$data = get_transient( self::transient_key( $id ) );
+
+		return is_array( $data ) ? array_values( (array) $data['messages'] ) : array();
+	}
+
+	/**
+	 * Stores the visitor's name and email on the conversation (stored ones
+	 * only; temporary conversations keep nothing).
+	 *
+	 * @param string $id    Conversation ID.
+	 * @param string $name  Name.
+	 * @param string $email Email.
+	 * @return void
+	 */
+	public function set_lead( string $id, string $name, string $email ): void {
+		if ( ctype_digit( $id ) ) {
+			$this->conversations->set_lead( (int) $id, $name, $email );
+		}
+	}
+
+	/**
+	 * Notes something about a stored conversation (for example a handoff).
+	 *
+	 * @param string               $id   Conversation ID.
+	 * @param array<string, mixed> $meta Keys to set.
+	 * @return void
+	 */
+	public function note( string $id, array $meta ): void {
+		if ( ctype_digit( $id ) ) {
+			$this->conversations->merge_meta( (int) $id, $meta );
+		}
+	}
+
+	/**
 	 * Transient key for an unstored conversation.
 	 *
 	 * @param string $id Conversation ID.

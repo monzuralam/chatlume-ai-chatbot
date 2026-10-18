@@ -780,7 +780,7 @@ Approved decisions:
 - "Match my website", Font Library and theme.json fonts, and "Preview on my site" were delivered in Phase 5.
 - Transcript emails: "Email this conversation to the team" always goes to the notification address; a visitor can email the transcript only to the email they gave in the lead form, at most 3 times per session per hour.
 
-Module 7.1 – Proactive invitations and voice ✅ (2026-10-18, awaiting review)
+Module 7.1 – Proactive invitations and voice ✅ (2026-10-18)
 - [x] Settings `display.triggers`: invitation on/off, show a message bubble or open the chat, bubble text (friendly default), after N seconds, after N% scrolled, on exit intent (desktop), on every page or only chosen pages and addresses, frequency (once per visit, day, or week, or every page view), and skipping visitors who already chatted
 - [x] The page carries the invitation only when it applies to that page, so cached pages stay correct; it never shows while the chat is open or outside business hours
 - [x] "Open the chat" shows the bubble instead on small screens, so the page is never covered on phones; the bubble is announced to screen readers and the launcher pulses once (no motion under prefers-reduced-motion)
@@ -792,6 +792,21 @@ Module 7.1 – Proactive invitations and voice ✅ (2026-10-18, awaiting review)
 Implementation decisions (for review):
 - Invitation code is a separate 0.7 KB (gzipped) chunk loaded only on pages with an invitation. The launcher grew by 0.26 KB to 8.0 KB gzipped; it was already 7.8 KB, above the 6 KB budget, before this module, to be addressed in Phase 8. The chat app is 24.5 KB gzipped (budget 45 KB).
 - Voice input does not send automatically, so visitors can correct misheard words.
+
+Module 7.2 – Lead capture, handoff, and transcript email ✅ (2026-10-18, awaiting review)
+- [x] Settings `leads`: on/off, before the first message or after N messages, required (before only; no "Skip"), ask for a name, optional consent checkbox (bold, italics, links), email the team about new leads
+- [x] Settings `handoff`: "Talk to a person" with a contact page, email, phone, and WhatsApp (only usable ones shown), "Email this conversation to the team", visitors emailing the conversation to themselves, and the team address (default: the site admin email)
+- [x] The lead belongs to the chat session: a form filled in before any conversation, and every later conversation of the session, carry it; stored on the conversation (`lead_name`, `lead_email`) and kept with the session for its lifetime (30 idle minutes when conversation storage is off)
+- [x] Widget: lead form (inline validation, consent, Skip), the "Talk to a person" card (links, and the conversation to the team after asking for an email if needed), and "Talk to a person" / "Email me this conversation" in the header menu; a "Lead form" preview state in the Customizer
+- [x] Plain-text emails through wp_mail: new lead and handoff emails to the team with Reply-To set to the visitor; transcripts to the visitor's own lead email only
+- [x] REST: `POST /lead`, `/handoff`, `/transcript` — same-origin, signed session, owned conversation, and 3 per session per hour for anything that stores details or sends email (only valid requests count); a required pre-chat form is also enforced by `/chat`
+- [x] Actions `chatlume_lead_captured` and `chatlume_handoff_requested`; handoffs are noted in the conversation's meta
+- [x] Chatbot page: "Lead capture" and "Talk to a person" sections
+
+Implementation decisions (for review):
+- The team gets one email per new lead (a different email address in the same session counts as new).
+- Link handoffs (contact, phone, WhatsApp, email) are recorded when clicked; only "Email this conversation" sends an email.
+- Chat app: 26.4 KB gzipped (+1.9 KB); the launcher is unchanged.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

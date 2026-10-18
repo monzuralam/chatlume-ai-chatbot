@@ -229,6 +229,55 @@ final class ChatSettingsSchema {
 	}
 
 	/**
+	 * Lead capture: name and email before chatting or after a few messages.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function leads(): array {
+		return self::section(
+			__( 'Lead capture.', 'chatlume-ai-chatbot' ),
+			array(
+				'enabled'  => self::boolean( false ),
+				// Before the first message, or after a few messages.
+				'timing'   => self::choice( 'after', array( 'before', 'after' ) ),
+				// Visitor messages before the form shows (timing "after").
+				'after'    => self::integer( 2, 1, 20 ),
+				// Before chatting: the form must be filled in (no "Skip").
+				'required' => self::boolean( false ),
+				'ask_name' => self::boolean( true ),
+				// Consent checkbox text; empty shows no checkbox.
+				'consent'  => self::text( '', 300, 'rich' ),
+				// Email the team about each new lead.
+				'notify'   => self::boolean( true ),
+			)
+		);
+	}
+
+	/**
+	 * Human handoff: ways to reach a person, and emailing a conversation.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function handoff(): array {
+		return self::section(
+			__( 'Talk to a person.', 'chatlume-ai-chatbot' ),
+			array(
+				'enabled'    => self::boolean( false ),
+				'contact'    => self::text( '', 500, 'url' ),
+				'email'      => self::text( '', 100, 'email' ),
+				'phone'      => self::text( '', 40 ),
+				'whatsapp'   => self::text( '', 40 ),
+				// "Email this conversation to the team".
+				'email_team' => self::boolean( true ),
+				// Visitors may email the conversation to the address they gave.
+				'transcript' => self::boolean( true ),
+				// Team address for conversations and new leads (empty: the site admin email).
+				'team_email' => self::text( '', 100, 'email' ),
+			)
+		);
+	}
+
+	/**
 	 * Proactive invitations: a teaser or an opened chat when a visitor has
 	 * spent some time, scrolled, or is about to leave.
 	 *

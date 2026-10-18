@@ -126,6 +126,48 @@ class ConversationRepository {
 	}
 
 	/**
+	 * Stores the visitor's name and email.
+	 *
+	 * @param int    $id    Conversation ID.
+	 * @param string $name  Name.
+	 * @param string $email Email.
+	 * @return void
+	 */
+	public function set_lead( int $id, string $name, string $email ): void {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Update on Chatlume's own table.
+		$wpdb->update(
+			Schema::table( 'conversations' ),
+			array(
+				'lead_name'  => $name,
+				'lead_email' => $email,
+			),
+			array( 'id' => $id ),
+			array( '%s', '%s' ),
+			array( '%d' )
+		);
+	}
+
+	/**
+	 * Adds keys to a conversation's meta.
+	 *
+	 * @param int                  $id   Conversation ID.
+	 * @param array<string, mixed> $meta Keys to set.
+	 * @return void
+	 */
+	public function merge_meta( int $id, array $meta ): void {
+		global $wpdb;
+
+		$row     = $this->find( $id );
+		$current = null !== $row ? json_decode( (string) ( $row['meta'] ?? '' ), true ) : array();
+		$current = is_array( $current ) ? $current : array();
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Update on Chatlume's own table.
+		$wpdb->update( Schema::table( 'conversations' ), array( 'meta' => (string) wp_json_encode( array_merge( $current, $meta ) ) ), array( 'id' => $id ), array( '%s' ), array( '%d' ) );
+	}
+
+	/**
 	 * Deletes conversations (and their messages) last active before a date.
 	 *
 	 * @param string $before UTC datetime (Y-m-d H:i:s).

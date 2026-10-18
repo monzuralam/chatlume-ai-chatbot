@@ -109,6 +109,9 @@ export function sampleMessages(
 				user( samples.question ),
 				message( { text: strings.offline ?? '', source: 'offline' } ),
 			];
+		case 'lead':
+			// The lead form shows on an empty chat (the app adds it).
+			return [];
 	}
 	return null;
 }

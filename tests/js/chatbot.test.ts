@@ -46,6 +46,25 @@ const settings = {
 		cap_behavior: 'site_search',
 		alert_email: '',
 	},
+	leads: {
+		enabled: true,
+		timing: 'after',
+		after: 2,
+		required: false,
+		ask_name: true,
+		consent: '',
+		notify: true,
+	},
+	handoff: {
+		enabled: true,
+		contact: '',
+		email: '',
+		phone: '',
+		whatsapp: '',
+		email_team: true,
+		transcript: true,
+		team_email: '',
+	},
 } as unknown as Settings;
 
 const defaults: ChatbotInfo[ 'defaults' ] = {
@@ -117,6 +136,32 @@ describe( 'chatbot form conversion', () => {
 		expect( fieldMessage( errors.chatbot?.blocked_words ) ).toBe(
 			'This is too long or too large.'
 		);
+	} );
+
+	it( 'checks the handoff contact page and team address', () => {
+		// Another test leaves an invalid alert email on the shared settings object.
+		const form = toChatbotForm(
+			JSON.parse( JSON.stringify( settings ) ) as Settings
+		);
+		form.costs.alert_email = '';
+		form.handoff.contact = 'contact-us';
+		form.handoff.team_email = 'team@';
+
+		const result = chatbotFormSchema.safeParse( fromChatbotForm( form ) );
+		const errors = issuesToErrors< typeof form >(
+			result.success ? [] : result.error.issues
+		);
+
+		expect( fieldMessage( errors.handoff?.contact ) ).toBe(
+			'Enter a web address starting with http:// or https://.'
+		);
+		expect( errors.handoff?.team_email ).toBeDefined();
+
+		form.handoff.contact = 'https://shop.test/contact';
+		form.handoff.team_email = '';
+		expect(
+			chatbotFormSchema.safeParse( fromChatbotForm( form ) ).success
+		).toBe( true );
 	} );
 } );
 

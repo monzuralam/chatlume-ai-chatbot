@@ -193,6 +193,7 @@ function previewStates(): Array< { id: PreviewState; label: string } > {
 		{ id: 'typing', label: __( 'Typing', 'chatlume-ai-chatbot' ) },
 		{ id: 'error', label: __( 'Error', 'chatlume-ai-chatbot' ) },
 		{ id: 'offline', label: __( 'Offline', 'chatlume-ai-chatbot' ) },
+		{ id: 'lead', label: __( 'Lead form', 'chatlume-ai-chatbot' ) },
 	];
 }
 

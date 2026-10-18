@@ -18,6 +18,10 @@ interface Props {
 	onNewChat: () => void;
 	/** Outside business hours. */
 	closed?: boolean;
+	/** Shows ways to reach a person (when handoff is on). */
+	onHandoff?: () => void;
+	/** Emails the conversation to the visitor (when they gave an email). */
+	onEmailMe?: () => void;
 }
 
 /**
@@ -32,6 +36,8 @@ interface Props {
  * @param props.onClose   Closes the window.
  * @param props.onNewChat Starts a new conversation.
  * @param props.closed    Outside business hours.
+ * @param props.onHandoff Shows ways to reach a person.
+ * @param props.onEmailMe Emails the conversation to the visitor.
  * @return Header.
  */
 export function Header( {
@@ -43,6 +49,8 @@ export function Header( {
 	onClose,
 	onNewChat,
 	closed = false,
+	onHandoff,
+	onEmailMe,
 }: Props ) {
 	const [ menuOpen, setMenuOpen ] = useState( false );
 	const menu = useRef< HTMLDivElement >( null );
@@ -155,6 +163,32 @@ export function Header( {
 							<Icon name="plus" />
 							{ strings.newChat }
 						</button>
+						{ onHandoff && (
+							<button
+								type="button"
+								role="menuitem"
+								onClick={ () => {
+									setMenuOpen( false );
+									onHandoff();
+								} }
+							>
+								<Icon name="chat" />
+								{ strings.talkToPerson }
+							</button>
+						) }
+						{ onEmailMe && (
+							<button
+								type="button"
+								role="menuitem"
+								onClick={ () => {
+									closeMenu();
+									onEmailMe();
+								} }
+							>
+								<Icon name="mail" />
+								{ strings.emailMe }
+							</button>
+						) }
 						{ closable && (
 							<button
 								type="button"

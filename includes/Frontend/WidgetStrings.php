@@ -66,6 +66,23 @@ final class WidgetStrings {
 			'voiceFailed'  => __( 'Voice input did not work. Please type your message.', 'chatlume-ai-chatbot' ),
 			'readAloud'    => __( 'Read aloud', 'chatlume-ai-chatbot' ),
 			'stopReading'  => __( 'Stop reading', 'chatlume-ai-chatbot' ),
+			'leadBefore'   => __( 'Before we start, how can we reach you?', 'chatlume-ai-chatbot' ),
+			'leadAfter'    => __( 'Would you like us to follow up by email?', 'chatlume-ai-chatbot' ),
+			'leadName'     => __( 'Name', 'chatlume-ai-chatbot' ),
+			'leadEmail'    => __( 'Email', 'chatlume-ai-chatbot' ),
+			'leadSubmit'   => __( 'Continue', 'chatlume-ai-chatbot' ),
+			'leadSkip'     => __( 'Skip', 'chatlume-ai-chatbot' ),
+			'leadThanks'   => __( 'Thanks! We have your details.', 'chatlume-ai-chatbot' ),
+			'leadInvalid'  => __( 'Please enter a valid email address.', 'chatlume-ai-chatbot' ),
+			'leadConsent'  => __( 'Please tick the box to continue.', 'chatlume-ai-chatbot' ),
+			'talkToPerson' => __( 'Talk to a person', 'chatlume-ai-chatbot' ),
+			'handoffTitle' => __( 'How would you like to reach us?', 'chatlume-ai-chatbot' ),
+			'emailTeam'    => __( 'Email this conversation to the team', 'chatlume-ai-chatbot' ),
+			'emailNeeded'  => __( 'Add your email so the team can reply:', 'chatlume-ai-chatbot' ),
+			'emailTeamOk'  => __( 'Sent! The team will reply by email.', 'chatlume-ai-chatbot' ),
+			'emailMe'      => __( 'Email me this conversation', 'chatlume-ai-chatbot' ),
+			'emailMeOk'    => __( 'Sent to your email.', 'chatlume-ai-chatbot' ),
+			'sending'      => __( 'Sending…', 'chatlume-ai-chatbot' ),
 		);
 	}
 }

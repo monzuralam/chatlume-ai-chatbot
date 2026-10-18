@@ -15,6 +15,7 @@ import type {
 	WidgetStrings,
 } from '../types';
 import { Composer } from './Composer';
+import { HandoffCard, LeadForm } from './Engagement';
 import { Header } from './Header';
 import { Messages } from './Messages';
 import { useChat } from './useChat';
@@ -24,6 +25,33 @@ export interface AppApi {
 	focus: () => void;
 	update: ( config: Partial< WidgetConfig > ) => void;
 	setState: ( state: PreviewState | null ) => void;
+}
+
+/**
+ * Whether a flag is set for this browser session.
+ *
+ * @param key Key.
+ * @return Set.
+ */
+function readSession( key: string ): boolean {
+	try {
+		return window.sessionStorage.getItem( `chatlume:${ key }` ) === '1';
+	} catch {
+		return false;
+	}
+}
+
+/**
+ * Sets a flag for this browser session.
+ *
+ * @param key Key.
+ */
+function writeSession( key: string ): void {
+	try {
+		window.sessionStorage.setItem( `chatlume:${ key }`, '1' );
+	} catch {
+		// Storage unavailable: the flag lasts until the page reloads.
+	}
 }
 
 const FOCUSABLE =
@@ -99,6 +127,82 @@ export function App( {
 		} );
 	}, [] );
 
+	// Lead form and "Talk to a person".
+	const lead = chat.behavior.lead ?? null;
+	const handoff = chat.behavior.handoff ?? null;
+	const [ leadSaved, setLeadSaved ] = useState( false );
+	const [ leadSkipped, setLeadSkipped ] = useState( () =>
+		readSession( 'lead-skip' )
+	);
+	const [ previewLead, setPreviewLead ] = useState( false );
+	const [ handoffOpen, setHandoffOpen ] = useState( false );
+	const [ notice, setNotice ] = useState( '' );
+	const leadGiven = !! lead?.given || leadSaved;
+	const visitorMessages = chat.messages.filter(
+		( message ) => message.role === 'user'
+	).length;
+	// Before chatting: the form replaces the message box until it is filled in (or skipped).
+	const leadGate =
+		previewLead ||
+		( !! lead &&
+			lead.timing === 'before' &&
+			! leadGiven &&
+			! leadSkipped &&
+			visitorMessages === 0 &&
+			! closed );
+	const leadLater =
+		!! lead &&
+		lead.timing === 'after' &&
+		! leadGiven &&
+		! leadSkipped &&
+		visitorMessages >= lead.after &&
+		! chat.busy;
+
+	const skipLead = () => {
+		writeSession( 'lead-skip' );
+		setLeadSkipped( true );
+		setPreviewLead( false );
+	};
+
+	const saveLead = async ( details: {
+		name: string;
+		email: string;
+		consent: boolean;
+	} ) => {
+		if ( host.preview ) {
+			setPreviewLead( false );
+			setLeadSaved( true );
+			return;
+		}
+		await chat.post( 'lead', {
+			...details,
+			page_url: window.location.href,
+		} );
+		setLeadSaved( true );
+		setNotice( strings.leadThanks );
+	};
+
+	const emailMe = () => {
+		setNotice( strings.sending );
+		chat.post( 'transcript', {} )
+			.then( () => setNotice( strings.emailMeOk ) )
+			.catch( ( error: unknown ) =>
+				setNotice(
+					error instanceof Error && error.message
+						? error.message
+						: strings.error
+				)
+			);
+	};
+
+	useEffect( () => {
+		if ( ! notice ) {
+			return undefined;
+		}
+		const timer = window.setTimeout( () => setNotice( '' ), 6000 );
+		return () => window.clearTimeout( timer );
+	}, [ notice ] );
+
 	const setState = useCallback(
 		( state: PreviewState | null ) => {
 			if ( state === 'launcher' ) {
@@ -106,6 +210,7 @@ export function App( {
 				return;
 			}
 			host.open();
+			setPreviewLead( state === 'lead' );
 			if ( state ) {
 				chat.force( state );
 			}
@@ -362,8 +467,20 @@ export function App( {
 					closed={ closed }
 					onNewChat={ () => {
 						chat.reset();
+						setHandoffOpen( false );
 						focus();
 					} }
+					onHandoff={
+						handoff ? () => setHandoffOpen( true ) : undefined
+					}
+					onEmailMe={
+						chat.behavior.transcript &&
+						leadGiven &&
+						! host.preview &&
+						chat.messages.length > 0
+							? emailMe
+							: undefined
+					}
 				/>
 				<Messages
 					chat={ chat }
@@ -372,16 +489,76 @@ export function App( {
 					strings={ strings }
 					botName={ chat.behavior.bot_name || title }
 					closed={ closed }
+					hideStarters={ leadGate }
+					footer={
+						<>
+							{ ( leadGate || leadLater ) && (
+								<LeadForm
+									config={ lead }
+									strings={ strings }
+									title={
+										leadGate
+											? strings.leadBefore
+											: strings.leadAfter
+									}
+									skippable={
+										! lead?.required || previewLead
+									}
+									askName={ lead?.ask_name !== false }
+									consent
+									onSubmit={ saveLead }
+									onSkip={ skipLead }
+								/>
+							) }
+							{ handoffOpen && handoff && (
+								<HandoffCard
+									config={ handoff }
+									strings={ strings }
+									leadGiven={ leadGiven }
+									canEmail={
+										chat.messages.length > 0 &&
+										! host.preview
+									}
+									leadConfig={ lead }
+									onLink={ ( type ) => {
+										if ( chat.conversationId() ) {
+											chat.post( 'handoff', {
+												channel: type,
+												page_url: window.location.href,
+											} ).catch( () => undefined );
+										}
+									} }
+									onLead={ saveLead }
+									onEmailTeam={ () =>
+										chat
+											.post( 'handoff', {
+												channel: 'email_team',
+												page_url: window.location.href,
+											} )
+											.then( () => undefined )
+									}
+									onClose={ () => setHandoffOpen( false ) }
+								/>
+							) }
+						</>
+					}
 				/>
-				<Composer
-					ref={ input }
-					chat={ chat }
-					ui={ ui }
-					strings={ strings }
-					closed={ closed }
-					voice={ chat.behavior.voice_input !== false }
-					maxLength={ chat.behavior.max_message_length || 1000 }
-				/>
+				{ notice && (
+					<p className="cl-notice" role="status">
+						{ notice }
+					</p>
+				) }
+				{ ! leadGate && (
+					<Composer
+						ref={ input }
+						chat={ chat }
+						ui={ ui }
+						strings={ strings }
+						closed={ closed }
+						voice={ chat.behavior.voice_input !== false }
+						maxLength={ chat.behavior.max_message_length || 1000 }
+					/>
+				) }
 				{ ui.brand.poweredBy && (
 					<p className="cl-powered">{ strings.poweredBy }</p>
 				) }

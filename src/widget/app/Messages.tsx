@@ -1,7 +1,14 @@
 /**
  * The conversation: welcome, starters and quick actions, messages.
  */
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import {
+	useEffect,
+	useLayoutEffect,
+	useMemo,
+	useRef,
+	useState,
+	type ReactNode,
+} from 'react';
 
 import { markdownText, parseRichText } from '../lib/markdown';
 import {
@@ -431,13 +438,15 @@ function QuickActionChip( {
 /**
  * The scrolling conversation area.
  *
- * @param props          Props.
- * @param props.chat     Chat state.
- * @param props.behavior Behavior settings.
- * @param props.ui       Theme options.
- * @param props.strings  Widget strings.
- * @param props.botName  Bot name.
+ * @param props              Props.
+ * @param props.chat         Chat state.
+ * @param props.behavior     Behavior settings.
+ * @param props.ui           Theme options.
+ * @param props.strings      Widget strings.
+ * @param props.botName      Bot name.
  * @param props.closed
+ * @param props.hideStarters Hide starter questions.
+ * @param props.footer       Cards after the conversation.
  * @return Conversation.
  */
 export function Messages( {
@@ -447,6 +456,8 @@ export function Messages( {
 	strings,
 	botName,
 	closed = false,
+	hideStarters = false,
+	footer,
 }: {
 	chat: Chat;
 	behavior: BehaviorConfig;
@@ -454,6 +465,10 @@ export function Messages( {
 	strings: WidgetStrings;
 	botName: string;
 	closed?: boolean;
+	/** Hide starter questions (while the pre-chat form shows). */
+	hideStarters?: boolean;
+	/** Cards after the conversation (lead form, handoff). */
+	footer?: ReactNode;
 } ) {
 	const scroller = useRef< HTMLDivElement >( null );
 	const pinned = useRef( true );
@@ -470,7 +485,7 @@ export function Messages( {
 		if ( node && pinned.current ) {
 			node.scrollTop = node.scrollHeight;
 		}
-	}, [ chat.messages ] );
+	}, [ chat.messages, footer ] );
 
 	return (
 		<div
@@ -547,6 +562,7 @@ export function Messages( {
 			</ol>
 
 			{ empty &&
+				! hideStarters &&
 				( ( ! closed && behavior.starter_questions.length > 0 ) ||
 					behavior.quick_actions.length > 0 ) && (
 					<div className="cl-starters" part="starters">
@@ -579,6 +595,8 @@ export function Messages( {
 					{ strings.busyTab }
 				</p>
 			) }
+
+			{ footer }
 		</div>
 	);
 }

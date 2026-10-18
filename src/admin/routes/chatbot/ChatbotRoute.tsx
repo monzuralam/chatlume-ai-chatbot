@@ -168,6 +168,13 @@ function ChatbotForm( {
 		offline: useId(),
 		error: useId(),
 		siteSearch: useId(),
+		leadTiming: useId(),
+		consent: useId(),
+		contact: useId(),
+		handoffEmail: useId(),
+		phone: useId(),
+		whatsapp: useId(),
+		teamEmail: useId(),
 	};
 
 	useUnsavedChangesWarning( isDirty );
@@ -834,6 +841,262 @@ function ChatbotForm( {
 							'chatlume-ai-chatbot'
 						) }
 					/>
+				</FormSection>
+
+				<FormSection
+					title={ __( 'Lead capture', 'chatlume-ai-chatbot' ) }
+					description={ __(
+						'Ask visitors for their name and email, so you can follow up. Leads appear in Conversations.',
+						'chatlume-ai-chatbot'
+					) }
+				>
+					<SwitchField
+						control={ control }
+						name="leads.enabled"
+						label={ __(
+							'Ask for contact details',
+							'chatlume-ai-chatbot'
+						) }
+						description={ __(
+							'Visitors can always skip unless you require the form before chatting.',
+							'chatlume-ai-chatbot'
+						) }
+					/>
+					{ values.leads?.enabled && (
+						<>
+							<div className="chatlume:grid chatlume:gap-5 chatlume:sm:grid-cols-2">
+								<Field
+									id={ ids.leadTiming }
+									label={ __(
+										'When',
+										'chatlume-ai-chatbot'
+									) }
+								>
+									<Select
+										id={ ids.leadTiming }
+										{ ...register( 'leads.timing' ) }
+									>
+										<option value="before">
+											{ __(
+												'Before the first message',
+												'chatlume-ai-chatbot'
+											) }
+										</option>
+										<option value="after">
+											{ __(
+												'After a few messages',
+												'chatlume-ai-chatbot'
+											) }
+										</option>
+									</Select>
+								</Field>
+								{ values.leads.timing === 'after' && (
+									<NumberField
+										register={ register }
+										name="leads.after"
+										label={ __(
+											'After this many messages',
+											'chatlume-ai-chatbot'
+										) }
+										min={ 1 }
+										max={ 20 }
+										error={ fieldMessage(
+											errors.leads?.after
+										) }
+									/>
+								) }
+							</div>
+							{ values.leads.timing === 'before' && (
+								<SwitchField
+									control={ control }
+									name="leads.required"
+									label={ __(
+										'Require the form before chatting',
+										'chatlume-ai-chatbot'
+									) }
+									description={ __(
+										'Removes “Skip”. Fewer visitors may start a chat.',
+										'chatlume-ai-chatbot'
+									) }
+								/>
+							) }
+							<SwitchField
+								control={ control }
+								name="leads.ask_name"
+								label={ __(
+									'Ask for a name too',
+									'chatlume-ai-chatbot'
+								) }
+								description={ __(
+									'The email is always asked; the name is optional for visitors.',
+									'chatlume-ai-chatbot'
+								) }
+							/>
+							<Field
+								id={ ids.consent }
+								label={ __(
+									'Consent checkbox',
+									'chatlume-ai-chatbot'
+								) }
+								hint={ __(
+									'Optional. Visitors must tick it to send the form. You can link to your privacy policy with <a href="…">…</a>.',
+									'chatlume-ai-chatbot'
+								) }
+								error={ fieldMessage( errors.leads?.consent ) }
+							>
+								<Input
+									id={ ids.consent }
+									maxLength={ 300 }
+									placeholder={ __(
+										'I agree that you may contact me about my question.',
+										'chatlume-ai-chatbot'
+									) }
+									aria-describedby={ `${ ids.consent }-hint` }
+									{ ...register( 'leads.consent' ) }
+								/>
+							</Field>
+							<SwitchField
+								control={ control }
+								name="leads.notify"
+								label={ __(
+									'Email me about new leads',
+									'chatlume-ai-chatbot'
+								) }
+								description={ __(
+									'Sent to the team address under “Talk to a person”.',
+									'chatlume-ai-chatbot'
+								) }
+							/>
+						</>
+					) }
+				</FormSection>
+
+				<FormSection
+					title={ __( 'Talk to a person', 'chatlume-ai-chatbot' ) }
+					description={ __(
+						'Give visitors a way to reach your team, from the chat menu.',
+						'chatlume-ai-chatbot'
+					) }
+				>
+					<SwitchField
+						control={ control }
+						name="handoff.enabled"
+						label={ __(
+							'Show “Talk to a person”',
+							'chatlume-ai-chatbot'
+						) }
+						description={ __(
+							'Shows the ways to reach you that you fill in below.',
+							'chatlume-ai-chatbot'
+						) }
+					/>
+					{ values.handoff?.enabled && (
+						<div className="chatlume:grid chatlume:gap-5 chatlume:sm:grid-cols-2">
+							<Field
+								id={ ids.contact }
+								label={ __(
+									'Contact page',
+									'chatlume-ai-chatbot'
+								) }
+								error={ fieldMessage(
+									errors.handoff?.contact
+								) }
+							>
+								<Input
+									id={ ids.contact }
+									type="url"
+									placeholder="https://"
+									maxLength={ 500 }
+									{ ...register( 'handoff.contact' ) }
+								/>
+							</Field>
+							<Field
+								id={ ids.handoffEmail }
+								label={ __( 'Email', 'chatlume-ai-chatbot' ) }
+								error={ fieldMessage( errors.handoff?.email ) }
+							>
+								<Input
+									id={ ids.handoffEmail }
+									type="email"
+									maxLength={ 100 }
+									{ ...register( 'handoff.email' ) }
+								/>
+							</Field>
+							<Field
+								id={ ids.phone }
+								label={ __( 'Phone', 'chatlume-ai-chatbot' ) }
+							>
+								<Input
+									id={ ids.phone }
+									type="tel"
+									maxLength={ 40 }
+									{ ...register( 'handoff.phone' ) }
+								/>
+							</Field>
+							<Field
+								id={ ids.whatsapp }
+								label={ __(
+									'WhatsApp number',
+									'chatlume-ai-chatbot'
+								) }
+								hint={ __(
+									'With the country code, for example +44 20 7946 0000.',
+									'chatlume-ai-chatbot'
+								) }
+							>
+								<Input
+									id={ ids.whatsapp }
+									type="tel"
+									maxLength={ 40 }
+									aria-describedby={ `${ ids.whatsapp }-hint` }
+									{ ...register( 'handoff.whatsapp' ) }
+								/>
+							</Field>
+						</div>
+					) }
+					{ values.handoff?.enabled && (
+						<SwitchField
+							control={ control }
+							name="handoff.email_team"
+							label={ __(
+								'“Email this conversation to the team”',
+								'chatlume-ai-chatbot'
+							) }
+							description={ __(
+								'Sends the whole conversation to your team address. Visitors add their email first, so you can reply.',
+								'chatlume-ai-chatbot'
+							) }
+						/>
+					) }
+					<SwitchField
+						control={ control }
+						name="handoff.transcript"
+						label={ __(
+							'Let visitors email the conversation to themselves',
+							'chatlume-ai-chatbot'
+						) }
+						description={ __(
+							'Only to the email address they gave you, at most 3 times an hour.',
+							'chatlume-ai-chatbot'
+						) }
+					/>
+					<Field
+						id={ ids.teamEmail }
+						label={ __( 'Team address', 'chatlume-ai-chatbot' ) }
+						hint={ __(
+							'Where conversations and new leads are sent. Leave empty to use the site’s admin email.',
+							'chatlume-ai-chatbot'
+						) }
+						error={ fieldMessage( errors.handoff?.team_email ) }
+					>
+						<Input
+							id={ ids.teamEmail }
+							type="email"
+							maxLength={ 100 }
+							aria-describedby={ `${ ids.teamEmail }-hint` }
+							{ ...register( 'handoff.team_email' ) }
+						/>
+					</Field>
 				</FormSection>
 
 				<FormSection

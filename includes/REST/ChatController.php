@@ -16,6 +16,8 @@ use Chatlume\Appearance\TokenResolver;
 use Chatlume\Data\ConversationRepository;
 use Chatlume\Data\MessageRepository;
 use Chatlume\Data\QuickAnswerRepository;
+use Chatlume\Engagement\Handoff;
+use Chatlume\Engagement\Leads;
 use Chatlume\Plugin;
 use Chatlume\Security\IpResolver;
 use Chatlume\Security\RateLimiter;
@@ -252,7 +254,11 @@ class ChatController {
 		$data    = array(
 			'token'   => $session['token'],
 			'expires' => $session['expires'],
-			'config'  => self::behavior_config( (string) $request->get_param( 'language' ) ),
+			'config'  => self::behavior_config( (string) $request->get_param( 'language' ) ) + array(
+				'lead'       => Leads::config( $session['session_id'] ),
+				'handoff'    => Handoff::config(),
+				'transcript' => Handoff::transcripts_allowed(),
+			),
 		);
 
 		// A cached page may carry an older look: send the published theme when its version differs.
@@ -494,30 +500,16 @@ class ChatController {
 				continue;
 			}
 
-			switch ( $type ) {
-				case 'message':
-					$actions[] = array(
-						'label'   => $label,
-						'type'    => $type,
-						'message' => $value,
-					);
-					continue 2;
-				case 'email':
-					$email = sanitize_email( $value );
-					$href  = is_email( $email ) ? 'mailto:' . $email : '';
-					break;
-				case 'phone':
-					$digits = (string) preg_replace( '/[^0-9+]/', '', $value );
-					$href   = strlen( $digits ) >= 3 ? 'tel:' . $digits : '';
-					break;
-				case 'whatsapp':
-					$digits = (string) preg_replace( '/\D/', '', $value );
-					$href   = strlen( $digits ) >= 6 ? 'https://wa.me/' . $digits : '';
-					break;
-				default:
-					$href = esc_url_raw( $value, array( 'http', 'https' ) );
+			if ( 'message' === $type ) {
+				$actions[] = array(
+					'label'   => $label,
+					'type'    => $type,
+					'message' => $value,
+				);
+				continue;
 			}
 
+			$href = self::action_href( $type, $value );
 			if ( '' !== $href ) {
 				$actions[] = array(
 					'label' => $label,
@@ -528,6 +520,31 @@ class ChatController {
 		}
 
 		return $actions;
+	}
+
+	/**
+	 * A safe link for an action: mailto:, tel:, WhatsApp, or an http(s) URL.
+	 *
+	 * @param string $type  url, email, phone, or whatsapp.
+	 * @param string $value Address, number, or URL.
+	 * @return string Link, or '' when the value is unusable.
+	 */
+	public static function action_href( string $type, string $value ): string {
+		$value = trim( $value );
+
+		switch ( $type ) {
+			case 'email':
+				$email = sanitize_email( $value );
+				return is_email( $email ) ? 'mailto:' . $email : '';
+			case 'phone':
+				$digits = (string) preg_replace( '/[^0-9+]/', '', $value );
+				return strlen( $digits ) >= 3 ? 'tel:' . $digits : '';
+			case 'whatsapp':
+				$digits = (string) preg_replace( '/\D/', '', $value );
+				return strlen( $digits ) >= 6 ? 'https://wa.me/' . $digits : '';
+			default:
+				return '' === $value ? '' : esc_url_raw( $value, array( 'http', 'https' ) );
+		}
 	}
 
 	/**
@@ -638,7 +655,7 @@ class ChatController {
 	 *
 	 * @return array<string, mixed>
 	 */
-	private static function conversation_arg(): array {
+	public static function conversation_arg(): array {
 		return array(
 			'type'              => 'string',
 			'default'           => '',

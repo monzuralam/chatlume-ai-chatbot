@@ -148,6 +148,36 @@ export interface BehaviorConfig {
 	voice_input?: boolean;
 	/** "Read aloud" on answers (where the browser supports it). */
 	read_aloud?: boolean;
+	/** Lead form, or null when lead capture is off. */
+	lead?: LeadConfig | null;
+	/** "Talk to a person", or null when off. */
+	handoff?: HandoffConfig | null;
+	/** Visitors may email the conversation to the email they gave. */
+	transcript?: boolean;
+}
+
+/** Lead capture (see `Chatlume\Engagement\Leads::config()`). */
+export interface LeadConfig {
+	timing: 'before' | 'after';
+	/** Visitor messages before the form (timing "after"). */
+	after: number;
+	/** The form must be filled in before chatting. */
+	required: boolean;
+	ask_name: boolean;
+	/** Consent checkbox text (bold, italics, links); empty for none. */
+	consent: string;
+	/** Whether this session already gave its details. */
+	given: boolean;
+}
+
+/** Ways to reach a person (see `Chatlume\Engagement\Handoff::config()`). */
+export interface HandoffConfig {
+	actions: Array< {
+		type: 'contact' | 'email' | 'phone' | 'whatsapp';
+		label: string;
+		href: string;
+	} >;
+	email_team: boolean;
 }
 
 export interface Source {
@@ -183,7 +213,8 @@ export type PreviewState =
 	| 'streaming'
 	| 'typing'
 	| 'error'
-	| 'offline';
+	| 'offline'
+	| 'lead';
 
 /** Sample content for the preview, supplied (translated) by the Customizer. */
 export interface PreviewSamples {

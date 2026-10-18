@@ -16,6 +16,8 @@ import {
 	speakingId,
 	stopSpeaking,
 } from '../../src/widget/lib/voice';
+import { looksLikeEmail } from '../../src/widget/app/Engagement';
+import { sampleMessages, withDefaults } from '../../src/widget/app/samples';
 import type { TriggerConfig } from '../../src/widget/types';
 
 const DAY = 86400000;
@@ -254,5 +256,21 @@ describe( 'voice', () => {
 			'Second answer',
 			'Third',
 		] );
+	} );
+} );
+
+describe( 'lead form helpers', () => {
+	it( 'checks email addresses before sending', () => {
+		expect( looksLikeEmail( 'ana@example.test' ) ).toBe( true );
+		expect( looksLikeEmail( ' ana@shop.co.uk ' ) ).toBe( true );
+		expect( looksLikeEmail( 'ana@' ) ).toBe( false );
+		expect( looksLikeEmail( 'ana example@test.com' ) ).toBe( false );
+		expect( looksLikeEmail( '' ) ).toBe( false );
+	} );
+
+	it( 'previews the lead form on an empty chat', () => {
+		expect(
+			sampleMessages( 'lead', withDefaults( {} ), { offline: 'Away' } )
+		).toEqual( [] );
 	} );
 } );

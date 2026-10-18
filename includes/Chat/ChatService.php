@@ -8,6 +8,7 @@
 namespace Chatlume\Chat;
 
 use Chatlume\Data\QuickAnswerRepository;
+use Chatlume\Engagement\Leads;
 use Chatlume\Frontend\DisplayRules;
 use Chatlume\Knowledge\SiteSearchFallback;
 use Chatlume\Providers\ProviderError;
@@ -179,6 +180,12 @@ class ChatService {
 			throw new ChatException( 'empty_message', __( 'Please type a message.', 'chatlume-ai-chatbot' ) );
 		}
 
+		// A required pre-chat form cannot be skipped by calling the API directly (admin tests can).
+		$lead = Leads::config( $session_id );
+		if ( null !== $lead && $lead['required'] && ! $lead['given'] && empty( $request['is_test'] ) ) {
+			throw new ChatException( 'lead_required', __( 'Please share your details first.', 'chatlume-ai-chatbot' ), 403 );
+		}
+
 		$max_length = (int) Settings::get( 'chatbot.max_message_length', 1000 );
 		if ( mb_strlen( $message, 'UTF-8' ) > $max_length ) {
 			throw new ChatException(
@@ -348,6 +355,9 @@ class ChatService {
 		if ( '' === $new_id ) {
 			throw new ChatException( 'unavailable', BotText::error(), 500 );
 		}
+
+		// Details the visitor already gave in this session (for example before the first message).
+		( new Leads( $this->state ) )->attach( $new_id, $session_id );
 
 		/**
 		 * Fires when a new conversation starts.
