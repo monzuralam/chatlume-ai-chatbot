@@ -11,6 +11,7 @@ use Chatlume\Cron\RetentionCleanup;
 use Chatlume\Installer\Migrations;
 use Chatlume\Installer\Schema;
 use Chatlume\Plugin;
+use Chatlume\Providers\CoreConnectorsBridge;
 use Chatlume\Security\Encryption;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -397,7 +398,13 @@ class HealthCheck {
 			self::INFO,
 			__( 'WordPress AI Client', 'chatlume-ai-chatbot' ),
 			function_exists( 'wp_ai_client_prompt' )
-				? __( 'Available in this WordPress version. Chatlume connects to AI providers through its own provider settings.', 'chatlume-ai-chatbot' )
+				? ( array() !== CoreConnectorsBridge::connectors()
+					? sprintf(
+						/* translators: %s: Comma-separated AI provider names. */
+						__( 'Available. Providers from Settings > Connectors can be chosen on Chatlume’s Providers page without entering their keys again: %s.', 'chatlume-ai-chatbot' ),
+						implode( ', ', array_column( CoreConnectorsBridge::connectors(), 'name' ) )
+					)
+					: __( 'Available in this WordPress version. Once an AI provider is connected in Settings > Connectors, it can be chosen on Chatlume’s Providers page.', 'chatlume-ai-chatbot' ) )
 				: __( 'Not available in this WordPress version. Chatlume uses its own provider connections, so everything works.', 'chatlume-ai-chatbot' )
 		);
 	}

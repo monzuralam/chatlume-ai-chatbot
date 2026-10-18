@@ -7,6 +7,7 @@
 
 namespace Chatlume;
 
+use Chatlume\Abilities\AbilitiesRegistrar;
 use Chatlume\Admin\AdminPage;
 use Chatlume\Admin\Assets;
 use Chatlume\Admin\Commands;
@@ -25,6 +26,7 @@ use Chatlume\Knowledge\Indexer;
 use Chatlume\Integrations\Webhooks;
 use Chatlume\Knowledge\ProductSync;
 use Chatlume\Knowledge\Retriever;
+use Chatlume\Providers\CoreConnectorsBridge;
 use Chatlume\REST\AppearanceController;
 use Chatlume\REST\ChatbotController;
 use Chatlume\REST\ChatController;
@@ -107,6 +109,8 @@ final class Plugin {
 		( new ProductSync() )->register();
 		( new Webhooks() )->register();
 		( new CachePurger() )->register();
+		( new CoreConnectorsBridge() )->register();
+		( new AbilitiesRegistrar() )->register();
 		( new OptimizationPlugins() )->register();
 		( new Embeddings() )->register();
 		( new Retriever() )->register();

@@ -680,8 +680,11 @@ export function useChat( host: WidgetHost ): Chat {
 						language: pageLanguage(),
 						...extra,
 					};
+					// Providers that answer all at once use a plain request with a longer wait.
 					const streaming =
-						config.streaming.enabled && ! noStream.current;
+						config.streaming.enabled &&
+						! noStream.current &&
+						behavior.streams !== false;
 					timer = window.setTimeout(
 						() => stopWith( 'timeout' ),
 						( streaming
@@ -756,6 +759,7 @@ export function useChat( host: WidgetHost ): Chat {
 			strings,
 			config.streaming,
 			config.rest,
+			behavior.streams,
 			ensureSession,
 			streamReply,
 			finalize,

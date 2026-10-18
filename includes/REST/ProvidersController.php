@@ -10,6 +10,7 @@ namespace Chatlume\REST;
 use Chatlume\Plugin;
 use Chatlume\Providers\AbstractProvider;
 use Chatlume\Providers\ApiKeys;
+use Chatlume\Providers\CoreAiProvider;
 use Chatlume\Providers\ProviderError;
 use Chatlume\Providers\ProviderRegistry;
 use Chatlume\Settings\Settings;
@@ -243,7 +244,10 @@ class ProvidersController {
 			$config = Settings::get( 'providers.configs.' . $id, array() );
 			$test   = $tests[ $id ] ?? null;
 
-			if ( ! $key['readable'] ) {
+			if ( $provider instanceof CoreAiProvider ) {
+				// Connected in Settings > Connectors: WordPress holds the key.
+				$state = ! $provider->is_connected() ? 'needs_connector' : ( ! is_array( $test ) ? 'untested' : ( empty( $test['ok'] ) ? 'error' : 'ready' ) );
+			} elseif ( ! $key['readable'] ) {
 				$state = 'key_unreadable';
 			} elseif ( $info['key_required'] && 'none' === $key['source'] ) {
 				$state = 'needs_key';
@@ -365,7 +369,10 @@ class ProvidersController {
 	 * @return WP_REST_Response|WP_Error
 	 */
 	public function save_key( WP_REST_Request $request ) {
-		$id     = (string) $request->get_param( 'id' );
+		$id = (string) $request->get_param( 'id' );
+		if ( ProviderRegistry::get( $id ) instanceof CoreAiProvider ) {
+			return new WP_Error( 'chatlume_core_provider', __( 'This provider uses the key saved in Settings > Connectors.', 'chatlume-ai-chatbot' ), array( 'status' => 400 ) );
+		}
 		$result = ApiKeys::save( $id, (string) $request->get_param( 'api_key' ) );
 
 		if ( is_wp_error( $result ) ) {

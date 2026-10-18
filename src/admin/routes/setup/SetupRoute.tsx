@@ -223,6 +223,104 @@ function ProviderStep( {
 }
 
 /**
+ * Guide for a provider connected in WordPress (Settings > Connectors).
+ *
+ * @param provider Provider.
+ * @return Steps.
+ */
+function coreGuideSteps(
+	provider: ProviderSummary
+): Array< { text: string; link?: string; label?: string } > {
+	const waiting = provider.state === 'needs_connector';
+	return [
+		{
+			text: waiting
+				? __(
+						'Add this provider’s key in Settings > Connectors. WordPress keeps it, so Chatlume never needs to see it.',
+						'chatlume-ai-chatbot'
+					)
+				: __(
+						'This provider is already connected in WordPress. Chatlume uses it through WordPress, without needing its key.',
+						'chatlume-ai-chatbot'
+					),
+			link: provider.links.keys,
+			label: __( 'Open Settings > Connectors', 'chatlume-ai-chatbot' ),
+		},
+		{
+			text: __(
+				'Replies appear all at once instead of word by word. Answers from your knowledge base, quick answers, budgets, and limits all work as usual.',
+				'chatlume-ai-chatbot'
+			),
+		},
+	];
+}
+
+/**
+ * Guide for a provider that needs a key or a server address.
+ *
+ * @param provider  Provider.
+ * @param keyNeeded Whether a key is needed.
+ * @param free      Free tier note, if any.
+ * @return Steps.
+ */
+function guideSteps(
+	provider: ProviderSummary,
+	keyNeeded: boolean,
+	free: string | null
+): Array< { text: string; link?: string; label?: string } > {
+	return keyNeeded
+		? [
+				{
+					text: sprintf(
+						/* translators: %s: Provider name. */
+						__(
+							'Sign in to %s, or create a free account.',
+							'chatlume-ai-chatbot'
+						),
+						provider.label
+					),
+					link: provider.links.keys,
+					label: __(
+						'Open the API keys page',
+						'chatlume-ai-chatbot'
+					),
+				},
+				{
+					text: free
+						? free
+						: __(
+								'Add a payment method or credits. AI providers charge per use; a typical answer costs a fraction of a cent.',
+								'chatlume-ai-chatbot'
+							),
+					link: free ? undefined : provider.links.billing,
+					label: __( 'Open billing', 'chatlume-ai-chatbot' ),
+				},
+				{
+					text: __(
+						'Create a new secret key, give it a name such as “My website”, and copy it. You only see it once.',
+						'chatlume-ai-chatbot'
+					),
+				},
+			]
+		: [
+				{
+					text: __(
+						'Start the server that runs your models, and note its address (for Ollama on the same computer: http://localhost:11434).',
+						'chatlume-ai-chatbot'
+					),
+					link: provider.links.docs,
+					label: __( 'Read the setup guide', 'chatlume-ai-chatbot' ),
+				},
+				{
+					text: __(
+						'Make sure your website can reach that address. A server on your own laptop is not reachable from a hosted website.',
+						'chatlume-ai-chatbot'
+					),
+				},
+			];
+}
+
+/**
  * Step 2: how to get a key.
  *
  * @param props          Props.
@@ -232,59 +330,9 @@ function GuideStep( { provider }: { provider: ProviderSummary } ) {
 	const free = freeTier( provider.id );
 	const keyNeeded = provider.key_required;
 	const steps: Array< { text: string; link?: string; label?: string } > =
-		keyNeeded
-			? [
-					{
-						text: sprintf(
-							/* translators: %s: Provider name. */
-							__(
-								'Sign in to %s, or create a free account.',
-								'chatlume-ai-chatbot'
-							),
-							provider.label
-						),
-						link: provider.links.keys,
-						label: __(
-							'Open the API keys page',
-							'chatlume-ai-chatbot'
-						),
-					},
-					{
-						text: free
-							? free
-							: __(
-									'Add a payment method or credits. AI providers charge per use; a typical answer costs a fraction of a cent.',
-									'chatlume-ai-chatbot'
-								),
-						link: free ? undefined : provider.links.billing,
-						label: __( 'Open billing', 'chatlume-ai-chatbot' ),
-					},
-					{
-						text: __(
-							'Create a new secret key, give it a name such as “My website”, and copy it. You only see it once.',
-							'chatlume-ai-chatbot'
-						),
-					},
-				]
-			: [
-					{
-						text: __(
-							'Start the server that runs your models, and note its address (for Ollama on the same computer: http://localhost:11434).',
-							'chatlume-ai-chatbot'
-						),
-						link: provider.links.docs,
-						label: __(
-							'Read the setup guide',
-							'chatlume-ai-chatbot'
-						),
-					},
-					{
-						text: __(
-							'Make sure your website can reach that address. A server on your own laptop is not reachable from a hosted website.',
-							'chatlume-ai-chatbot'
-						),
-					},
-				];
+		provider.kind === 'core'
+			? coreGuideSteps( provider )
+			: guideSteps( provider, keyNeeded, free );
 
 	return (
 		<div className="chatlume:flex chatlume:flex-col chatlume:gap-5">

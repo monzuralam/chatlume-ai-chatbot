@@ -105,6 +105,45 @@ function ExternalButton( {
 	);
 }
 
+/**
+ * Connection of a provider connected in WordPress (Settings > Connectors):
+ * WordPress keeps the key, so there is nothing to enter here.
+ *
+ * @param props          Props.
+ * @param props.provider Provider.
+ */
+function CoreConnection( { provider }: { provider: ProviderSummary } ) {
+	const connected = provider.state !== 'needs_connector';
+	return (
+		<div className="chatlume:flex chatlume:flex-col chatlume:gap-3">
+			<p className="chatlume:rounded-control chatlume:bg-surface-muted chatlume:px-4 chatlume:py-3 chatlume:text-sm chatlume:text-fg">
+				{ connected
+					? __(
+							'Connected in WordPress. Chatlume uses the key saved in Settings > Connectors through WordPress’s AI Client and never reads or stores it. Replies appear all at once instead of word by word.',
+							'chatlume-ai-chatbot'
+						)
+					: __(
+							'This provider’s plugin is active, but its key is not saved yet. Add it in Settings > Connectors, then test the connection here.',
+							'chatlume-ai-chatbot'
+						) }
+			</p>
+			{ typeof provider.links.keys === 'string' && (
+				<div>
+					<Button variant="ghost" size="sm" asChild>
+						<a href={ provider.links.keys }>
+							<ExternalLink aria-hidden="true" />
+							{ __(
+								'Open Settings > Connectors',
+								'chatlume-ai-chatbot'
+							) }
+						</a>
+					</Button>
+				</div>
+			) }
+		</div>
+	);
+}
+
 function ApiKeySection( { provider }: { provider: ProviderSummary } ) {
 	const id = useId();
 	const [ value, setValue ] = useState( '' );
@@ -598,7 +637,11 @@ export function ProviderSheet( {
 						<Section
 							title={ __( 'Connection', 'chatlume-ai-chatbot' ) }
 						>
-							<ApiKeySection provider={ provider } />
+							{ provider.kind === 'core' ? (
+								<CoreConnection provider={ provider } />
+							) : (
+								<ApiKeySection provider={ provider } />
+							) }
 
 							{ fields.includes( 'base_url' ) && (
 								<Field

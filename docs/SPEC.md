@@ -421,7 +421,7 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started. Approved deviati
 4. ✅ **Widget** (done 2026-10-15): full widget UI, design token system, widget styles (floating, side panel, modal, inline), message styles, CSS parts, preview mode, streaming with stream limiter and abort handling, markdown sanitizer, source cards, quick actions, tab sync, mobile, accessibility, shortcode, block, JS API.
 5. ✅ **Admin experience** (done 2026-10-18): setup wizard with provider guides, Dashboard, Chatbot, Playground, the Customizer with always-on live preview (presets, Simple/Advanced modes, colors, typography, layout, draft/publish, versions, real-site backdrop, context-aware states, click-to-edit, interactive preview, before/after, devices, Developer styling panel), Display & triggers, Conversations, Settings with Health check, core Command Palette commands.
 6. ✅ **Knowledge base** (done 2026-10-18): indexer, document uploads, embeddings storage and re-embedding, two-stage retrieval with n-gram fallback, source links, WooCommerce sync, multilingual filtering, Knowledge page.
-7. 🚧 **Engagement, integrations, and platform**: proactive triggers, voice, lead capture, handoff, webhooks, email notifications, analytics events, cache purging, optimization-plugin compatibility, WPML/Polylang, "Match my website", WordPress Font Library and theme.json integration, "Preview on my site", per-language content, WordPress Connectors bridge and core AI Client, Abilities registration.
+7. ✅ **Engagement, integrations, and platform** (done 2026-10-18): proactive triggers, voice, lead capture, handoff, webhooks, email notifications, analytics events, cache purging, optimization-plugin compatibility, WPML/Polylang, "Match my website", WordPress Font Library and theme.json integration, "Preview on my site", per-language content, WordPress Connectors bridge and core AI Client, Abilities registration.
 8. ⬜ **Hardening and release**: privacy integrations, uninstall, full test suite, i18n, readme with all required sections, Plugin Check fixes, release zip.
 
 ### Build log
@@ -773,7 +773,7 @@ Implementation decisions (for review):
 
 Phase 6 – Knowledge base is complete.
 
-**Phase 7 – Engagement, integrations, and platform 🚧 (in progress)**
+**Phase 7 – Engagement, integrations, and platform ✅ (2026-10-18)**
 
 Approved decisions:
 - Delivered in six modules, each committed after review: proactive invitations and voice; lead capture, handoff, and transcript email; Integrations page (webhooks, email notifications, analytics events, Turnstile); cache purging and optimization-plugin compatibility; WPML/Polylang current language and per-language widget strings; WordPress Connectors, core AI Client, and Abilities API.
@@ -838,7 +838,7 @@ Implementation decisions (for review):
 - Exclusion filters are registered unconditionally (a filter does nothing unless its plugin applies it, and this avoids plugin load-order issues); purge calls are guarded by existence checks.
 - Verified live with Autoptimize (JS aggregation including inline scripts) and LiteSpeed Cache (combine, minify, delayed JS): the button appears without interaction and chats work.
 
-Module 7.5 – Languages and widget texts ✅ (2026-10-18, awaiting review)
+Module 7.5 – Languages and widget texts ✅ (2026-10-18)
 
 Approved decision: per-language texts are edited in Chatlume's own "Widget texts" page (works with free Polylang and WPML without String Translation).
 
@@ -855,6 +855,23 @@ Implementation decisions (for review):
 - Starter questions and quick actions are translated by position, so reordering them on the Chatbot page needs the translations to be checked.
 - Quick action links (pages, email, phone, WhatsApp) are the same in every language; only the button text and preset messages are translated.
 - Verified live with Polylang's public functions emulated by a temporary must-use plugin (English and Bengali), rather than installing Polylang on the shared test site.
+
+Module 7.6 – WordPress Connectors, core AI Client, and Abilities API ✅ (2026-10-18, awaiting review)
+
+Approved decision: providers connected in WordPress send requests only through the core AI Client; Chatlume never reads, copies, or stores their keys (no word-by-word streaming for them).
+
+- [x] `Providers\CoreConnectorsBridge`: one Chatlume provider ("<name> through WordPress", ID `wp-<connector>`, kind `core`) per AI connector in Settings > Connectors whose provider plugin is active; only on WordPress 7.0+ with AI enabled (`wp_supports_ai()`); the provider list is rebuilt after `init`, when connectors exist
+- [x] `Providers\CoreAiProvider`: requests through `wp_ai_client_prompt()` with the provider, model preference, system instruction, chat history, maximum tokens, temperature, and timeout; token usage, finish reason, and model from the result; models from the AI Client registry (text generation); AI Client errors (prevented, token limit, upstream, network, 401/403/402/404/408/429) mapped to Chatlume's plain-language errors
+- [x] Replies from these providers arrive whole: `/session` tells the widget (`streams: false`), which then uses a plain request with the longer wait instead of the first-word timeout
+- [x] Providers page: a "Needs a key in Settings > Connectors" state, a connection note with a link to Settings > Connectors instead of the key field, and saving a key for these providers is refused; the setup wizard lists them first, marked "Connected in WordPress", with their own guide text; the Health check names the connected providers
+- [x] `Abilities\AbilitiesRegistrar` (WordPress 6.9+): category `chatlume` and the abilities `chatlume/ask` (answers like the widget, kept as a test conversation), `chatlume/get-stats` (today, 7, or 30 days), `chatlume/list-unanswered-questions` (up to 10), and `chatlume/create-quick-answer` (updates an existing question instead of duplicating it), each with input and output schemas, annotations, the Chatlume manager permission, and REST exposure (`/wp-abilities/v1/abilities/chatlume/...`)
+
+Implementation decisions (for review):
+- Embeddings are not offered through WordPress (the AI Client has none), so knowledge-base embeddings still need a provider with a key in Chatlume.
+- A connector whose plugin is active but whose key is missing stays listed (with the "needs a key" state) so a saved choice survives; when its plugin is deactivated it disappears and the chat falls back as with any unavailable provider.
+- Verified live on WordPress 7.1 with a temporary test provider registered in the AI Client (pointing at the local OpenAI-compatible server): connection test, model list, visitor chats with tokens logged, the wizard, the Health check, and all four abilities over REST (visitors get 401).
+
+Phase 7 – Engagement, integrations, and platform is complete.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

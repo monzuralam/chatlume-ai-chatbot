@@ -56,6 +56,11 @@ export function stateLabel( state: ProviderState ): string {
 			return __( 'Needs an API key', 'chatlume-ai-chatbot' );
 		case 'needs_url':
 			return __( 'Needs a base URL', 'chatlume-ai-chatbot' );
+		case 'needs_connector':
+			return __(
+				'Needs a key in Settings > Connectors',
+				'chatlume-ai-chatbot'
+			);
 		case 'key_unreadable':
 			return __( 'Please re-enter your API key', 'chatlume-ai-chatbot' );
 	}
@@ -74,6 +79,7 @@ export function StateBadge( { provider }: { provider: ProviderSummary } ) {
 		error: 'danger',
 		needs_key: 'neutral',
 		needs_url: 'neutral',
+		needs_connector: 'neutral',
 		key_unreadable: 'warning',
 	} as const;
 	const Icon = {
@@ -82,6 +88,7 @@ export function StateBadge( { provider }: { provider: ProviderSummary } ) {
 		error: CircleX,
 		needs_key: KeyRound,
 		needs_url: CircleDashed,
+		needs_connector: KeyRound,
 		key_unreadable: TriangleAlert,
 	}[ provider.state ];
 

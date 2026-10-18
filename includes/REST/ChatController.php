@@ -21,6 +21,7 @@ use Chatlume\Engagement\Handoff;
 use Chatlume\Engagement\Leads;
 use Chatlume\Frontend\WidgetTexts;
 use Chatlume\Plugin;
+use Chatlume\Providers\ProviderRegistry;
 use Chatlume\Security\IpResolver;
 use Chatlume\Security\RateLimiter;
 use Chatlume\Security\SessionManager;
@@ -511,7 +512,21 @@ class ChatController {
 			'store_conversations' => (bool) Settings::get( 'privacy.store_conversations', true ),
 			'voice_input'         => (bool) Settings::get( 'chatbot.voice_input', true ),
 			'read_aloud'          => (bool) Settings::get( 'chatbot.read_aloud', true ),
+			// Providers that answer all at once (e.g. through WordPress's AI Client) skip the first-word timeout.
+			'streams'             => self::primary_streams(),
 		);
+	}
+
+	/**
+	 * Whether the primary provider sends replies word by word.
+	 *
+	 * @return bool
+	 */
+	public static function primary_streams(): bool {
+		$primary  = ProviderRegistry::role( 'primary' );
+		$provider = '' !== $primary['provider'] ? ProviderRegistry::get( $primary['provider'] ) : null;
+
+		return null === $provider || $provider->supports( 'streaming' );
 	}
 
 	/**

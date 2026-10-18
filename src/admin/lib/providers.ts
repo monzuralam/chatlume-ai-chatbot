@@ -12,6 +12,7 @@ export type ProviderState =
 	| 'error'
 	| 'needs_key'
 	| 'needs_url'
+	| 'needs_connector'
 	| 'key_unreadable';
 
 export interface ProviderKeyStatus {

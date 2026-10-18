@@ -158,6 +158,8 @@ export interface BehaviorConfig {
 	handoff?: HandoffConfig | null;
 	/** Visitors may email the conversation to the email they gave. */
 	transcript?: boolean;
+	/** Whether replies arrive word by word (false for providers that answer all at once). */
+	streams?: boolean;
 }
 
 /** Lead capture (see `Chatlume\Engagement\Leads::config()`). */
