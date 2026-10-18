@@ -106,6 +106,7 @@ Nothing is removed unless you enable **Delete all data on uninstall** in Chatlum
 * Lead capture: ask for a name and email before chatting or after a few messages, with an optional consent checkbox and an email to your team for each new lead.
 * Talk to a person: visitors can reach you through your contact page, email, phone, or WhatsApp, or send the conversation to your team, who can reply by email. Visitors can also email a conversation to themselves.
 * Integrations: signed webhooks for new leads, ended conversations, answers rated not helpful, and requests for a person (for Zapier, Make, n8n, or your CRM), with a delivery log and test button; email notification settings with a test email; optional chat events for Google Tag Manager and other analytics on your page; and optional Cloudflare Turnstile bot protection.
+* Caching and optimization plugins: publishing a new look or changing what the chat shows clears the page cache of WP Rocket, LiteSpeed Cache, W3 Total Cache, WP Super Cache, WP Fastest Cache, and SiteGround Optimizer, and the chat scripts are kept out of JavaScript combine, minify, and delay features in WP Rocket, LiteSpeed Cache, Autoptimize, Perfmatters, and SiteGround Optimizer.
 
 == External services ==
 

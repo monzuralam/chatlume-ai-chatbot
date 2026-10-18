@@ -808,7 +808,7 @@ Implementation decisions (for review):
 - Link handoffs (contact, phone, WhatsApp, email) are recorded when clicked; only "Email this conversation" sends an email.
 - Chat app: 26.4 KB gzipped (+1.9 KB); the launcher is unchanged.
 
-Module 7.3 – Integrations page ✅ (2026-10-18, awaiting review)
+Module 7.3 – Integrations page ✅ (2026-10-18)
 - [x] Settings `integrations`: up to 5 webhooks (address and events), analytics events, Turnstile on/off and site key; the Turnstile secret key is stored encrypted with the API keys (or set with `CHATLUME_TURNSTILE_API_KEY`)
 - [x] Webhooks for `lead_captured`, `conversation_ended`, `negative_feedback`, and `handoff_requested`: JSON `{event, id, created_at, site, data}` (filter `chatlume_webhook_payload`) signed with `X-Chatlume-Signature: sha256=<HMAC>`, plus `X-Chatlume-Event` and `X-Chatlume-Delivery`; sent in the background through WP-Cron, never redirected, 5-second timeout, one retry after 5 minutes, and each attempt sent once even when cron runs overlap
 - [x] `conversation_ended`: stored visitor conversations with no message for 30 minutes (last two days only), checked every 15 minutes, reported once, with the transcript (up to 100 messages); the check is scheduled only while a webhook listens for it
@@ -824,6 +824,19 @@ Implementation decisions (for review):
 - Disabling a webhook's event or removing it also drops deliveries still waiting in the queue.
 - The Turnstile verification address is marked for Plugin Check as a server-side API call; both Cloudflare addresses are disclosed in the readme.
 - Chat app: 26.9 KB gzipped (+0.5 KB); launcher 8.0 KB gzipped (+0.1 KB, Phase 8 item).
+
+Module 7.4 – Cache purging and optimization-plugin compatibility ✅ (2026-10-18, awaiting review)
+- [x] `Compat\CachePurger`: clears the page cache of WP Rocket (`rocket_clean_domain()`), LiteSpeed Cache (`litespeed_purge_all`), W3 Total Cache (`w3tc_flush_all()`), WP Super Cache (`wp_cache_clear_cache()`), WP Fastest Cache (`wpfc_clear_all_cache`), and SiteGround Optimizer (`sg_cachepress_purge_cache()`), each only when its API exists, at most once per request; action `chatlume_page_cache_purged` for hosts and other caches
+- [x] Purged when a widget look is published and when a settings section printed into pages changes (display, streaming, integrations, chatbot texts); other settings never purge
+- [x] Publishing in the Customizer names the caches that were cleared and, when Cloudflare is detected (its plugin, a CF-Ray header, or the Cloudflare proxy setting; filter `chatlume_detected_cdn`), suggests purging it
+- [x] `Compat\OptimizationPlugins`: the launcher and its inline configuration are excluded from JavaScript combine, minify, defer, and delay through each plugin's own filters — WP Rocket (`rocket_exclude_js`, `rocket_excluded_inline_js_content`, `rocket_delay_js_exclusions`), LiteSpeed Cache (`litespeed_optimize_js_excludes`, `litespeed_optm_js_defer_exc`, `litespeed_optm_gm_js_exc`), Autoptimize (`autoptimize_filter_js_exclude`, `autoptimize_filter_js_consider_minified`), Perfmatters (`perfmatters_delay_js_exclusions`, `perfmatters_defer_js_exclusions`, `perfmatters_minify_js_exclusions`), and SiteGround Optimizer (`sgo_js_minify_exclude`, `sgo_javascript_combine_exclude`, `sgo_js_async_exclude`, `sgo_javascript_combine_excluded_inline_content`)
+- [x] Both script tags carry `data-no-optimize`, `data-no-defer`, `data-noptimize`, and `data-cfasync="false"`, recognized by LiteSpeed Cache, Autoptimize, and Cloudflare Rocket Loader
+- [x] Health check explains what is handled automatically and what to do for plugins without an exclusion filter
+
+Implementation decisions (for review):
+- Hook names were checked in each plugin's current source (WordPress.org releases and WP Rocket's public repository) or, for Perfmatters, its filter documentation. FlyingPress documents no filter for JavaScript delay exclusions, so it relies on the Health check advice; the widget still works when delayed (verified with LiteSpeed combining and delaying it): it appears after the first interaction.
+- Exclusion filters are registered unconditionally (a filter does nothing unless its plugin applies it, and this avoids plugin load-order issues); purge calls are guarded by existence checks.
+- Verified live with Autoptimize (JS aggregation including inline scripts) and LiteSpeed Cache (combine, minify, delayed JS): the button appears without interaction and chats work.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

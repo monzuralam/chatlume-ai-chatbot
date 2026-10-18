@@ -363,8 +363,8 @@ class HealthCheck {
 			self::INFO,
 			$label,
 			/* translators: %s: Comma-separated plugin names. */
-			sprintf( __( 'Detected: %s. Pages stay fully cacheable because Chatlume loads visitor data at runtime.', 'chatlume-ai-chatbot' ), implode( ', ', $found ) ),
-			__( 'If the chat button does not appear, exclude scripts containing “chatlume” from JavaScript delay, defer, and combine features in that plugin’s settings.', 'chatlume-ai-chatbot' )
+			sprintf( __( 'Detected: %s. Pages stay fully cacheable because Chatlume loads visitor data at runtime. Chatlume clears their page cache when you publish a new look or change what the chat shows on pages, and keeps its scripts out of JavaScript combine, minify, and delay features.', 'chatlume-ai-chatbot' ), implode( ', ', $found ) ),
+			__( 'If the chat button appears only after the first scroll or tap, add “chatlume” to the JavaScript delay exclusions in that plugin’s settings.', 'chatlume-ai-chatbot' )
 		);
 	}
 

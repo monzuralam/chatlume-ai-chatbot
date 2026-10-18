@@ -11,6 +11,8 @@ use Chatlume\Admin\AdminPage;
 use Chatlume\Admin\Assets;
 use Chatlume\Admin\Commands;
 use Chatlume\Appearance\PreviewMode;
+use Chatlume\Compat\CachePurger;
+use Chatlume\Compat\OptimizationPlugins;
 use Chatlume\Cron\IndexQueue;
 use Chatlume\Cron\RetentionCleanup;
 use Chatlume\Frontend\Shortcode;
@@ -103,6 +105,8 @@ final class Plugin {
 		( new IndexQueue() )->register();
 		( new ProductSync() )->register();
 		( new Webhooks() )->register();
+		( new CachePurger() )->register();
+		( new OptimizationPlugins() )->register();
 		( new Embeddings() )->register();
 		( new Retriever() )->register();
 		( new Shortcode() )->register();

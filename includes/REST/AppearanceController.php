@@ -14,6 +14,7 @@ use Chatlume\Appearance\PreviewMode;
 use Chatlume\Appearance\SiteBrand;
 use Chatlume\Appearance\ThemeSchema;
 use Chatlume\Appearance\TokenResolver;
+use Chatlume\Compat\CachePurger;
 use Chatlume\Plugin;
 use WP_Error;
 use WP_REST_Request;
@@ -333,7 +334,8 @@ class AppearanceController {
 	public function publish(): WP_REST_Response {
 		AppearanceStore::publish();
 
-		return self::state();
+		// Page caches cleared on publish, and a CDN the admin may need to purge.
+		return self::state( array( 'cache' => CachePurger::report() ) );
 	}
 
 	/**
@@ -469,12 +471,13 @@ class AppearanceController {
 	/**
 	 * The Customizer's state.
 	 *
+	 * @param array<string, mixed> $extra Extra fields.
 	 * @return WP_REST_Response
 	 */
-	private static function state(): WP_REST_Response {
+	private static function state( array $extra = array() ): WP_REST_Response {
 		return self::no_store(
 			new WP_REST_Response(
-				array(
+				$extra + array(
 					'draft'       => AppearanceStore::draft(),
 					'published'   => TokenResolver::published_theme(),
 					'has_changes' => AppearanceStore::has_changes(),

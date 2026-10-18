@@ -2,6 +2,7 @@
  * Customizer data: draft, published theme, and versions.
  */
 import apiFetch from '@wordpress/api-fetch';
+import { __, sprintf } from '@wordpress/i18n';
 
 import { request, toApiError } from './api';
 import { getBootstrap } from './bootstrap';
@@ -114,6 +115,55 @@ export interface AppearanceState {
 		uploaded: UploadedFont[];
 		/** Script of the site language, e.g. "bengali". */
 		site_script: string;
+	};
+	/** Only after publishing: page caches cleared and a CDN that may need purging. */
+	cache?: PublishCache;
+}
+
+export interface PublishCache {
+	purged: string[];
+	cdn: string;
+}
+
+/**
+ * The message shown after publishing.
+ *
+ * @param cache What happened to page caches.
+ * @return Title and an optional note about a CDN.
+ */
+export function publishedMessage( cache?: PublishCache ): {
+	title: string;
+	description?: string;
+} {
+	const title =
+		cache && cache.purged.length > 0
+			? sprintf(
+					/* translators: %s: Caching plugin names, comma-separated. */
+					__(
+						'Published. Visitors now see the new look, and the page cache of %s was cleared.',
+						'chatlume-ai-chatbot'
+					),
+					cache.purged.join( ', ' )
+				)
+			: __(
+					'Published. Visitors now see the new look.',
+					'chatlume-ai-chatbot'
+				);
+
+	if ( ! cache?.cdn ) {
+		return { title };
+	}
+
+	return {
+		title,
+		description: sprintf(
+			/* translators: %s: CDN name, e.g. Cloudflare. */
+			__(
+				'Your site uses %s. If it caches your pages, purge its cache too so every visitor gets the new look.',
+				'chatlume-ai-chatbot'
+			),
+			cache.cdn
+		),
 	};
 }
 

@@ -57,6 +57,7 @@ import {
 	fetchPreviewToken,
 	parseThemeFile,
 	publishDraft,
+	publishedMessage,
 	record,
 	redo,
 	restoreVersion,
@@ -343,13 +344,13 @@ function Customizer( {
 			if ( dirty && ! ( await persist( theme ) ) ) {
 				return;
 			}
-			apply( await publishDraft() );
-			toast.success(
-				__(
-					'Published. Visitors now see the new look.',
-					'chatlume-ai-chatbot'
-				)
-			);
+			const result = await publishDraft();
+			apply( result );
+			const message = publishedMessage( result.cache );
+			toast.success( message.title, {
+				description: message.description,
+				duration: message.description ? 10000 : undefined,
+			} );
 		} );
 
 	const discard = () =>
