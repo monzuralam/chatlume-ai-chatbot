@@ -81,7 +81,7 @@ class SettingsControllerTest extends TestCase {
 		}
 
 		$this->assertSame( 'GET', $endpoints[0]['methods'] );
-		$this->assertSame( array( 'setup', 'privacy', 'providers', 'chatbot', 'quick_answers', 'security', 'costs', 'cache', 'display', 'streaming', 'debug' ), array_keys( $endpoints[1]['args'] ) );
+		$this->assertSame( array( 'setup', 'privacy', 'providers', 'chatbot', 'quick_answers', 'security', 'costs', 'cache', 'display', 'streaming', 'debug', 'knowledge' ), array_keys( $endpoints[1]['args'] ) );
 	}
 
 	public function test_get_item_returns_settings(): void {
@@ -89,7 +89,7 @@ class SettingsControllerTest extends TestCase {
 
 		$data = $response->get_data();
 
-		$this->assertSame( array( 'setup', 'privacy', 'providers', 'chatbot', 'quick_answers', 'security', 'costs', 'cache', 'display', 'streaming', 'debug' ), array_keys( $data ) );
+		$this->assertSame( array( 'setup', 'privacy', 'providers', 'chatbot', 'quick_answers', 'security', 'costs', 'cache', 'display', 'streaming', 'debug', 'knowledge' ), array_keys( $data ) );
 		$this->assertFalse( $data['privacy']['delete_data_on_uninstall'] );
 		// Settings never contain API keys (they are stored separately).
 		$this->assertStringNotContainsString( 'api_key', (string) wp_json_encode( $data ) );

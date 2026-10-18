@@ -11,18 +11,21 @@ use Chatlume\Admin\AdminPage;
 use Chatlume\Admin\Assets;
 use Chatlume\Admin\Commands;
 use Chatlume\Appearance\PreviewMode;
+use Chatlume\Cron\IndexQueue;
 use Chatlume\Cron\RetentionCleanup;
 use Chatlume\Frontend\Shortcode;
 use Chatlume\Frontend\WidgetLoader;
 use Chatlume\Installer\Activation;
 use Chatlume\Installer\Migrations;
 use Chatlume\Installer\Multisite;
+use Chatlume\Knowledge\Indexer;
 use Chatlume\REST\AppearanceController;
 use Chatlume\REST\ChatbotController;
 use Chatlume\REST\ChatController;
 use Chatlume\REST\ConversationsController;
 use Chatlume\REST\DisplayController;
 use Chatlume\REST\HealthController;
+use Chatlume\REST\KnowledgeController;
 use Chatlume\REST\PlaygroundController;
 use Chatlume\REST\ProvidersController;
 use Chatlume\REST\QuickAnswersController;
@@ -90,6 +93,8 @@ final class Plugin {
 		( new Multisite() )->register();
 		( new Activation() )->register();
 		( new RetentionCleanup() )->register();
+		( new Indexer() )->register();
+		( new IndexQueue() )->register();
 		( new Shortcode() )->register();
 
 		if ( ! is_admin() ) {
@@ -127,6 +132,7 @@ final class Plugin {
 		( new PlaygroundController() )->register_routes();
 		( new DisplayController() )->register_routes();
 		( new AppearanceController() )->register_routes();
+		( new KnowledgeController() )->register_routes();
 	}
 
 	/**

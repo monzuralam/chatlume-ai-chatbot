@@ -80,6 +80,12 @@ const settings: Settings = {
 		},
 	},
 	debug: { enabled: false },
+	knowledge: {
+		post_types: [ 'page', 'post' ],
+		include_ids: [],
+		exclude_ids: [],
+		business_info: '',
+	},
 	streaming: {
 		enabled: true,
 		max_concurrent: 3,

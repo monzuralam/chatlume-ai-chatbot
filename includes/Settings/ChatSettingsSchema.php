@@ -278,6 +278,40 @@ final class ChatSettingsSchema {
 	}
 
 	/**
+	 * Knowledge sources.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function knowledge(): array {
+		return self::section(
+			__( 'What the bot knows.', 'chatlume-ai-chatbot' ),
+			array(
+				// Published content of these post types is indexed.
+				'post_types'    => array(
+					'type'     => 'array',
+					'maxItems' => 30,
+					'default'  => array( 'page', 'post' ),
+					'items'    => self::text( '', 20, 'key' ),
+				),
+				// Single items of other post types.
+				'include_ids'   => array(
+					'type'     => 'array',
+					'maxItems' => 500,
+					'items'    => self::integer( 0, 0, PHP_INT_MAX ),
+				),
+				// Items left out even though their post type is selected.
+				'exclude_ids'   => array(
+					'type'     => 'array',
+					'maxItems' => 500,
+					'items'    => self::integer( 0, 0, PHP_INT_MAX ),
+				),
+				// Free-text facts: opening hours, policies, contact details.
+				'business_info' => self::text( '', 20000, 'textarea' ),
+			)
+		);
+	}
+
+	/**
 	 * Troubleshooting.
 	 *
 	 * @return array<string, mixed>

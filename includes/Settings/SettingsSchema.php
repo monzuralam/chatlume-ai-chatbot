@@ -78,6 +78,7 @@ final class SettingsSchema {
 			'display'       => ChatSettingsSchema::display(),
 			'streaming'     => ChatSettingsSchema::streaming(),
 			'debug'         => ChatSettingsSchema::debug(),
+			'knowledge'     => ChatSettingsSchema::knowledge(),
 		);
 	}
 

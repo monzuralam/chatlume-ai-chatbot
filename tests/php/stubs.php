@@ -243,6 +243,73 @@ if ( ! class_exists( 'WP_Site' ) ) {
 	}
 }
 
+if ( ! class_exists( 'WP_Post' ) ) {
+	/**
+	 * Stub of core's WP_Post.
+	 */
+	class WP_Post {
+		/**
+		 * Post ID.
+		 *
+		 * @var int
+		 */
+		public $ID = 0;
+
+		/**
+		 * Post type.
+		 *
+		 * @var string
+		 */
+		public $post_type = 'post';
+
+		/**
+		 * Status.
+		 *
+		 * @var string
+		 */
+		public $post_status = 'publish';
+
+		/**
+		 * Password.
+		 *
+		 * @var string
+		 */
+		public $post_password = '';
+
+		/**
+		 * Title.
+		 *
+		 * @var string
+		 */
+		public $post_title = '';
+
+		/**
+		 * Excerpt.
+		 *
+		 * @var string
+		 */
+		public $post_excerpt = '';
+
+		/**
+		 * Content.
+		 *
+		 * @var string
+		 */
+		public $post_content = '';
+
+		/**
+		 * Constructor.
+		 *
+		 * @param array<string, mixed> $fields Fields.
+		 */
+		public function __construct( array $fields = array() ) {
+			foreach ( $fields as $key => $value ) {
+				$this->$key = $value;
+			}
+		}
+	}
+}
+
 if ( ! function_exists( 'is_wp_error' ) ) {
 	/**
 	 * Core's is_wp_error().

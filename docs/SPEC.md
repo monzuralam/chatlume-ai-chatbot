@@ -420,7 +420,7 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started. Approved deviati
 3. ✅ **Chat backend** (done 2026-10-14): session manager, conversation state, IP resolver, rate limiter, cost guard, quick answers, response cache, site-search fallback, no-key mode, prompt builder, non-streaming endpoint, logging.
 4. ✅ **Widget** (done 2026-10-15): full widget UI, design token system, widget styles (floating, side panel, modal, inline), message styles, CSS parts, preview mode, streaming with stream limiter and abort handling, markdown sanitizer, source cards, quick actions, tab sync, mobile, accessibility, shortcode, block, JS API.
 5. ✅ **Admin experience** (done 2026-10-18): setup wizard with provider guides, Dashboard, Chatbot, Playground, the Customizer with always-on live preview (presets, Simple/Advanced modes, colors, typography, layout, draft/publish, versions, real-site backdrop, context-aware states, click-to-edit, interactive preview, before/after, devices, Developer styling panel), Display & triggers, Conversations, Settings with Health check, core Command Palette commands.
-6. ⬜ **Knowledge base**: indexer, document uploads, embeddings storage and re-embedding, two-stage retrieval with n-gram fallback, source links, WooCommerce sync, multilingual filtering, Knowledge page.
+6. 🚧 **Knowledge base**: indexer, document uploads, embeddings storage and re-embedding, two-stage retrieval with n-gram fallback, source links, WooCommerce sync, multilingual filtering, Knowledge page.
 7. ⬜ **Engagement, integrations, and platform**: proactive triggers, voice, lead capture, handoff, webhooks, email notifications, analytics events, cache purging, optimization-plugin compatibility, WPML/Polylang, "Match my website", WordPress Font Library and theme.json integration, "Preview on my site", per-language content, WordPress Connectors bridge and core AI Client, Abilities registration.
 8. ⬜ **Hardening and release**: privacy integrations, uninstall, full test suite, i18n, readme with all required sections, Plugin Check fixes, release zip.
 
@@ -530,7 +530,7 @@ Implementation decisions (for review):
 - Sample content for the preview states is supplied by the Customizer (Phase 5), so it is translated there.
 - The admin app's strict settings schema now includes the new `display` and `streaming` sections (without them every settings save failed with "Unrecognized key"). A Jest test compares its sections with `SettingsSchema::definition()`, so the two can no longer drift apart.
 
-**Phase 5 – Admin experience 🚧 (in progress)**
+**Phase 5 – Admin experience ✅ (2026-10-18)**
 
 Approved decisions:
 - Delivered module by module, each committed after review, in this order: Settings and Health check, Chatbot, Conversations, Dashboard, Playground, Display, Customizer, setup wizard, Command Palette commands.
@@ -694,7 +694,27 @@ Implementation decisions (for review):
 - A separate `commands` bundle using the core `wp-commands` and `wp-data` scripts (registered through the commands store), so nothing from the admin app loads on other screens.
 - Add-on pages registered in the admin app are not added to the palette (they are only known inside the app); add-ons can register their own commands the same way.
 
-Phase 5 – Admin experience is complete pending review of module 5.9.
+Phase 5 – Admin experience is complete.
+
+**Phase 6 – Knowledge base 🚧 (in progress)**
+
+Approved decisions:
+- Delivered in five modules, each committed after review: sources and indexer, retrieval and embeddings, documents, WooCommerce products sync, Knowledge page.
+- Published pages and posts are indexed automatically for free keyword search. Embeddings are created in the background only when an embeddings-capable provider is set, and can be turned off.
+
+Module 6.1 – Sources and indexer ✅ (2026-10-18, awaiting review)
+- [x] Settings section `knowledge`: post types to index (default pages and posts), single items to include or exclude, and free-text business information
+- [x] Content cleaning (shortcodes, scripts, styles, tags, entities) and chunking into about 800 characters with 120 characters of overlap, breaking at paragraphs, then sentences (Latin, Bengali, Arabic, and CJK sentence ends), then words, never inside a multibyte character
+- [x] Posts are re-indexed when saved and removed when unpublished, password-protected, trashed, deleted, or excluded; chunks whose text did not change keep their embeddings
+- [x] Full rebuilds in WP-Cron batches of 25 posts, resumable by ID; the first one starts on its own, others on "Re-index all" or when the chosen post types change; when WP-Cron runs late, the admin's progress checks run the next batch; rows no longer eligible are removed at the end
+- [x] Language per item from Polylang or WPML, otherwise the site language; the business information applies to every language on multilingual sites
+- [x] `chatlume_knowledge_sources` filter to change or leave out any source before it is indexed
+- [x] REST: `GET /knowledge/status` (index size, embedded and stale counts, languages, rebuild progress, FULLTEXT support, post types to choose from), `POST /knowledge/reindex`, `GET /knowledge/sources` (search, type filter, pagination); managers only
+
+Implementation decisions (for review):
+- Including or excluding single items, or editing the business information, re-indexes only those items; only a change of post types rebuilds everything.
+- The first-index check runs on `admin_init`, so front-end requests never pay for it.
+- Saving content of a type that is not indexed costs no database queries.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

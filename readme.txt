@@ -61,6 +61,10 @@ Add the **Chatlume Chat** block, or the shortcode `[chatlume height="600"]` (hei
 
 Chatlume stores no custom CSS, but the widget reads `--chatlume-*` CSS custom properties, so you can override them in Appearance > Customize > Additional CSS (or the Site Editor's Styles), for example `chatlume-widget { --chatlume-primary: #0a7d33; }`. Key elements can also be styled with `chatlume-widget::part(launcher)`, `::part(window)`, `::part(header)`, `::part(message-bot)`, `::part(message-user)`, `::part(composer)`, and `::part(source-card)`.
 
+= What content does the bot learn from? =
+
+Published, public, non-password-protected pages and posts by default. You can choose other public content types, add or leave out single items, and add a short text about your business such as opening hours and policies. Drafts, private content, and password-protected pages are never indexed. Developers can change or leave out any item with the `chatlume_knowledge_sources` filter.
+
 = What happens to my data if I delete the plugin? =
 
 Nothing is removed unless you enable **Delete all data on uninstall** in Chatlume > Settings. With that option on, deleting the plugin removes Chatlume's database tables, settings, and stored API keys.
@@ -88,6 +92,7 @@ Nothing is removed unless you enable **Delete all data on uninstall** in Chatlum
 * Customize on your real site: preview the widget on any page at desktop, tablet, or phone size, click any part to edit it, compare with the published look, try live AI replies, preview the draft on your site, match your website's branding in one click, save your own presets, import and export themes, and copy CSS snippets for developers.
 * Setup wizard: choose an AI provider, follow the steps to get a key, connect and test it, pick a model and your colors, with a live preview the whole way, or skip the AI and start with quick answers and site search.
 * Command Palette: open any Chatlume screen from anywhere in the admin with Ctrl+K (Cmd+K on Mac), for example "Chatlume: Conversations" or "Chatlume: Test your bot".
+* Knowledge base: your published pages and posts (or any other public content types you choose, single items included or excluded) and a short text about your business are indexed automatically, kept up to date as you edit, and rebuilt in the background without slowing your site. Multilingual sites using WPML or Polylang keep each language separate.
 
 == External services ==
 

@@ -175,6 +175,15 @@ export const displaySettingsSchema = z
 	} )
 	.strict();
 
+export const knowledgeSettingsSchema = z
+	.object( {
+		post_types: z.array( z.string().max( 20 ) ).max( 30 ),
+		include_ids: z.array( z.number().int().min( 0 ) ).max( 500 ),
+		exclude_ids: z.array( z.number().int().min( 0 ) ).max( 500 ),
+		business_info: z.string().max( 20000 ),
+	} )
+	.strict();
+
 export const streamingSettingsSchema = z
 	.object( {
 		enabled: z.boolean(),
@@ -197,6 +206,7 @@ export const settingsSchema = z
 		display: displaySettingsSchema,
 		streaming: streamingSettingsSchema,
 		debug: debugSettingsSchema,
+		knowledge: knowledgeSettingsSchema,
 	} )
 	.strict();
 
@@ -243,6 +253,7 @@ export const IMPORTABLE_SECTIONS = [
 	'display',
 	'streaming',
 	'debug',
+	'knowledge',
 ] as const;
 
 /**
