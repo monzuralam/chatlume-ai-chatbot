@@ -73,6 +73,21 @@ class QuickAnswerRepository {
 	}
 
 	/**
+	 * ID of the quick answer with this question and language (the database
+	 * collation ignores letter case), or 0.
+	 *
+	 * @param string $question Question.
+	 * @param string $language Language.
+	 * @return int
+	 */
+	public function find_by_question( string $question, string $language ): int {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Chatlume's own table; used by imports only.
+		return (int) $wpdb->get_var( $wpdb->prepare( 'SELECT id FROM %i WHERE question = %s AND language = %s ORDER BY id ASC LIMIT 1', Schema::table( 'quick_answers' ), $question, $language ) );
+	}
+
+	/**
 	 * Creates a quick answer.
 	 *
 	 * @param array<string, mixed> $data question, answer, keywords, language, enabled.

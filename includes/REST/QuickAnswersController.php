@@ -29,6 +29,11 @@ if ( ! defined( 'ABSPATH' ) ) {
 class QuickAnswersController {
 
 	/**
+	 * Most rows in one import.
+	 */
+	public const MAX_IMPORT = 2000;
+
+	/**
 	 * Repository.
 	 *
 	 * @var QuickAnswerRepository
@@ -125,6 +130,106 @@ class QuickAnswersController {
 				),
 			)
 		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/quick-answers/import',
+			array(
+				'methods'             => WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'import_items' ),
+				'permission_callback' => $permission,
+				'args'                => array(
+					'rows' => array(
+						'type'              => 'array',
+						'required'          => true,
+						'minItems'          => 1,
+						'maxItems'          => self::MAX_IMPORT,
+						'items'             => array( 'type' => 'object' ),
+						'validate_callback' => 'rest_validate_request_arg',
+					),
+				),
+			)
+		);
+	}
+
+	/**
+	 * POST /quick-answers/import: rows from a CSV file. A row whose question
+	 * already exists in the same language updates that quick answer;
+	 * invalid rows are skipped and reported with their row number.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response
+	 */
+	public function import_items( WP_REST_Request $request ): WP_REST_Response {
+		$result = array(
+			'created' => 0,
+			'updated' => 0,
+			'skipped' => 0,
+			'errors'  => array(),
+		);
+
+		foreach ( array_values( (array) $request->get_param( 'rows' ) ) as $index => $row ) {
+			$values = self::import_row( is_array( $row ) ? $row : array() );
+			if ( is_string( $values ) ) {
+				++$result['skipped'];
+				if ( count( $result['errors'] ) < 20 ) {
+					$result['errors'][] = array(
+						'row'     => $index + 1,
+						'message' => $values,
+					);
+				}
+				continue;
+			}
+
+			$existing = $this->repository->find_by_question( $values['question'], $values['language'] );
+			if ( $existing > 0 ) {
+				$this->repository->update( $existing, $values );
+				++$result['updated'];
+			} elseif ( $this->repository->create( $values ) > 0 ) {
+				++$result['created'];
+			} else {
+				++$result['skipped'];
+			}
+		}
+
+		return new WP_REST_Response( $result );
+	}
+
+	/**
+	 * Clean values of one imported row, or why it was skipped.
+	 *
+	 * @param array<string, mixed> $row Row.
+	 * @return array<string, mixed>|string Values (keywords and enabled only when given), or why the row was skipped.
+	 */
+	private static function import_row( array $row ) {
+		$question = mb_substr( sanitize_text_field( (string) ( $row['question'] ?? '' ) ), 0, 500 );
+		$answer   = mb_substr( sanitize_textarea_field( (string) ( $row['answer'] ?? '' ) ), 0, 5000 );
+		if ( '' === trim( $question ) || '' === trim( $answer ) ) {
+			return __( 'A question and an answer are both needed.', 'chatlume-ai-chatbot' );
+		}
+
+		$language = str_replace( '_', '-', trim( sanitize_text_field( (string) ( $row['language'] ?? '' ) ) ) );
+		if ( '' !== $language && ! preg_match( '/' . ChatController::LANGUAGE_PATTERN . '/', $language ) ) {
+			return __( 'The language is not a valid language code, such as en or pt-BR.', 'chatlume-ai-chatbot' );
+		}
+
+		$values = array(
+			'question' => trim( $question ),
+			'answer'   => trim( $answer ),
+			'language' => $language,
+		);
+		// Missing columns leave an existing quick answer's value unchanged.
+		if ( array_key_exists( 'keywords', $row ) ) {
+			$values['keywords'] = mb_substr( sanitize_text_field( (string) $row['keywords'] ), 0, 500 );
+		}
+		if ( array_key_exists( 'enabled', $row ) && '' !== $row['enabled'] ) {
+			$enabled           = $row['enabled'];
+			$values['enabled'] = is_string( $enabled )
+				? ! in_array( strtolower( trim( $enabled ) ), array( '0', 'no', 'false', 'off' ), true )
+				: (bool) $enabled;
+		}
+
+		return $values;
 	}
 
 	/**

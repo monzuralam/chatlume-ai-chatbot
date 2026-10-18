@@ -96,6 +96,7 @@ Nothing is removed unless you enable **Delete all data on uninstall** in Chatlum
 * Knowledge search: the bot answers from the most relevant passages of your content, found by keywords (with plurals and word forms) and, when an embeddings provider is set up, ranked by meaning; Chinese, Japanese, Thai, and other languages written without spaces are supported. Answers list up to three source links.
 * Knowledge documents: upload PDF, Word (DOCX), text, Markdown, CSV, and JSON files (up to 10 MB by default) for the bot to learn from. Only the extracted text is kept; the files themselves are never saved on your site.
 * WooCommerce: products visible in your shop are indexed automatically with their price as shoppers see it (including sales and price ranges), stock status, categories, SKU, attributes, and descriptions, and updated whenever a product, its stock, or a scheduled sale changes.
+* Knowledge page: choose what the bot learns from, upload documents by drag and drop, manage quick answers with inline editing and CSV import and export, and follow the index size, re-indexing progress, and embeddings in one place.
 
 == External services ==
 

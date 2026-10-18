@@ -13,15 +13,21 @@ import { searchContent, type ChosenPage } from '../../lib/display';
  * @param props.value    Chosen IDs.
  * @param props.known    Titles of pages chosen before.
  * @param props.onChange Receives the new IDs.
+ * @param props.label    Field label.
+ * @param props.hint     Explanation under the label.
  */
 export function PagePicker( {
 	value,
 	known,
 	onChange,
+	label,
+	hint,
 }: {
 	value: number[];
 	known: ChosenPage[];
 	onChange: ( ids: number[] ) => void;
+	label?: string;
+	hint?: string;
 } ) {
 	const id = useId();
 	const [ term, setTerm ] = useState( '' );
@@ -29,6 +35,15 @@ export function PagePicker( {
 	const [ titles, setTitles ] = useState< Record< number, ChosenPage > >(
 		() => Object.fromEntries( known.map( ( page ) => [ page.id, page ] ) )
 	);
+
+	// Items chosen elsewhere (for example "Leave out" in a list) get their
+	// titles when the server reports them.
+	useEffect( () => {
+		setTitles( ( current ) => ( {
+			...Object.fromEntries( known.map( ( page ) => [ page.id, page ] ) ),
+			...current,
+		} ) );
+	}, [ known ] );
 
 	useEffect( () => {
 		const timer = window.setTimeout(
@@ -63,8 +78,17 @@ export function PagePicker( {
 				htmlFor={ id }
 				className="chatlume:text-sm chatlume:font-medium chatlume:text-fg"
 			>
-				{ __( 'Specific pages and posts', 'chatlume-ai-chatbot' ) }
+				{ label ??
+					__( 'Specific pages and posts', 'chatlume-ai-chatbot' ) }
 			</label>
+			{ hint && (
+				<p
+					id={ `${ id }-hint` }
+					className="chatlume:-mt-1 chatlume:text-[13px] chatlume:text-fg-muted"
+				>
+					{ hint }
+				</p>
+			) }
 			{ value.length > 0 && (
 				<ul className="chatlume:flex chatlume:flex-wrap chatlume:gap-1.5">
 					{ value.map( ( pageId ) => {
@@ -114,6 +138,7 @@ export function PagePicker( {
 			<Input
 				id={ id }
 				type="search"
+				aria-describedby={ hint ? `${ id }-hint` : undefined }
 				value={ term }
 				placeholder={ __( 'Search by title…', 'chatlume-ai-chatbot' ) }
 				autoComplete="off"

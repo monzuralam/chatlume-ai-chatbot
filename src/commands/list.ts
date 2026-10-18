@@ -66,6 +66,15 @@ export function chatlumeCommands(): ChatlumeCommand[] {
 			route: '/chatbot',
 		},
 		{
+			name: 'chatlume/knowledge',
+			label: __( 'Chatlume: Knowledge', 'chatlume-ai-chatbot' ),
+			searchLabel: __(
+				'chatbot knowledge base documents quick answers faq index',
+				'chatlume-ai-chatbot'
+			),
+			route: '/knowledge',
+		},
+		{
 			name: 'chatlume/providers',
 			label: __( 'Chatlume: AI providers', 'chatlume-ai-chatbot' ),
 			searchLabel: __( 'chatbot api key model', 'chatlume-ai-chatbot' ),

@@ -420,7 +420,7 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started. Approved deviati
 3. ✅ **Chat backend** (done 2026-10-14): session manager, conversation state, IP resolver, rate limiter, cost guard, quick answers, response cache, site-search fallback, no-key mode, prompt builder, non-streaming endpoint, logging.
 4. ✅ **Widget** (done 2026-10-15): full widget UI, design token system, widget styles (floating, side panel, modal, inline), message styles, CSS parts, preview mode, streaming with stream limiter and abort handling, markdown sanitizer, source cards, quick actions, tab sync, mobile, accessibility, shortcode, block, JS API.
 5. ✅ **Admin experience** (done 2026-10-18): setup wizard with provider guides, Dashboard, Chatbot, Playground, the Customizer with always-on live preview (presets, Simple/Advanced modes, colors, typography, layout, draft/publish, versions, real-site backdrop, context-aware states, click-to-edit, interactive preview, before/after, devices, Developer styling panel), Display & triggers, Conversations, Settings with Health check, core Command Palette commands.
-6. 🚧 **Knowledge base**: indexer, document uploads, embeddings storage and re-embedding, two-stage retrieval with n-gram fallback, source links, WooCommerce sync, multilingual filtering, Knowledge page.
+6. ✅ **Knowledge base** (done 2026-10-18): indexer, document uploads, embeddings storage and re-embedding, two-stage retrieval with n-gram fallback, source links, WooCommerce sync, multilingual filtering, Knowledge page.
 7. ⬜ **Engagement, integrations, and platform**: proactive triggers, voice, lead capture, handoff, webhooks, email notifications, analytics events, cache purging, optimization-plugin compatibility, WPML/Polylang, "Match my website", WordPress Font Library and theme.json integration, "Preview on my site", per-language content, WordPress Connectors bridge and core AI Client, Abilities registration.
 8. ⬜ **Hardening and release**: privacy integrations, uninstall, full test suite, i18n, readme with all required sections, Plugin Check fixes, release zip.
 
@@ -696,7 +696,7 @@ Implementation decisions (for review):
 
 Phase 5 – Admin experience is complete.
 
-**Phase 6 – Knowledge base 🚧 (in progress)**
+**Phase 6 – Knowledge base ✅ (2026-10-18)**
 
 Approved decisions:
 - Delivered in five modules, each committed after review: sources and indexer, retrieval and embeddings, documents, WooCommerce products sync, Knowledge page.
@@ -745,7 +745,7 @@ Implementation decisions (for review):
 - The root Composer autoloader includes a classmap of `vendor-prefixed/`, because Strauss's generated PSR-0 map for pdfparser points at the wrong folder.
 - The `chatlume_knowledge_sources` filter also receives documents (with `null` for the post).
 
-Module 6.4 – WooCommerce products sync ✅ (2026-10-18, awaiting review)
+Module 6.4 – WooCommerce products sync ✅ (2026-10-18)
 - [x] Visible, published products indexed as source type `product`: name, price as shoppers see it (sale and regular price, ranges for variable products, the shop's tax display), stock status (with quantity when managed), categories, SKU, visible attributes, short description, description, and link
 - [x] Re-indexed on product and variation saves, stock and stock-status changes, and scheduled sale starts and ends; removed when unpublished, hidden from the catalog, hidden while out of stock (when the shop hides those), password-protected, excluded, trashed, or deleted
 - [x] Changes are collected during a request and indexed once at its end, so bulk edits and imports index each product once
@@ -757,6 +757,21 @@ Implementation decisions (for review):
 - Products are never also indexed as plain posts, even if "product" is among the chosen post types.
 - The end-of-rebuild cleanup now removes sources whose post is no longer a published, chosen candidate by comparing with the posts table, instead of by update time (rows saved in the same second as a rebuild started could survive).
 - The index remembers which post types it covers and rebuilds itself (checked on admin pages) when they change outside the settings: WooCommerce activated or deactivated, a custom post type removed, or an update that adds a source. Existing indexes from 6.1 rebuild once to add products.
+
+Module 6.5 – Knowledge page ✅ (2026-10-18, awaiting review)
+- [x] New Knowledge page (sidebar after Chatbot; tab kept in the address, e.g. `#/knowledge?tab=documents`) and a "Chatlume: Knowledge" Command Palette command
+- [x] Sources: content types, WooCommerce products switch, "Also include" and "Leave out" pickers, business information with a character counter (sticky save bar, unsaved-changes guard, Ctrl/Cmd+S); the indexed items with title search, type filter, pages, links, passage counts, and one-click "Leave out"
+- [x] Documents: drag-and-drop or file picker, several files read one at a time with a status per file (waiting, reading, learned N passages, or the reason it was refused), type and size checked before uploading, language per upload, document list with delete confirmation, and the upload size limit next to the server's own limit
+- [x] Quick answers: search, add, inline editing (question, answer, keywords, language), on/off switch, use and "asked the AI instead" counts, delete confirmation, pages; CSV import (header in any order or question/answer columns, comma, semicolon, or tab; up to 2,000 rows; existing questions updated; skipped rows reported with their row number) and CSV export (UTF-8 for spreadsheets, formula-safe cells)
+- [x] Index status: items, passages, size, embedding coverage, items per type, live rebuild progress with "Re-index all", warnings when the index nears or passes the size that answers quickly on shared hosting (5,000 passages with FULLTEXT, 2,000 without, or 64 MB), a note when FULLTEXT is unavailable, embeddings progress and errors with the retry time, the embeddings switch, and passages per answer
+- [x] REST: `POST /quick-answers/import`; `/knowledge/status` adds the size level and the titles of items chosen one by one; `/knowledge/documents` adds the server's upload limit
+
+Implementation decisions (for review):
+- Progress refreshes every two seconds only while a rebuild or embeddings run; each check also moves the work along when WP-Cron is late.
+- An imported row that leaves out the keywords or enabled column keeps the existing quick answer's value; new rows are enabled.
+- Saving any knowledge setting refreshes the index views, because the server re-indexes right away.
+
+Phase 6 – Knowledge base is complete pending review of module 6.5.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

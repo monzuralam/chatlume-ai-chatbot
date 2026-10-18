@@ -58,8 +58,14 @@ export function useUpdateSettings() {
 				);
 			}
 		},
-		onSuccess: ( settings ) => {
+		onSuccess: ( settings, update ) => {
 			queryClient.setQueryData( SETTINGS_QUERY_KEY, settings );
+			// The server re-indexes right away when knowledge sources change.
+			if ( 'knowledge' in update ) {
+				queryClient.invalidateQueries( {
+					queryKey: [ 'chatlume', 'knowledge' ],
+				} );
+			}
 		},
 	} );
 }

@@ -85,6 +85,63 @@ export async function wpRequest< T >(
 }
 
 /**
+ * A page of a Chatlume list endpoint with its X-WP-Total count.
+ *
+ * @param route Route inside the chatlume/v1 namespace, with query args.
+ * @return Items and the total across pages.
+ */
+export async function requestPage< T >(
+	route: string
+): Promise< { items: T[]; total: number } > {
+	let response: Response;
+	try {
+		response = ( await apiFetch( {
+			path: `/${ getBootstrap().restNamespace }${ route }`,
+			parse: false,
+		} ) ) as Response;
+	} catch ( error ) {
+		throw toApiError(
+			error instanceof Response
+				? await error.json().catch( () => ( {} ) )
+				: error
+		);
+	}
+
+	const items = ( await response.json() ) as T[];
+
+	return {
+		items: Array.isArray( items ) ? items : [],
+		total: Number( response.headers.get( 'X-WP-Total' ) ?? 0 ) || 0,
+	};
+}
+
+/**
+ * Uploads a file to a Chatlume endpoint as multipart form data.
+ *
+ * @param route  Route inside the chatlume/v1 namespace.
+ * @param fields Form fields (files and text).
+ * @return Parsed response.
+ */
+export async function upload< T >(
+	route: string,
+	fields: Record< string, string | Blob >
+): Promise< T > {
+	const body = new FormData();
+	for ( const [ key, value ] of Object.entries( fields ) ) {
+		body.append( key, value );
+	}
+	try {
+		return await apiFetch< T >( {
+			path: `/${ getBootstrap().restNamespace }${ route }`,
+			method: 'POST',
+			body,
+		} );
+	} catch ( error ) {
+		throw toApiError( error );
+	}
+}
+
+/**
  * Calls a Chatlume REST endpoint.
  *
  * @param route   Route inside the chatlume/v1 namespace, e.g. '/settings'.

@@ -1,5 +1,6 @@
 import { __ } from '@wordpress/i18n';
 import {
+	BookOpen,
 	Bot,
 	FlaskConical,
 	LayoutDashboard,
@@ -37,6 +38,12 @@ const ConversationsRoute = lazy(
 );
 const SetupRoute = lazy(
 	() => import( /* webpackChunkName: "route-setup" */ './setup/SetupRoute' )
+);
+const KnowledgeRoute = lazy(
+	() =>
+		import(
+			/* webpackChunkName: "route-knowledge" */ './knowledge/KnowledgeRoute'
+		)
 );
 const CustomizeRoute = lazy(
 	() =>
@@ -93,6 +100,15 @@ export function registerBuiltInPages(): void {
 		icon: Bot,
 		component: ChatbotRoute,
 		order: 200,
+	} );
+
+	pageRegistry.register( {
+		id: 'knowledge',
+		title: __( 'Knowledge', 'chatlume-ai-chatbot' ),
+		path: '/knowledge',
+		icon: BookOpen,
+		component: KnowledgeRoute,
+		order: 210,
 	} );
 
 	pageRegistry.register( {

@@ -192,10 +192,11 @@ class KnowledgeController {
 	public function get_documents(): WP_REST_Response {
 		return self::no_store(
 			array(
-				'items'     => Documents::all(),
-				'max_bytes' => Documents::max_bytes(),
-				'types'     => array_keys( DocumentParser::TYPES ),
-				'docx'      => class_exists( '\ZipArchive' ),
+				'items'        => Documents::all(),
+				'max_bytes'    => Documents::max_bytes(),
+				'server_bytes' => (int) wp_max_upload_size(),
+				'types'        => array_keys( DocumentParser::TYPES ),
+				'docx'         => class_exists( '\ZipArchive' ),
 			)
 		);
 	}
@@ -275,8 +276,12 @@ class KnowledgeController {
 	 * @return array<string, mixed>
 	 */
 	private static function status( array $queue ): array {
+		$index    = ( new KnowledgeRepository() )->stats();
+		$fulltext = 'yes' === get_option( Schema::FULLTEXT_OPTION, 'no' );
+
 		return array(
-			'index'       => ( new KnowledgeRepository() )->stats(),
+			'index'       => $index,
+			'size'        => self::size( $index, $fulltext ),
 			'queue'       => array(
 				'status'   => (string) $queue['status'],
 				'total'    => (int) $queue['total'],
@@ -284,10 +289,44 @@ class KnowledgeController {
 				'started'  => self::iso( (string) $queue['started'] ),
 				'finished' => self::iso( (string) $queue['finished'] ),
 			),
-			'fulltext'    => 'yes' === get_option( Schema::FULLTEXT_OPTION, 'no' ),
+			'fulltext'    => $fulltext,
 			'embeddings'  => self::embeddings(),
 			'post_types'  => DisplayController::post_types(),
 			'woocommerce' => ProductSync::active(),
+			'chosen'      => array(
+				'included' => DisplayController::pages( array_map( 'intval', (array) Settings::get( 'knowledge.include_ids', array() ) ) ),
+				'excluded' => DisplayController::pages( array_map( 'intval', (array) Settings::get( 'knowledge.exclude_ids', array() ) ) ),
+			),
+		);
+	}
+
+	/**
+	 * How the index size compares with what answers quickly on typical
+	 * shared hosting: about 5,000 passages with FULLTEXT search (measured
+	 * well under the 300 ms budget), 2,000 without it, and 64 MB of text and
+	 * vectors.
+	 *
+	 * @param array<string, mixed> $index    Index stats.
+	 * @param bool                 $fulltext Whether FULLTEXT search is available.
+	 * @return array{level: string, chunks_limit: int, bytes_limit: int}
+	 */
+	public static function size( array $index, bool $fulltext ): array {
+		$chunks_limit = $fulltext ? 5000 : 2000;
+		$bytes_limit  = 64 * MB_IN_BYTES;
+		$share        = max( (int) $index['chunks'] / $chunks_limit, (int) $index['bytes'] / $bytes_limit );
+
+		if ( $share > 1 ) {
+			$level = 'high';
+		} elseif ( $share >= 0.8 ) {
+			$level = 'warn';
+		} else {
+			$level = 'ok';
+		}
+
+		return array(
+			'level'        => $level,
+			'chunks_limit' => $chunks_limit,
+			'bytes_limit'  => $bytes_limit,
 		);
 	}
 
