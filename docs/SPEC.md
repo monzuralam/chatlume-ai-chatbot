@@ -716,7 +716,7 @@ Implementation decisions (for review):
 - The first-index check runs on `admin_init`, so front-end requests never pay for it.
 - Saving content of a type that is not indexed costs no database queries.
 
-Module 6.2 – Retrieval and embeddings ✅ (2026-10-18, awaiting review)
+Module 6.2 – Retrieval and embeddings ✅ (2026-10-18)
 - [x] Two-stage retrieval through `chatlume_retrieved_context`: MySQL FULLTEXT picks up to 100 candidates; PHP n-gram scoring (BM25-style, character pairs for Chinese, Japanese, Thai, and other unspaced scripts) is used for those scripts, without FULLTEXT, and when FULLTEXT finds nothing
 - [x] Semantic reranking of the candidates only (70% meaning, 30% keywords), and only when at least 80% of them have vectors from the current model; vectors are never loaded beyond the candidates and models are never mixed
 - [x] Background embeddings in WP-Cron (32 passages per request, up to 8 requests per run within 20 seconds), packed as 32-bit floats with the model and dimensions; a model or dimension change marks old vectors stale and re-creates them; provider errors wait 15 minutes; the admin's progress checks catch up when WP-Cron is late
@@ -730,6 +730,20 @@ Implementation decisions (for review):
 - FULLTEXT runs in boolean mode with stem prefixes ("refunds" becomes `refun*`), because MySQL does not stem; the n-gram scorer uses the same stems.
 - Measured on the local site with 5,000 chunks and 512-dimension vectors: 26 ms median retrieval with FULLTEXT, 63 ms with n-gram scoring (question vector cached).
 - A question embedding waits at most 5 seconds.
+
+Module 6.3 – Documents ✅ (2026-10-18, awaiting review)
+- [x] Uploads of PDF (smalot/pdfparser, prefixed by Strauss), DOCX (ZipArchive), TXT, Markdown, CSV, and JSON through `POST /knowledge/documents`; list with `GET` and remove with `DELETE /knowledge/documents/{id}`; managers only
+- [x] Validation: extension allowlist, MIME type where the server can detect it, format signatures (`%PDF-`, ZIP), binary content refused for text formats, size limit `knowledge.max_upload_mb` (1–50, default 10, never above the server's upload limit), up to 200 documents
+- [x] Only extracted text is stored, as chunks of source type `document`; the upload is read from PHP's temporary file and never saved, so nothing can be downloaded or executed
+- [x] Safe extraction: DOCX body size-checked before unpacking, read as text without an XML parser (no entity expansion); PDF images skipped and decoding memory capped; at most 1,000,000 characters per document
+- [x] Readable text from every format: UTF-8, UTF-16, and Windows-1252 files; Markdown syntax removed; CSV rows as "Column: value" paragraphs (delimiter detected); JSON flattened to "path: value" lines
+- [x] Each document's language: the site language by default (every language on multilingual sites), or chosen on upload
+- [x] New chunks are embedded in the background like other sources
+
+Implementation decisions (for review):
+- Document records (name, type, size, characters, chunks, language, date) live in the non-autoloaded option `chatlume_documents`; the chunks live in the knowledge table.
+- The root Composer autoloader includes a classmap of `vendor-prefixed/`, because Strauss's generated PSR-0 map for pdfparser points at the wrong folder.
+- The `chatlume_knowledge_sources` filter also receives documents (with `null` for the post).
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

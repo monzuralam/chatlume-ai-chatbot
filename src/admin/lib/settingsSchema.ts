@@ -183,6 +183,7 @@ export const knowledgeSettingsSchema = z
 		business_info: z.string().max( 20000 ),
 		use_embeddings: z.boolean(),
 		top_k: z.number().int().min( 1 ).max( 10 ),
+		max_upload_mb: z.number().int().min( 1 ).max( 50 ),
 	} )
 	.strict();
 

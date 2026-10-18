@@ -87,6 +87,7 @@ const settings: Settings = {
 		business_info: '',
 		use_embeddings: true,
 		top_k: 4,
+		max_upload_mb: 10,
 	},
 	streaming: {
 		enabled: true,

@@ -10,6 +10,8 @@ namespace Chatlume\REST;
 use Chatlume\Cron\IndexQueue;
 use Chatlume\Data\KnowledgeRepository;
 use Chatlume\Installer\Schema;
+use Chatlume\Knowledge\DocumentParser;
+use Chatlume\Knowledge\Documents;
 use Chatlume\Knowledge\Embeddings;
 use Chatlume\Plugin;
 use Chatlume\Settings\Settings;
@@ -25,8 +27,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * GET chatlume/v1/knowledge/status: index size, rebuild progress, and
  * the post types to choose from. POST chatlume/v1/knowledge/reindex: starts
- * a full rebuild. GET chatlume/v1/knowledge/sources: what is indexed. The
- * chosen sources themselves are saved through /settings.
+ * a full rebuild. GET chatlume/v1/knowledge/sources: what is indexed.
+ * GET/POST chatlume/v1/knowledge/documents and DELETE
+ * chatlume/v1/knowledge/documents/{id}: uploaded documents. The chosen
+ * sources themselves are saved through /settings.
  */
 class KnowledgeController {
 
@@ -55,6 +59,51 @@ class KnowledgeController {
 				'callback'            => array( $this, 'reindex' ),
 				'permission_callback' => array( $this, 'permissions_check' ),
 				'args'                => array(),
+			)
+		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/knowledge/documents',
+			array(
+				array(
+					'methods'             => WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'get_documents' ),
+					'permission_callback' => array( $this, 'permissions_check' ),
+					'args'                => array(),
+				),
+				array(
+					'methods'             => WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'upload_document' ),
+					'permission_callback' => array( $this, 'permissions_check' ),
+					'args'                => array(
+						'language' => array(
+							'type'              => 'string',
+							'default'           => 'auto',
+							'maxLength'         => 20,
+							'pattern'           => '^(auto|[A-Za-z]{2,3}([_-][A-Za-z0-9]{2,8})*)?$',
+							'validate_callback' => 'rest_validate_request_arg',
+							'sanitize_callback' => 'sanitize_text_field',
+						),
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			Plugin::REST_NAMESPACE,
+			'/knowledge/documents/(?P<id>[a-f0-9]{12})',
+			array(
+				'methods'             => WP_REST_Server::DELETABLE,
+				'callback'            => array( $this, 'delete_document' ),
+				'permission_callback' => array( $this, 'permissions_check' ),
+				'args'                => array(
+					'id' => array(
+						'type'     => 'string',
+						'pattern'  => '^[a-f0-9]{12}$',
+						'required' => true,
+					),
+				),
 			)
 		);
 
@@ -132,6 +181,68 @@ class KnowledgeController {
 	 */
 	public function reindex(): WP_REST_Response {
 		return self::no_store( self::status( ( new IndexQueue() )->start() ) );
+	}
+
+	/**
+	 * GET /knowledge/documents: records, accepted types, and the size limit.
+	 *
+	 * @return WP_REST_Response
+	 */
+	public function get_documents(): WP_REST_Response {
+		return self::no_store(
+			array(
+				'items'     => Documents::all(),
+				'max_bytes' => Documents::max_bytes(),
+				'types'     => array_keys( DocumentParser::TYPES ),
+				'docx'      => class_exists( '\ZipArchive' ),
+			)
+		);
+	}
+
+	/**
+	 * POST /knowledge/documents: one file (multipart field "file").
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function upload_document( WP_REST_Request $request ) {
+		$files = $request->get_file_params();
+		if ( empty( $files['file'] ) || ! is_array( $files['file'] ) ) {
+			return new WP_Error( 'chatlume_document_upload', __( 'Choose a file to upload.', 'chatlume-ai-chatbot' ), array( 'status' => 400 ) );
+		}
+
+		$record = $this->documents()->add( $files['file'], (string) $request->get_param( 'language' ) );
+		if ( is_wp_error( $record ) ) {
+			return $record;
+		}
+
+		$response = self::no_store( $record );
+		$response->set_status( 201 );
+
+		return $response;
+	}
+
+	/**
+	 * DELETE /knowledge/documents/{id}.
+	 *
+	 * @param WP_REST_Request $request Request.
+	 * @return WP_REST_Response|WP_Error
+	 */
+	public function delete_document( WP_REST_Request $request ) {
+		if ( ! $this->documents()->delete( (string) $request->get_param( 'id' ) ) ) {
+			return new WP_Error( 'chatlume_document_missing', __( 'This document no longer exists.', 'chatlume-ai-chatbot' ), array( 'status' => 404 ) );
+		}
+
+		return self::no_store( array( 'deleted' => true ) );
+	}
+
+	/**
+	 * Document storage (replaceable in tests).
+	 *
+	 * @return Documents
+	 */
+	protected function documents(): Documents {
+		return new Documents();
 	}
 
 	/**

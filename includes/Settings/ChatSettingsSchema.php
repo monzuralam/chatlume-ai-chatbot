@@ -311,6 +311,8 @@ final class ChatSettingsSchema {
 				'use_embeddings' => self::boolean( true ),
 				// Passages added to the prompt per question.
 				'top_k'          => self::integer( 4, 1, 10 ),
+				// Largest document upload in MB (also limited by the server).
+				'max_upload_mb'  => self::integer( 10, 1, 50 ),
 			)
 		);
 	}
