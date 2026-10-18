@@ -97,21 +97,6 @@ class KnowledgeRepository {
 	}
 
 	/**
-	 * Removes sources of a type that were not indexed since a moment (they
-	 * are no longer selected, published, or present).
-	 *
-	 * @param string $type  Source type.
-	 * @param string $since UTC Y-m-d H:i:s.
-	 * @return int Rows removed.
-	 */
-	public function purge_older( string $type, string $since ): int {
-		global $wpdb;
-
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Chatlume's own table.
-		return (int) $wpdb->query( $wpdb->prepare( 'DELETE FROM %i WHERE source_type = %s AND updated_at < %s', Schema::table( 'knowledge' ), $type, $since ) );
-	}
-
-	/**
 	 * Index size and contents.
 	 *
 	 * @return array{chunks: int, sources: int, bytes: int, embedded: int, stale: int, types: array<string, int>, languages: array<string, int>, updated_at: string}

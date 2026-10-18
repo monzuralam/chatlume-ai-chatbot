@@ -20,6 +20,7 @@ use Chatlume\Installer\Migrations;
 use Chatlume\Installer\Multisite;
 use Chatlume\Knowledge\Embeddings;
 use Chatlume\Knowledge\Indexer;
+use Chatlume\Knowledge\ProductSync;
 use Chatlume\Knowledge\Retriever;
 use Chatlume\REST\AppearanceController;
 use Chatlume\REST\ChatbotController;
@@ -97,6 +98,7 @@ final class Plugin {
 		( new RetentionCleanup() )->register();
 		( new Indexer() )->register();
 		( new IndexQueue() )->register();
+		( new ProductSync() )->register();
 		( new Embeddings() )->register();
 		( new Retriever() )->register();
 		( new Shortcode() )->register();

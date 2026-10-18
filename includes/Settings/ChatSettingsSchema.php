@@ -305,6 +305,8 @@ final class ChatSettingsSchema {
 					'maxItems' => 500,
 					'items'    => self::integer( 0, 0, PHP_INT_MAX ),
 				),
+				// WooCommerce products (when WooCommerce is active).
+				'products'       => self::boolean( true ),
 				// Free-text facts: opening hours, policies, contact details.
 				'business_info'  => self::text( '', 20000, 'textarea' ),
 				// Semantic ranking when an embeddings provider is set up.

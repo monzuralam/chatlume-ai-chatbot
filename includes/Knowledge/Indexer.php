@@ -71,6 +71,11 @@ class Indexer {
 		if ( ! $post instanceof WP_Post || wp_is_post_revision( $post ) || wp_is_post_autosave( $post ) ) {
 			return;
 		}
+		// Products are indexed once at the end of the request, with their shop data.
+		if ( ProductSync::TYPE === $post->post_type && ProductSync::active() ) {
+			ProductSync::queue( (int) $post->ID );
+			return;
+		}
 		// Orders, menu items, and other unchosen content cost nothing.
 		if ( ! in_array( $post->post_type, self::post_types(), true )
 			&& ! in_array( $post->ID, array_map( 'intval', (array) Settings::get( 'knowledge.include_ids', array() ) ), true ) ) {
@@ -87,6 +92,9 @@ class Indexer {
 	 */
 	public function on_remove( $post_id ): void {
 		$this->repository->delete( self::TYPE_POST, (string) (int) $post_id );
+		if ( ProductSync::active() ) {
+			$this->repository->delete( ProductSync::TYPE, (string) (int) $post_id );
+		}
 	}
 
 	/**
@@ -96,6 +104,10 @@ class Indexer {
 	 * @return int Chunks stored.
 	 */
 	public function index_post( WP_Post $post ): int {
+		if ( ProductSync::TYPE === $post->post_type && ProductSync::active() ) {
+			return ( new ProductSync( $this, $this->repository ) )->index( (int) $post->ID ) > 0 ? 1 : 0;
+		}
+
 		$id = (string) $post->ID;
 		if ( ! self::eligible( $post ) ) {
 			$this->repository->delete( self::TYPE_POST, $id );
@@ -165,14 +177,16 @@ class Indexer {
 	}
 
 	/**
-	 * Chosen post types that exist and are public.
+	 * Chosen post types that exist and are public. WooCommerce products are
+	 * left out: ProductSync indexes them with their shop data.
 	 *
 	 * @return string[]
 	 */
 	public static function post_types(): array {
-		$types = array();
+		$types    = array();
+		$products = ProductSync::active();
 		foreach ( (array) Settings::get( 'knowledge.post_types', array( 'page', 'post' ) ) as $type ) {
-			if ( is_string( $type ) && post_type_exists( $type ) && is_post_type_viewable( $type ) && 'attachment' !== $type ) {
+			if ( is_string( $type ) && post_type_exists( $type ) && is_post_type_viewable( $type ) && 'attachment' !== $type && ! ( $products && ProductSync::TYPE === $type ) ) {
 				$types[] = $type;
 			}
 		}
@@ -199,12 +213,12 @@ class Indexer {
 	/**
 	 * Chunks and stores a source (or removes it when it has no text).
 	 *
-	 * @param string     $type   Source type.
-	 * @param string     $id     Source ID.
-	 * @param mixed      $source Filtered source.
+	 * @param string $type   Source type.
+	 * @param string $id     Source ID.
+	 * @param mixed  $source Filtered source: title, url, language, text.
 	 * @return int Chunks stored.
 	 */
-	private function store( string $type, string $id, $source ): int {
+	public function store( string $type, string $id, $source ): int {
 		$text = is_array( $source ) ? trim( (string) ( $source['text'] ?? '' ) ) : '';
 		if ( '' === $text ) {
 			$this->repository->delete( $type, $id );

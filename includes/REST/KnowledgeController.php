@@ -13,6 +13,7 @@ use Chatlume\Installer\Schema;
 use Chatlume\Knowledge\DocumentParser;
 use Chatlume\Knowledge\Documents;
 use Chatlume\Knowledge\Embeddings;
+use Chatlume\Knowledge\ProductSync;
 use Chatlume\Plugin;
 use Chatlume\Settings\Settings;
 use WP_Error;
@@ -275,17 +276,18 @@ class KnowledgeController {
 	 */
 	private static function status( array $queue ): array {
 		return array(
-			'index'      => ( new KnowledgeRepository() )->stats(),
-			'queue'      => array(
+			'index'       => ( new KnowledgeRepository() )->stats(),
+			'queue'       => array(
 				'status'   => (string) $queue['status'],
 				'total'    => (int) $queue['total'],
 				'done'     => (int) $queue['done'],
 				'started'  => self::iso( (string) $queue['started'] ),
 				'finished' => self::iso( (string) $queue['finished'] ),
 			),
-			'fulltext'   => 'yes' === get_option( Schema::FULLTEXT_OPTION, 'no' ),
-			'embeddings' => self::embeddings(),
-			'post_types' => DisplayController::post_types(),
+			'fulltext'    => 'yes' === get_option( Schema::FULLTEXT_OPTION, 'no' ),
+			'embeddings'  => self::embeddings(),
+			'post_types'  => DisplayController::post_types(),
+			'woocommerce' => ProductSync::active(),
 		);
 	}
 

@@ -84,6 +84,7 @@ const settings: Settings = {
 		post_types: [ 'page', 'post' ],
 		include_ids: [],
 		exclude_ids: [],
+		products: true,
 		business_info: '',
 		use_embeddings: true,
 		top_k: 4,

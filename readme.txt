@@ -63,7 +63,7 @@ Chatlume stores no custom CSS, but the widget reads `--chatlume-*` CSS custom pr
 
 = What content does the bot learn from? =
 
-Published, public, non-password-protected pages and posts by default. You can choose other public content types, add or leave out single items, and add a short text about your business such as opening hours and policies. Drafts, private content, and password-protected pages are never indexed. Developers can change or leave out any item with the `chatlume_knowledge_sources` filter.
+Published, public, non-password-protected pages and posts by default, and WooCommerce products when WooCommerce is active (with their current price, sale, and stock status). You can choose other public content types, add or leave out single items, and add a short text about your business such as opening hours and policies. Drafts, private content, and password-protected pages are never indexed. Developers can change or leave out any item with the `chatlume_knowledge_sources` filter.
 
 = What happens to my data if I delete the plugin? =
 
@@ -95,6 +95,7 @@ Nothing is removed unless you enable **Delete all data on uninstall** in Chatlum
 * Knowledge base: your published pages and posts (or any other public content types you choose, single items included or excluded) and a short text about your business are indexed automatically, kept up to date as you edit, and rebuilt in the background without slowing your site. Multilingual sites using WPML or Polylang keep each language separate.
 * Knowledge search: the bot answers from the most relevant passages of your content, found by keywords (with plurals and word forms) and, when an embeddings provider is set up, ranked by meaning; Chinese, Japanese, Thai, and other languages written without spaces are supported. Answers list up to three source links.
 * Knowledge documents: upload PDF, Word (DOCX), text, Markdown, CSV, and JSON files (up to 10 MB by default) for the bot to learn from. Only the extracted text is kept; the files themselves are never saved on your site.
+* WooCommerce: products visible in your shop are indexed automatically with their price as shoppers see it (including sales and price ranges), stock status, categories, SKU, attributes, and descriptions, and updated whenever a product, its stock, or a scheduled sale changes.
 
 == External services ==
 

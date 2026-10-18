@@ -7,8 +7,9 @@
 
 namespace Chatlume\Cron;
 
-use Chatlume\Data\KnowledgeRepository;
+use Chatlume\Installer\Schema;
 use Chatlume\Knowledge\Indexer;
+use Chatlume\Knowledge\ProductSync;
 use Chatlume\Settings\Settings;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -72,12 +73,16 @@ class IndexQueue {
 	}
 
 	/**
-	 * A fresh site builds its first index once.
+	 * A fresh site builds its first index once. The index is also rebuilt
+	 * when the post types it covers change outside the knowledge settings:
+	 * WooCommerce activated or deactivated, a custom post type removed, or
+	 * an update that adds a source.
 	 *
 	 * @return void
 	 */
 	public function maybe_start_first(): void {
-		if ( false === get_option( self::OPTION, false ) ) {
+		$stored = get_option( self::OPTION, false );
+		if ( false === $stored || ( is_array( $stored ) && self::candidate_types() !== self::state()['types'] ) ) {
 			$this->start();
 		}
 	}
@@ -99,7 +104,7 @@ class IndexQueue {
 		$types_after  = array_values( (array) ( $after['post_types'] ?? array() ) );
 		sort( $types_before );
 		sort( $types_after );
-		if ( $types_before !== $types_after ) {
+		if ( $types_before !== $types_after || ( $before['products'] ?? true ) !== ( $after['products'] ?? true ) ) {
 			$this->start();
 			return;
 		}
@@ -152,6 +157,7 @@ class IndexQueue {
 			'started'  => current_time( 'mysql', true ),
 			'finished' => '',
 			'next_run' => time(),
+			'types'    => self::candidate_types(),
 		);
 		update_option( self::OPTION, $state, false );
 
@@ -183,8 +189,10 @@ class IndexQueue {
 		}
 
 		if ( count( $ids ) < self::BATCH ) {
-			// Posts not touched in this run are no longer eligible.
-			( new KnowledgeRepository() )->purge_older( Indexer::TYPE_POST, (string) $state['started'] );
+			// Sources whose post is gone, unpublished, or no longer chosen.
+			$included = self::included_ids();
+			self::purge_unlisted( Indexer::TYPE_POST, Indexer::post_types(), $included );
+			self::purge_unlisted( ProductSync::TYPE, ProductSync::enabled() ? array( ProductSync::TYPE ) : array(), $included );
 			$state['status']   = 'done';
 			$state['done']     = max( (int) $state['done'], (int) $state['total'] );
 			$state['finished'] = current_time( 'mysql', true );
@@ -217,13 +225,15 @@ class IndexQueue {
 	/**
 	 * Current state.
 	 *
-	 * @return array{status: string, total: int, done: int, after_id: int, started: string, finished: string, next_run: int}
+	 * @return array{status: string, total: int, done: int, after_id: int, started: string, finished: string, next_run: int, types: string[]}
 	 */
 	public static function state(): array {
 		$state = get_option( self::OPTION, array() );
 		$state = is_array( $state ) ? $state : array();
 
 		return array(
+			// Post types the last rebuild covered.
+			'types'    => array_values( array_map( 'strval', (array) ( $state['types'] ?? array() ) ) ),
 			'status'   => in_array( $state['status'] ?? '', array( 'running', 'done' ), true ) ? (string) $state['status'] : 'idle',
 			'total'    => (int) ( $state['total'] ?? 0 ),
 			'done'     => (int) ( $state['done'] ?? 0 ),
@@ -232,6 +242,21 @@ class IndexQueue {
 			'finished' => (string) ( $state['finished'] ?? '' ),
 			'next_run' => (int) ( $state['next_run'] ?? 0 ),
 		);
+	}
+
+	/**
+	 * Post types rebuilt in full: the chosen ones, plus WooCommerce products
+	 * when they are indexed.
+	 *
+	 * @return string[]
+	 */
+	private static function candidate_types(): array {
+		$types = Indexer::post_types();
+		if ( ProductSync::enabled() ) {
+			$types[] = ProductSync::TYPE;
+		}
+
+		return $types;
 	}
 
 	/**
@@ -244,8 +269,8 @@ class IndexQueue {
 	private function next_ids( int $after_id ): array {
 		global $wpdb;
 
-		$types    = Indexer::post_types();
-		$included = array_values( array_filter( array_map( 'intval', (array) Settings::get( 'knowledge.include_ids', array() ) ) ) );
+		$types    = self::candidate_types();
+		$included = self::included_ids();
 		if ( array() === $types && array() === $included ) {
 			return array();
 		}
@@ -276,8 +301,8 @@ class IndexQueue {
 	private function count(): int {
 		global $wpdb;
 
-		$types    = Indexer::post_types();
-		$included = array_values( array_filter( array_map( 'intval', (array) Settings::get( 'knowledge.include_ids', array() ) ) ) );
+		$types    = self::candidate_types();
+		$included = self::included_ids();
 		$types    = array() === $types ? array( '' ) : $types;
 		$included = array() === $included ? array( 0 ) : $included;
 		$type_in  = implode( ',', array_fill( 0, count( $types ), '%s' ) );
@@ -293,5 +318,44 @@ class IndexQueue {
 		// phpcs:enable
 
 		return (int) $total;
+	}
+
+	/**
+	 * Items chosen one by one.
+	 *
+	 * @return int[]
+	 */
+	private static function included_ids(): array {
+		return array_values( array_filter( array_map( 'intval', (array) Settings::get( 'knowledge.include_ids', array() ) ) ) );
+	}
+
+	/**
+	 * Removes indexed sources of a type whose post is no longer a candidate
+	 * (deleted, unpublished, password-protected, or of a type no longer
+	 * chosen). Compares with the posts table, not with times, so sources
+	 * saved while the rebuild ran are never lost or kept by mistake.
+	 *
+	 * @param string   $source_type Source type.
+	 * @param string[] $types       Post types still indexed.
+	 * @param int[]    $included    Items chosen one by one.
+	 * @return void
+	 */
+	private static function purge_unlisted( string $source_type, array $types, array $included ): void {
+		global $wpdb;
+
+		// Placeholders so the IN() lists are never empty.
+		$types    = array() === $types ? array( '' ) : $types;
+		$included = array() === $included ? array( 0 ) : $included;
+		$type_in  = implode( ',', array_fill( 0, count( $types ), '%s' ) );
+		$id_in    = implode( ',', array_fill( 0, count( $included ), '%d' ) );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, WordPress.DB.PreparedSQLPlaceholders.ReplacementsWrongNumber, WordPress.DB.PreparedSQL.InterpolatedNotPrepared -- The IN() lists are only placeholders; all values are prepared.
+		$wpdb->query(
+			$wpdb->prepare(
+				"DELETE k FROM %i k LEFT JOIN %i p ON p.ID = k.source_id AND p.post_status = 'publish' AND p.post_password = '' AND ( p.post_type IN ($type_in) OR p.ID IN ($id_in) ) WHERE k.source_type = %s AND p.ID IS NULL",
+				array_merge( array( Schema::table( 'knowledge' ), $wpdb->posts ), $types, $included, array( $source_type ) )
+			)
+		);
+		// phpcs:enable
 	}
 }

@@ -731,7 +731,7 @@ Implementation decisions (for review):
 - Measured on the local site with 5,000 chunks and 512-dimension vectors: 26 ms median retrieval with FULLTEXT, 63 ms with n-gram scoring (question vector cached).
 - A question embedding waits at most 5 seconds.
 
-Module 6.3 – Documents ✅ (2026-10-18, awaiting review)
+Module 6.3 – Documents ✅ (2026-10-18)
 - [x] Uploads of PDF (smalot/pdfparser, prefixed by Strauss), DOCX (ZipArchive), TXT, Markdown, CSV, and JSON through `POST /knowledge/documents`; list with `GET` and remove with `DELETE /knowledge/documents/{id}`; managers only
 - [x] Validation: extension allowlist, MIME type where the server can detect it, format signatures (`%PDF-`, ZIP), binary content refused for text formats, size limit `knowledge.max_upload_mb` (1–50, default 10, never above the server's upload limit), up to 200 documents
 - [x] Only extracted text is stored, as chunks of source type `document`; the upload is read from PHP's temporary file and never saved, so nothing can be downloaded or executed
@@ -744,6 +744,19 @@ Implementation decisions (for review):
 - Document records (name, type, size, characters, chunks, language, date) live in the non-autoloaded option `chatlume_documents`; the chunks live in the knowledge table.
 - The root Composer autoloader includes a classmap of `vendor-prefixed/`, because Strauss's generated PSR-0 map for pdfparser points at the wrong folder.
 - The `chatlume_knowledge_sources` filter also receives documents (with `null` for the post).
+
+Module 6.4 – WooCommerce products sync ✅ (2026-10-18, awaiting review)
+- [x] Visible, published products indexed as source type `product`: name, price as shoppers see it (sale and regular price, ranges for variable products, the shop's tax display), stock status (with quantity when managed), categories, SKU, visible attributes, short description, description, and link
+- [x] Re-indexed on product and variation saves, stock and stock-status changes, and scheduled sale starts and ends; removed when unpublished, hidden from the catalog, hidden while out of stock (when the shop hides those), password-protected, excluded, trashed, or deleted
+- [x] Changes are collected during a request and indexed once at its end, so bulk edits and imports index each product once
+- [x] Setting `knowledge.products` (on by default); with it off, products can still be added one by one through `include_ids`
+- [x] Full rebuilds include products; switching products on or off rebuilds the index
+- [x] `/knowledge/status` reports whether WooCommerce is active
+
+Implementation decisions (for review):
+- Products are never also indexed as plain posts, even if "product" is among the chosen post types.
+- The end-of-rebuild cleanup now removes sources whose post is no longer a published, chosen candidate by comparing with the posts table, instead of by update time (rows saved in the same second as a rebuild started could survive).
+- The index remembers which post types it covers and rebuilds itself (checked on admin pages) when they change outside the settings: WooCommerce activated or deactivated, a custom post type removed, or an update that adds a source. Existing indexes from 6.1 rebuild once to add products.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

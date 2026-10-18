@@ -166,24 +166,27 @@ class KnowledgeTest extends TestCase {
 			}
 
 			/**
-			 * Deletes rows of a source, or rows older than a moment.
+			 * Deletes rows of a source, or rows whose post is no longer a
+			 * candidate (the end-of-rebuild purge).
 			 *
 			 * @param string $query Query.
 			 * @return int
 			 */
 			public function query( $query ) {
-				$args   = $this->args();
-				$before = count( $this->rows );
-				$older  = false !== strpos( $query, 'updated_at <' );
+				$args     = $this->args();
+				$before   = count( $this->rows );
+				$unlisted = false !== strpos( $query, 'LEFT JOIN' );
+				$type     = $unlisted ? end( $args ) : $args[1];
+				$post_ids = array_map( 'strval', $this->post_ids );
 
 				$this->rows = array_values(
 					array_filter(
 						$this->rows,
-						static function ( $row ) use ( $args, $older ) {
-							if ( $row['source_type'] !== $args[1] ) {
+						static function ( $row ) use ( $args, $unlisted, $type, $post_ids ) {
+							if ( $row['source_type'] !== $type ) {
 								return true;
 							}
-							return $older ? $row['updated_at'] >= $args[2] : $row['source_id'] !== $args[2];
+							return $unlisted ? in_array( $row['source_id'], $post_ids, true ) : $row['source_id'] !== $args[2];
 						}
 					)
 				);
