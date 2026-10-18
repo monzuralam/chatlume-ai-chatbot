@@ -20,6 +20,7 @@ use Chatlume\Installer\Migrations;
 use Chatlume\Installer\Multisite;
 use Chatlume\Knowledge\Embeddings;
 use Chatlume\Knowledge\Indexer;
+use Chatlume\Integrations\Webhooks;
 use Chatlume\Knowledge\ProductSync;
 use Chatlume\Knowledge\Retriever;
 use Chatlume\REST\AppearanceController;
@@ -28,6 +29,7 @@ use Chatlume\REST\ChatController;
 use Chatlume\REST\ConversationsController;
 use Chatlume\REST\DisplayController;
 use Chatlume\REST\EngagementController;
+use Chatlume\REST\IntegrationsController;
 use Chatlume\REST\HealthController;
 use Chatlume\REST\KnowledgeController;
 use Chatlume\REST\PlaygroundController;
@@ -100,6 +102,7 @@ final class Plugin {
 		( new Indexer() )->register();
 		( new IndexQueue() )->register();
 		( new ProductSync() )->register();
+		( new Webhooks() )->register();
 		( new Embeddings() )->register();
 		( new Retriever() )->register();
 		( new Shortcode() )->register();
@@ -139,6 +142,7 @@ final class Plugin {
 		( new PlaygroundController() )->register_routes();
 		( new DisplayController() )->register_routes();
 		( new EngagementController() )->register_routes();
+		( new IntegrationsController() )->register_routes();
 		( new AppearanceController() )->register_routes();
 		( new KnowledgeController() )->register_routes();
 	}

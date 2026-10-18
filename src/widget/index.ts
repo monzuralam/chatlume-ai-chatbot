@@ -11,6 +11,7 @@
  */
 import launcherCss from './styles/launcher.css?inline';
 import { CLOSE_ICON, LAUNCHER_ICONS, svgIcon } from './launcher/icons';
+import { track } from './lib/analytics';
 import { isClosed, showFloating } from './lib/display';
 import { loadFonts } from './lib/fonts';
 import { read, write } from './lib/storage';
@@ -226,6 +227,9 @@ class Controller implements WidgetHost {
 		}
 		if ( ! this.inline && ! this.preview ) {
 			write( 'seen', true );
+		}
+		if ( ! this.preview ) {
+			track( this.config.analytics, 'chat_open' );
 		}
 		this.syncScrollLock();
 		this.emit();

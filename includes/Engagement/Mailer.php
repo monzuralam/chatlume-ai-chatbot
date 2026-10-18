@@ -114,6 +114,24 @@ final class Mailer {
 	}
 
 	/**
+	 * A test email to the team address.
+	 *
+	 * @return bool
+	 */
+	public static function test(): bool {
+		return self::send(
+			self::team_address(),
+			/* translators: %s: Site name. */
+			sprintf( __( '[%s] Chatlume test email', 'chatlume-ai-chatbot' ), self::site() ),
+			array(
+				__( 'This is a test from Chatlume. Emails about new leads and conversations will reach this address.', 'chatlume-ai-chatbot' ),
+				/* translators: %s: Admin URL. */
+				sprintf( __( 'Change the address in Chatlume: %s', 'chatlume-ai-chatbot' ), admin_url( 'admin.php?page=chatlume#/integrations' ) ),
+			)
+		);
+	}
+
+	/**
 	 * A conversation as plain text.
 	 *
 	 * @param array<int, array{role: string, content: string}> $messages Messages.

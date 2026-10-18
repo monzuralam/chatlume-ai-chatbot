@@ -71,7 +71,7 @@ class SettingsTest extends TestCase {
 	public function test_defaults(): void {
 		$defaults = SettingsSchema::all_defaults();
 
-		$this->assertSame( array( 'setup', 'privacy', 'providers', 'chatbot', 'quick_answers', 'security', 'costs', 'cache', 'display', 'streaming', 'debug', 'knowledge', 'leads', 'handoff' ), array_keys( $defaults ) );
+		$this->assertSame( array( 'setup', 'privacy', 'providers', 'chatbot', 'quick_answers', 'security', 'costs', 'cache', 'display', 'streaming', 'debug', 'knowledge', 'leads', 'handoff', 'integrations' ), array_keys( $defaults ) );
 		$this->assertSame( array( 'completed' => false ), $defaults['setup'] );
 		$this->assertSame(
 			array(
@@ -139,7 +139,7 @@ class SettingsTest extends TestCase {
 
 		$all = Settings::get_all();
 
-		$this->assertSame( array( 'setup', 'privacy', 'providers', 'chatbot', 'quick_answers', 'security', 'costs', 'cache', 'display', 'streaming', 'debug', 'knowledge', 'leads', 'handoff' ), array_keys( $all ) );
+		$this->assertSame( array( 'setup', 'privacy', 'providers', 'chatbot', 'quick_answers', 'security', 'costs', 'cache', 'display', 'streaming', 'debug', 'knowledge', 'leads', 'handoff', 'integrations' ), array_keys( $all ) );
 		$this->assertSame( array( 'completed' => false ), $all['setup'] );
 		$this->assertTrue( $all['privacy']['delete_data_on_uninstall'] );
 	}
@@ -330,7 +330,7 @@ class SettingsTest extends TestCase {
 	public function test_rest_args_cover_every_section_with_callbacks(): void {
 		$args = SettingsSchema::rest_args();
 
-		$this->assertSame( array( 'setup', 'privacy', 'providers', 'chatbot', 'quick_answers', 'security', 'costs', 'cache', 'display', 'streaming', 'debug', 'knowledge', 'leads', 'handoff' ), array_keys( $args ) );
+		$this->assertSame( array( 'setup', 'privacy', 'providers', 'chatbot', 'quick_answers', 'security', 'costs', 'cache', 'display', 'streaming', 'debug', 'knowledge', 'leads', 'handoff', 'integrations' ), array_keys( $args ) );
 
 		foreach ( $args as $arg ) {
 			$this->assertSame( 'object', $arg['type'] );

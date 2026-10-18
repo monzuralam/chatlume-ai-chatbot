@@ -81,6 +81,7 @@ final class SettingsSchema {
 			'knowledge'     => ChatSettingsSchema::knowledge(),
 			'leads'         => ChatSettingsSchema::leads(),
 			'handoff'       => ChatSettingsSchema::handoff(),
+			'integrations'  => ChatSettingsSchema::integrations(),
 		);
 	}
 

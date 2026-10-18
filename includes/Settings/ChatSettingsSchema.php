@@ -278,6 +278,45 @@ final class ChatSettingsSchema {
 	}
 
 	/**
+	 * Webhooks, analytics events, and bot protection.
+	 *
+	 * @return array<string, mixed>
+	 */
+	public static function integrations(): array {
+		return self::section(
+			__( 'Integrations.', 'chatlume-ai-chatbot' ),
+			array(
+				// Addresses that receive signed POST requests for chosen events.
+				'webhooks'           => array(
+					'type'     => 'array',
+					'maxItems' => 5,
+					'items'    => array(
+						'type'       => 'object',
+						'properties' => array(
+							'url'    => self::text( '', 500, 'url' ),
+							'events' => array(
+								'type'     => 'array',
+								'maxItems' => 4,
+								'items'    => array(
+									'type'    => 'string',
+									'format'  => 'key',
+									'default' => 'lead_captured',
+									'enum'    => array( 'lead_captured', 'conversation_ended', 'negative_feedback', 'handoff_requested' ),
+								),
+							),
+						),
+					),
+				),
+				// Push chat events to window.dataLayer and as DOM events (no data leaves the page).
+				'analytics'          => self::boolean( false ),
+				// Cloudflare Turnstile before a chat session starts (loads Cloudflare's script).
+				'turnstile'          => self::boolean( false ),
+				'turnstile_site_key' => self::text( '', 100 ),
+			)
+		);
+	}
+
+	/**
 	 * Proactive invitations: a teaser or an opened chat when a visitor has
 	 * spent some time, scrolled, or is about to leave.
 	 *

@@ -22,6 +22,7 @@ use Chatlume\Plugin;
 use Chatlume\Security\IpResolver;
 use Chatlume\Security\RateLimiter;
 use Chatlume\Security\SessionManager;
+use Chatlume\Security\Turnstile;
 use Chatlume\Settings\Settings;
 use Chatlume\Support\DebugLog;
 use WP_Error;
@@ -85,15 +86,23 @@ class ChatController {
 				// Public: visitors start sessions here. Protected by the same-origin check and a per-IP rate limit.
 				'permission_callback' => '__return_true',
 				'args'                => array(
-					'token'    => $token + array( 'default' => '' ),
-					'language' => self::language_arg(),
+					'token'     => $token + array( 'default' => '' ),
+					'language'  => self::language_arg(),
 					// Version of the widget config the page was served with (detects stale cached pages).
-					'v'        => array(
+					'v'         => array(
 						'type'              => 'string',
 						'default'           => '',
 						'maxLength'         => 32,
 						'pattern'           => '^[a-f0-9]*$',
 						'sanitize_callback' => 'sanitize_key',
+						'validate_callback' => 'rest_validate_request_arg',
+					),
+					// Cloudflare Turnstile token (new sessions, when Turnstile is on).
+					'turnstile' => array(
+						'type'              => 'string',
+						'default'           => '',
+						'maxLength'         => 2048,
+						'pattern'           => '^[A-Za-z0-9._:-]*$',
 						'validate_callback' => 'rest_validate_request_arg',
 					),
 				),
@@ -250,7 +259,15 @@ class ChatController {
 			return self::error( new ChatException( 'rate_limited', BotText::rate_limited(), 429, $limited['retry_after'] ) );
 		}
 
-		$session = ( new SessionManager() )->start( (string) $request->get_param( 'token' ) );
+		$sessions = new SessionManager();
+		$existing = (string) $request->get_param( 'token' );
+		// New sessions pass Turnstile first, when it is on; renewing a valid session does not.
+		if ( Turnstile::enabled() && ( '' === $existing || null === $sessions->verify( $existing ) )
+			&& ! Turnstile::verify( (string) $request->get_param( 'turnstile' ), IpResolver::resolve() ) ) {
+			return self::error( new ChatException( 'turnstile_failed', __( 'Please confirm you are human to start chatting.', 'chatlume-ai-chatbot' ), 403 ) );
+		}
+
+		$session = $sessions->start( $existing );
 		$data    = array(
 			'token'   => $session['token'],
 			'expires' => $session['expires'],
@@ -444,6 +461,16 @@ class ChatController {
 			$saved = ( new MessageRepository() )->set_feedback( (int) $request->get_param( 'message_id' ), (int) $conversation_id, $rating );
 			if ( $saved && 0 !== $rating ) {
 				$conversations->set_rating( (int) $conversation_id, $rating );
+			}
+			if ( $saved ) {
+				/**
+				 * Fires when a visitor rates an answer (1, -1, or 0 to clear).
+				 *
+				 * @param string $conversation_id Conversation ID.
+				 * @param int    $message_id      Message ID.
+				 * @param int    $rating          Rating.
+				 */
+				do_action( 'chatlume_feedback_received', $conversation_id, (int) $request->get_param( 'message_id' ), $rating );
 			}
 		}
 

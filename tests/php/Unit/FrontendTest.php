@@ -140,7 +140,7 @@ class FrontendTest extends TestCase {
 		$config = WidgetLoader::inline_config( true );
 
 		$this->assertSame(
-			array( 'rest', 'assets', 'version', 'floating', 'preload', 'display', 'streaming', 'theme', 'strings' ),
+			array( 'rest', 'assets', 'version', 'floating', 'preload', 'display', 'streaming', 'theme', 'strings', 'analytics', 'turnstile' ),
 			array_keys( $config )
 		);
 		$this->assertSame( 'https://example.test/wp-json/chatlume/v1/', $config['rest'] );

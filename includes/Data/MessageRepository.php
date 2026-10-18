@@ -92,6 +92,27 @@ class MessageRepository {
 	}
 
 	/**
+	 * One message of a conversation.
+	 *
+	 * @param int $message_id      Message ID.
+	 * @param int $conversation_id Conversation ID (the message must belong to it).
+	 * @return array{role: string, content: string}|null
+	 */
+	public function find( int $message_id, int $conversation_id ): ?array {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Chatlume's own table; read once per webhook.
+		$row = $wpdb->get_row( $wpdb->prepare( 'SELECT role, content FROM %i WHERE id = %d AND conversation_id = %d', Schema::table( 'messages' ), $message_id, $conversation_id ), ARRAY_A );
+
+		return is_array( $row )
+			? array(
+				'role'    => (string) $row['role'],
+				'content' => (string) $row['content'],
+			)
+			: null;
+	}
+
+	/**
 	 * The whole conversation for a transcript, oldest first.
 	 *
 	 * @param int $conversation_id Conversation ID.

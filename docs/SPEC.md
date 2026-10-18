@@ -793,7 +793,7 @@ Implementation decisions (for review):
 - Invitation code is a separate 0.7 KB (gzipped) chunk loaded only on pages with an invitation. The launcher grew by 0.26 KB to 8.0 KB gzipped; it was already 7.8 KB, above the 6 KB budget, before this module, to be addressed in Phase 8. The chat app is 24.5 KB gzipped (budget 45 KB).
 - Voice input does not send automatically, so visitors can correct misheard words.
 
-Module 7.2 – Lead capture, handoff, and transcript email ✅ (2026-10-18, awaiting review)
+Module 7.2 – Lead capture, handoff, and transcript email ✅ (2026-10-18)
 - [x] Settings `leads`: on/off, before the first message or after N messages, required (before only; no "Skip"), ask for a name, optional consent checkbox (bold, italics, links), email the team about new leads
 - [x] Settings `handoff`: "Talk to a person" with a contact page, email, phone, and WhatsApp (only usable ones shown), "Email this conversation to the team", visitors emailing the conversation to themselves, and the team address (default: the site admin email)
 - [x] The lead belongs to the chat session: a form filled in before any conversation, and every later conversation of the session, carry it; stored on the conversation (`lead_name`, `lead_email`) and kept with the session for its lifetime (30 idle minutes when conversation storage is off)
@@ -807,6 +807,23 @@ Implementation decisions (for review):
 - The team gets one email per new lead (a different email address in the same session counts as new).
 - Link handoffs (contact, phone, WhatsApp, email) are recorded when clicked; only "Email this conversation" sends an email.
 - Chat app: 26.4 KB gzipped (+1.9 KB); the launcher is unchanged.
+
+Module 7.3 – Integrations page ✅ (2026-10-18, awaiting review)
+- [x] Settings `integrations`: up to 5 webhooks (address and events), analytics events, Turnstile on/off and site key; the Turnstile secret key is stored encrypted with the API keys (or set with `CHATLUME_TURNSTILE_API_KEY`)
+- [x] Webhooks for `lead_captured`, `conversation_ended`, `negative_feedback`, and `handoff_requested`: JSON `{event, id, created_at, site, data}` (filter `chatlume_webhook_payload`) signed with `X-Chatlume-Signature: sha256=<HMAC>`, plus `X-Chatlume-Event` and `X-Chatlume-Delivery`; sent in the background through WP-Cron, never redirected, 5-second timeout, one retry after 5 minutes, and each attempt sent once even when cron runs overlap
+- [x] `conversation_ended`: stored visitor conversations with no message for 30 minutes (last two days only), checked every 15 minutes, reported once, with the transcript (up to 100 messages); the check is scheduled only while a webhook listens for it
+- [x] Delivery log of the last 50 attempts (event, host, status, error, time; never the contents), a signing secret to show, copy, or replace, and "Send test" for each address
+- [x] Email notifications in one place: team address, new-lead emails, budget alert address, and a test email
+- [x] Analytics events (off by default): `chat_open`, `message_sent`, `lead_captured`, and `handoff` pushed to `window.dataLayer` when present and dispatched as `chatlume:<event>` DOM events; never message text, names, or emails
+- [x] Cloudflare Turnstile (off by default): Cloudflare's script loads only when a new chat session starts; `/session` refuses new sessions without a valid token (403); if Cloudflare cannot be reached the chat stays available (rate limits still apply)
+- [x] Integrations page (sidebar before Settings) and a "Chatlume: Integrations" command; REST `/integrations`, `/integrations/secret`, `/integrations/deliveries`, `/integrations/test-webhook`, `/integrations/test-email`, `/integrations/turnstile-key` (managers only)
+- [x] Action `chatlume_feedback_received` when a visitor rates a stored answer
+
+Implementation decisions (for review):
+- Webhook addresses are chosen by the site administrator, so local and private addresses are allowed (useful for self-hosted automation); redirects are never followed.
+- Disabling a webhook's event or removing it also drops deliveries still waiting in the queue.
+- The Turnstile verification address is marked for Plugin Check as a server-side API call; both Cloudflare addresses are disclosed in the readme.
+- Chat app: 26.9 KB gzipped (+0.5 KB); launcher 8.0 KB gzipped (+0.1 KB, Phase 8 item).
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

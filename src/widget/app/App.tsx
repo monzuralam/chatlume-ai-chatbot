@@ -3,6 +3,7 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { track } from '../lib/analytics';
 import { isClosed } from '../lib/display';
 import { createPreviewChannel, type PreviewBatch } from '../lib/preview';
 import type {
@@ -180,6 +181,7 @@ export function App( {
 		} );
 		setLeadSaved( true );
 		setNotice( strings.leadThanks );
+		track( config.analytics, 'lead_captured' );
 	};
 
 	const emailMe = () => {
@@ -521,6 +523,9 @@ export function App( {
 									}
 									leadConfig={ lead }
 									onLink={ ( type ) => {
+										track( config.analytics, 'handoff', {
+											channel: type,
+										} );
 										if ( chat.conversationId() ) {
 											chat.post( 'handoff', {
 												channel: type,
@@ -535,7 +540,13 @@ export function App( {
 												channel: 'email_team',
 												page_url: window.location.href,
 											} )
-											.then( () => undefined )
+											.then( () =>
+												track(
+													config.analytics,
+													'handoff',
+													{ channel: 'email_team' }
+												)
+											)
 									}
 									onClose={ () => setHandoffOpen( false ) }
 								/>

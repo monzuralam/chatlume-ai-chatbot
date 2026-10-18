@@ -9,6 +9,7 @@ namespace Chatlume\Frontend;
 
 use Chatlume\Appearance\TokenResolver;
 use Chatlume\Plugin;
+use Chatlume\Security\Turnstile;
 use Chatlume\Settings\Settings;
 
 if ( ! defined( 'ABSPATH' ) ) {
@@ -191,6 +192,10 @@ class WidgetLoader {
 				),
 				'theme'     => TokenResolver::config(),
 				'strings'   => WidgetStrings::all(),
+				// Chat events for the site's own analytics (window.dataLayer and DOM events).
+				'analytics' => (bool) Settings::get( 'integrations.analytics', false ),
+				// Public Cloudflare Turnstile site key, only when Turnstile is on.
+				'turnstile' => Turnstile::enabled() ? Turnstile::site_key() : '',
 			)
 		);
 	}

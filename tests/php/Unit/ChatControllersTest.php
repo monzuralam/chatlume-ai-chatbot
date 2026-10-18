@@ -11,6 +11,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+use Brain\Monkey\Actions;
 use Brain\Monkey\Filters;
 use Brain\Monkey\Functions;
 use Chatlume\Appearance\TokenResolver;
@@ -195,6 +196,7 @@ class ChatControllersTest extends TestCase {
 
 	public function test_feedback_on_unstored_conversations_is_accepted_without_saving(): void {
 		$token = ( new SessionManager() )->start()['token'];
+		Actions\expectDone( 'chatlume_feedback_received' )->never();
 
 		$data = ( new ChatController() )->feedback(
 			new HeaderRequest(

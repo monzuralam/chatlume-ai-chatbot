@@ -24,6 +24,8 @@ import { markdownText } from '../lib/markdown';
 import { read, write } from '../lib/storage';
 import { readEvents, wasBuffered } from '../lib/stream';
 import { createTabSync, type TabSync } from '../lib/tabs';
+import { turnstileToken } from '../lib/turnstile';
+import { track } from '../lib/analytics';
 import type {
 	BehaviorConfig,
 	ChatMessage,
@@ -96,6 +98,28 @@ export function restoreMessages( value: unknown ): ChatMessage[] {
  *
  * @return Language.
  */
+/**
+ * The element a Turnstile challenge renders into (inside the chat window;
+ * it stays empty unless the visitor has to act).
+ *
+ * @param host Widget host.
+ * @return Container.
+ */
+function turnstileBox( host: WidgetHost ): HTMLElement {
+	// Outside React's container, so re-renders never remove it.
+	const parent = host.mount.parentElement ?? host.mount;
+	const existing = parent.querySelector< HTMLElement >(
+		':scope > .cl-turnstile'
+	);
+	if ( existing ) {
+		return existing;
+	}
+	const box = document.createElement( 'div' );
+	box.className = 'cl-turnstile';
+	parent.append( box );
+	return box;
+}
+
 function pageLanguage(): string {
 	return ( document.documentElement.lang || '' ).slice( 0, 20 );
 }
@@ -273,40 +297,69 @@ export function useChat( host: WidgetHost ): Chat {
 			if ( ! fresh && sessionRef.current ) {
 				return sessionRef.current;
 			}
-			const previous = read< { token?: string } | null >(
-				'session',
-				null
-			);
-			const promise = postJson< SessionResponse >(
-				config.rest,
-				'session',
-				{
-					token: previous?.token ?? '',
-					language: pageLanguage(),
-					v: config.theme.v,
-				},
-				strings.connection
-			).then( ( data ) => {
-				write( 'session', {
-					token: data.token,
-					expires: data.expires,
+			const previous = read< {
+				token?: string;
+				expires?: number;
+			} | null >( 'session', null );
+			// A new session passes Cloudflare Turnstile first, when it is on.
+			const needsCheck =
+				!! config.turnstile &&
+				! preview &&
+				( ! previous?.token ||
+					Number( previous.expires ?? 0 ) * 1000 <= Date.now() );
+			const check = needsCheck
+				? turnstileToken(
+						config.turnstile as string,
+						turnstileBox( host )
+					).catch( () => {
+						throw new ApiError( 'turnstile', strings.connection );
+					} )
+				: Promise.resolve( '' );
+			const promise = check
+				.then( ( turnstile ) =>
+					postJson< SessionResponse >(
+						config.rest,
+						'session',
+						{
+							token: needsCheck ? '' : ( previous?.token ?? '' ),
+							language: pageLanguage(),
+							v: config.theme.v,
+							turnstile,
+						},
+						strings.connection
+					)
+				)
+				.then( ( data ) => {
+					write( 'session', {
+						token: data.token,
+						expires: data.expires,
+					} );
+					if ( data.config ) {
+						write( 'behavior', data.config );
+						setBehaviorState( {
+							...DEFAULT_BEHAVIOR,
+							...data.config,
+						} );
+					}
+					if ( data.theme ) {
+						host.setTheme( data.theme );
+					}
+					return data.token;
 				} );
-				if ( data.config ) {
-					write( 'behavior', data.config );
-					setBehaviorState( { ...DEFAULT_BEHAVIOR, ...data.config } );
-				}
-				if ( data.theme ) {
-					host.setTheme( data.theme );
-				}
-				return data.token;
-			} );
 			promise.catch( () => {
 				sessionRef.current = null;
 			} );
 			sessionRef.current = promise;
 			return promise;
 		},
-		[ config.rest, config.theme.v, host, strings.connection ]
+		[
+			config.rest,
+			config.theme.v,
+			config.turnstile,
+			preview,
+			host,
+			strings.connection,
+		]
 	);
 
 	// Session and tab sync.
@@ -719,9 +772,12 @@ export function useChat( host: WidgetHost ): Chat {
 			] );
 			setAnnouncement( '' );
 			perform( botId, message, {} );
+			if ( ! preview ) {
+				track( config.analytics, 'message_sent' );
+			}
 			return true;
 		},
-		[ commit, perform, otherTabBusy ]
+		[ commit, perform, otherTabBusy, preview, config.analytics ]
 	);
 
 	const again = useCallback(

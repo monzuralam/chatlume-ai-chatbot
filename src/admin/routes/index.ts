@@ -9,6 +9,7 @@ import {
 	Paintbrush,
 	Plug,
 	Settings,
+	Webhook,
 } from 'lucide-react';
 import { lazy } from 'react';
 
@@ -61,6 +62,12 @@ const PlaygroundRoute = lazy(
 	() =>
 		import(
 			/* webpackChunkName: "route-playground" */ './playground/PlaygroundRoute'
+		)
+);
+const IntegrationsRoute = lazy(
+	() =>
+		import(
+			/* webpackChunkName: "route-integrations" */ './integrations/IntegrationsRoute'
 		)
 );
 const SettingsRoute = lazy(
@@ -156,6 +163,15 @@ export function registerBuiltInPages(): void {
 		icon: MessagesSquare,
 		component: ConversationsRoute,
 		order: 300,
+	} );
+
+	pageRegistry.register( {
+		id: 'integrations',
+		title: __( 'Integrations', 'chatlume-ai-chatbot' ),
+		path: '/integrations',
+		icon: Webhook,
+		component: IntegrationsRoute,
+		order: 900,
 	} );
 
 	pageRegistry.register( {

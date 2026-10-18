@@ -124,6 +124,12 @@ const settings: Settings = {
 		transcript: true,
 		team_email: '',
 	},
+	integrations: {
+		webhooks: [],
+		analytics: false,
+		turnstile: false,
+		turnstile_site_key: '',
+	},
 	streaming: {
 		enabled: true,
 		max_concurrent: 3,

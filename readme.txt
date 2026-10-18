@@ -105,6 +105,7 @@ Nothing is removed unless you enable **Delete all data on uninstall** in Chatlum
 * Voice: visitors can speak their questions and have answers read aloud, using their browser's built-in speech features.
 * Lead capture: ask for a name and email before chatting or after a few messages, with an optional consent checkbox and an email to your team for each new lead.
 * Talk to a person: visitors can reach you through your contact page, email, phone, or WhatsApp, or send the conversation to your team, who can reply by email. Visitors can also email a conversation to themselves.
+* Integrations: signed webhooks for new leads, ended conversations, answers rated not helpful, and requests for a person (for Zapier, Make, n8n, or your CRM), with a delivery log and test button; email notification settings with a test email; optional chat events for Google Tag Manager and other analytics on your page; and optional Cloudflare Turnstile bot protection.
 
 == External services ==
 
@@ -117,6 +118,8 @@ Chatlume connects to the AI provider(s) that you, the site administrator, set up
 * When the chatbot answers a visitor: the visitor's message, the recent conversation, your system prompt, the current page's title and URL, the visitor's display name if your prompt uses {user_name}, and matching excerpts from your site's content, sent to the primary provider (and to the fallback provider if the primary fails). Quick answers, cached answers, and site-search results are served without contacting any provider.
 * Only when embeddings are switched on and an embeddings provider and model are selected: the title and text of each indexed item (in passages of about 800 characters), sent to the embeddings provider in the background when the item is indexed or changes, and each visitor question, sent to the same provider to find the most relevant passages. Repeated questions are answered from a cache without contacting the provider.
 * OpenRouter only, and only if you turn on "Send app attribution": your site's address and name.
+* Only if you add webhooks under Chatlume > Integrations: the events you choose (lead name and email, the conversation, or the rated answer) to the addresses you enter.
+* Only if you turn on Cloudflare Turnstile under Chatlume > Integrations and enter your own Cloudflare keys: when a visitor starts a chat, their browser loads Cloudflare's Turnstile script from challenges.cloudflare.com, which checks that the visitor is human; your site then sends the resulting token, your Turnstile secret key, and the visitor's IP address to Cloudflare to verify it.
 
 Chatlume does not send any data to its authors, and it uses no analytics or tracking.
 
@@ -131,6 +134,8 @@ Chatlume does not send any data to its authors, and it uses no analytics or trac
 * DeepSeek (api.deepseek.com). [Open Platform Terms](https://cdn.deepseek.com/policies/en-US/deepseek-open-platform-terms-of-service.html), [Privacy Policy](https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html).
 * xAI (api.x.ai). [Terms of Service](https://x.ai/legal/terms-of-service-enterprise), [Privacy Policy](https://x.ai/legal/privacy-policy).
 * Together AI (api.together.ai). [Terms of Service](https://www.together.ai/terms-of-service), [Privacy Policy](https://www.together.ai/privacy).
+* Cloudflare Turnstile (challenges.cloudflare.com), only when you turn it on. [Website and Online Services Terms](https://www.cloudflare.com/website-terms/), [Privacy Policy](https://www.cloudflare.com/privacypolicy/), [Turnstile Privacy Addendum](https://www.cloudflare.com/turnstile-privacy-policy/).
+* Webhooks: requests go only to the addresses you enter; the receiving service's own terms and privacy policy apply.
 * Ollama and custom OpenAI-compatible endpoints: requests go only to the address you enter. If that server is run by a third party, its own terms and privacy policy apply.
 
 == Source code and build ==

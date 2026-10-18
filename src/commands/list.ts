@@ -75,6 +75,15 @@ export function chatlumeCommands(): ChatlumeCommand[] {
 			route: '/knowledge',
 		},
 		{
+			name: 'chatlume/integrations',
+			label: __( 'Chatlume: Integrations', 'chatlume-ai-chatbot' ),
+			searchLabel: __(
+				'chatbot webhooks zapier email notifications analytics turnstile',
+				'chatlume-ai-chatbot'
+			),
+			route: '/integrations',
+		},
+		{
 			name: 'chatlume/providers',
 			label: __( 'Chatlume: AI providers', 'chatlume-ai-chatbot' ),
 			searchLabel: __( 'chatbot api key model', 'chatlume-ai-chatbot' ),

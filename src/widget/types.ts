@@ -127,6 +127,10 @@ export interface WidgetConfig {
 	preview?: PreviewOptions;
 	/** Draft preview on the site: inside the Customizer (frame) or in a tab (site). */
 	previewMode?: 'frame' | 'site';
+	/** Chat events for the site's own analytics. */
+	analytics?: boolean;
+	/** Cloudflare Turnstile site key ('' when off). */
+	turnstile?: string;
 }
 
 export interface QuickAction {

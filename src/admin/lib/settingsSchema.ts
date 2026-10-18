@@ -227,6 +227,39 @@ export const handoffSettingsSchema = z
 	} )
 	.strict();
 
+export const WEBHOOK_EVENTS = [
+	'lead_captured',
+	'conversation_ended',
+	'negative_feedback',
+	'handoff_requested',
+] as const;
+
+export const integrationsSettingsSchema = z
+	.object( {
+		webhooks: z
+			.array(
+				z
+					.object( {
+						url: z
+							.string()
+							.max( 500 )
+							.refine(
+								( value ) =>
+									value === '' ||
+									/^https?:\/\/\S+$/i.test( value ),
+								{ message: 'action:url' }
+							),
+						events: z.array( z.enum( WEBHOOK_EVENTS ) ).max( 4 ),
+					} )
+					.strict()
+			)
+			.max( 5 ),
+		analytics: z.boolean(),
+		turnstile: z.boolean(),
+		turnstile_site_key: z.string().max( 100 ),
+	} )
+	.strict();
+
 export const knowledgeSettingsSchema = z
 	.object( {
 		post_types: z.array( z.string().max( 20 ) ).max( 30 ),
@@ -265,6 +298,7 @@ export const settingsSchema = z
 		knowledge: knowledgeSettingsSchema,
 		leads: leadsSettingsSchema,
 		handoff: handoffSettingsSchema,
+		integrations: integrationsSettingsSchema,
 	} )
 	.strict();
 
@@ -314,6 +348,7 @@ export const IMPORTABLE_SECTIONS = [
 	'knowledge',
 	'leads',
 	'handoff',
+	'integrations',
 ] as const;
 
 /**

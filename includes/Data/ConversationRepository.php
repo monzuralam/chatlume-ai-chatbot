@@ -168,6 +168,34 @@ class ConversationRepository {
 	}
 
 	/**
+	 * Visitor conversations that went quiet in a time window and were not
+	 * reported as ended yet.
+	 *
+	 * @param string $before UTC datetime: last message before this.
+	 * @param string $after  UTC datetime: last message after this.
+	 * @param int    $limit  Most conversations.
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function idle_between( string $before, string $after, int $limit = 50 ): array {
+		global $wpdb;
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Chatlume's own table; background check.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT * FROM %i WHERE is_test = 0 AND message_count > 0 AND updated_at < %s AND updated_at > %s AND meta NOT LIKE %s ORDER BY updated_at ASC LIMIT %d',
+				Schema::table( 'conversations' ),
+				$before,
+				$after,
+				'%' . $wpdb->esc_like( '"ended_at"' ) . '%',
+				$limit
+			),
+			ARRAY_A
+		);
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
 	 * Deletes conversations (and their messages) last active before a date.
 	 *
 	 * @param string $before UTC datetime (Y-m-d H:i:s).
