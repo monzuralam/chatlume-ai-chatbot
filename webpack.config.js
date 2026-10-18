@@ -13,6 +13,7 @@
  *             WordPress script dependencies at all. Its CSS is imported as a
  *             string (`?inline`) and injected into the shadow root.
  * 3. block  – The `chatlume/chat` block (editor script, block.json, render.php).
+ * 4. commands – Commands for WordPress's Command Palette (every admin screen).
  */
 const path = require( 'path' );
 const CopyPlugin = require( 'copy-webpack-plugin' );
@@ -160,4 +161,24 @@ const block = {
 	],
 };
 
-module.exports = [ admin, widget, block ];
+// Command Palette commands: a tiny script on every admin screen.
+const commands = {
+	...scriptConfig,
+	name: 'commands',
+	entry: {
+		index: path.resolve( __dirname, 'src/commands/index.ts' ),
+	},
+	output: {
+		...scriptConfig.output,
+		path: path.resolve( __dirname, 'build/commands' ),
+	},
+	resolve: {
+		...scriptConfig.resolve,
+		extensions,
+	},
+	plugins: scriptConfig.plugins.filter(
+		( plugin ) => plugin.constructor.name !== 'CopyPlugin'
+	),
+};
+
+module.exports = [ admin, widget, block, commands ];

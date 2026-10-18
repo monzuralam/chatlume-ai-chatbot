@@ -9,6 +9,7 @@ namespace Chatlume;
 
 use Chatlume\Admin\AdminPage;
 use Chatlume\Admin\Assets;
+use Chatlume\Admin\Commands;
 use Chatlume\Appearance\PreviewMode;
 use Chatlume\Cron\RetentionCleanup;
 use Chatlume\Frontend\Shortcode;
@@ -105,6 +106,7 @@ final class Plugin {
 			$admin_page = new AdminPage();
 			$admin_page->register();
 			( new Assets( $admin_page ) )->register();
+			( new Commands() )->register();
 		}
 	}
 

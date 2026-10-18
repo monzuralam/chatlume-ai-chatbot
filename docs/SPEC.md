@@ -419,7 +419,7 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started. Approved deviati
 2. ✅ **Providers** (done 2026-10-14): interface, HTTP API transport and streamer, OpenAI-compatible base with presets, Anthropic and Gemini adapters, embeddings support, error normalization, live model lists with suggestions, test connection, primary/fallback, Providers page.
 3. ✅ **Chat backend** (done 2026-10-14): session manager, conversation state, IP resolver, rate limiter, cost guard, quick answers, response cache, site-search fallback, no-key mode, prompt builder, non-streaming endpoint, logging.
 4. ✅ **Widget** (done 2026-10-15): full widget UI, design token system, widget styles (floating, side panel, modal, inline), message styles, CSS parts, preview mode, streaming with stream limiter and abort handling, markdown sanitizer, source cards, quick actions, tab sync, mobile, accessibility, shortcode, block, JS API.
-5. 🚧 **Admin experience** (in progress): setup wizard with provider guides, Dashboard, Chatbot, Playground, the Customizer with always-on live preview (presets, Simple/Advanced modes, colors, typography, layout, draft/publish, versions, real-site backdrop, context-aware states, click-to-edit, interactive preview, before/after, devices, Developer styling panel), Display & triggers, Conversations, Settings with Health check, core Command Palette commands.
+5. ✅ **Admin experience** (done 2026-10-18): setup wizard with provider guides, Dashboard, Chatbot, Playground, the Customizer with always-on live preview (presets, Simple/Advanced modes, colors, typography, layout, draft/publish, versions, real-site backdrop, context-aware states, click-to-edit, interactive preview, before/after, devices, Developer styling panel), Display & triggers, Conversations, Settings with Health check, core Command Palette commands.
 6. ⬜ **Knowledge base**: indexer, document uploads, embeddings storage and re-embedding, two-stage retrieval with n-gram fallback, source links, WooCommerce sync, multilingual filtering, Knowledge page.
 7. ⬜ **Engagement, integrations, and platform**: proactive triggers, voice, lead capture, handoff, webhooks, email notifications, analytics events, cache purging, optimization-plugin compatibility, WPML/Polylang, "Match my website", WordPress Font Library and theme.json integration, "Preview on my site", per-language content, WordPress Connectors bridge and core AI Client, Abilities registration.
 8. ⬜ **Hardening and release**: privacy integrations, uninstall, full test suite, i18n, readme with all required sections, Plugin Check fixes, release zip.
@@ -674,7 +674,7 @@ Implementation decisions (for review):
 - The preview widget re-syncs every time a preview page connects, so reloading the page, renewing the token, or switching devices never shows stale settings.
 - When a site has no colorful brand color (neutral palette and buttons), "Match my website" keeps the colors and says so.
 
-Module 5.8 – Setup wizard ✅ (2026-10-15, awaiting review)
+Module 5.8 – Setup wizard ✅ (2026-10-18)
 - [x] Opens once, when the admin first arrives on the Dashboard and setup is not finished or skipped (the activation redirect already lands there); not listed in the sidebar; a Dashboard banner offers it until it is done
 - [x] Steps: AI provider (WordPress-connected providers first once the Connectors bridge exists, then popular ones, with "Free option" and "Connected" badges) → how to get a key (account, billing or free tier, create and copy the key, with direct links; server address steps for Ollama and custom endpoints) → connect and test (key and/or server address, saved and tested with one click, plain-language errors with fix links) → model (a recommended model preselected; recommended and free models marked) → look (brand color, "Match my website", position) → done, with next steps
 - [x] A live widget preview beside every step
@@ -684,6 +684,17 @@ Implementation decisions (for review):
 - Finishing saves the provider and model, marks setup complete, and publishes the look (including any unpublished Customizer changes, which the look step starts from).
 - The key is saved, then tested with the saved configuration, so the provider's status on the Providers page is up to date after the wizard.
 - WordPress Connectors appear in the wizard once the bridge arrives in Phase 7; the wizard already lists providers of that kind first.
+
+Module 5.9 – Command Palette commands ✅ (2026-10-18, awaiting review)
+- [x] Commands in WordPress's own Command Palette (Ctrl/Cmd+K), no custom palette: Chatlume: Dashboard, Conversations, Test your bot, Customize widget, Chatbot settings, AI providers, Display and business hours, Settings, Health check, Setup wizard; each with extra search words
+- [x] From any admin screen they open the Chatlume screen at that page; inside Chatlume they switch pages without reloading
+- [x] A 2.5 KB script that loads only where the palette exists (every admin screen on WordPress 6.9+, the block editors before that) and only for users who can manage Chatlume
+
+Implementation decisions (for review):
+- A separate `commands` bundle using the core `wp-commands` and `wp-data` scripts (registered through the commands store), so nothing from the admin app loads on other screens.
+- Add-on pages registered in the admin app are not added to the palette (they are only known inside the app); add-ons can register their own commands the same way.
+
+Phase 5 – Admin experience is complete pending review of module 5.9.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:
