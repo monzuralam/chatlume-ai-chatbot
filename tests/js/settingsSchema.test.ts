@@ -85,6 +85,8 @@ const settings: Settings = {
 		include_ids: [],
 		exclude_ids: [],
 		business_info: '',
+		use_embeddings: true,
+		top_k: 4,
 	},
 	streaming: {
 		enabled: true,

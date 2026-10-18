@@ -5,6 +5,7 @@ import {
 	cacheLabel,
 	canAskAi,
 	explainReply,
+	matchLabel,
 	promptText,
 	type PlaygroundReply,
 	type ReplyTrace,
@@ -112,6 +113,15 @@ describe( 'explainReply', () => {
 				} )
 			)
 		).toBe( 'Answered by the AI using 2 passages from your knowledge.' );
+		expect(
+			explainReply(
+				reply( 'ai', {
+					knowledge: [
+						{ title: 'A', url: '', score: 0.5, excerpt: 'x' },
+					],
+				} )
+			)
+		).toBe( 'Answered by the AI using 1 passage from your knowledge.' );
 		expect( explainReply( reply( 'ai' ) ) ).toMatch(
 			/without matching knowledge/
 		);
@@ -152,5 +162,16 @@ describe( 'cacheLabel and canAskAi', () => {
 	it( 'offers "Ask AI instead" only for quick answers', () => {
 		expect( canAskAi( reply( 'quick_answer', {}, {}, 7 ) ) ).toBe( true );
 		expect( canAskAi( reply( 'ai' ) ) ).toBe( false );
+	} );
+
+	it( 'names how a knowledge passage was found', () => {
+		expect( matchLabel( 'keyword' ) ).toBe( 'Keywords' );
+		expect( matchLabel( 'ngram' ) ).toBe( 'Character match' );
+		expect( matchLabel( 'keyword_semantic' ) ).toBe(
+			'Keywords and meaning'
+		);
+		expect( matchLabel( 'ngram_semantic' ) ).toBe( 'Keywords and meaning' );
+		expect( matchLabel( '' ) ).toBe( '' );
+		expect( matchLabel( undefined ) ).toBe( '' );
 	} );
 } );

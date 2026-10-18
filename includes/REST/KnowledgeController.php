@@ -10,7 +10,9 @@ namespace Chatlume\REST;
 use Chatlume\Cron\IndexQueue;
 use Chatlume\Data\KnowledgeRepository;
 use Chatlume\Installer\Schema;
+use Chatlume\Knowledge\Embeddings;
 use Chatlume\Plugin;
+use Chatlume\Settings\Settings;
 use WP_Error;
 use WP_REST_Request;
 use WP_REST_Response;
@@ -117,7 +119,10 @@ class KnowledgeController {
 	 * @return WP_REST_Response
 	 */
 	public function get_status(): WP_REST_Response {
-		return self::no_store( self::status( ( new IndexQueue() )->maybe_run() ) );
+		$queue = ( new IndexQueue() )->maybe_run();
+		( new Embeddings() )->maybe_run();
+
+		return self::no_store( self::status( $queue ) );
 	}
 
 	/**
@@ -168,7 +173,29 @@ class KnowledgeController {
 				'finished' => self::iso( (string) $queue['finished'] ),
 			),
 			'fulltext'   => 'yes' === get_option( Schema::FULLTEXT_OPTION, 'no' ),
+			'embeddings' => self::embeddings(),
 			'post_types' => DisplayController::post_types(),
+		);
+	}
+
+	/**
+	 * Embeddings progress. Never includes keys or provider responses.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function embeddings(): array {
+		$state = Embeddings::state();
+		$model = Embeddings::model_key();
+
+		return array(
+			'switched_on' => (bool) Settings::get( 'knowledge.use_embeddings', true ),
+			'available'   => null !== $model,
+			'model'       => (string) $model,
+			'pending'     => Embeddings::pending(),
+			'status'      => $state['status'],
+			'error'       => $state['error'],
+			'message'     => $state['message'],
+			'retry_at'    => $state['retry_at'] > 0 ? gmdate( 'Y-m-d\TH:i:s\Z', $state['retry_at'] ) : '',
 		);
 	}
 

@@ -2,7 +2,7 @@
  * The Playground ("Test your bot"): chat with the real bot and see why
  * each reply was given.
  */
-import { __, sprintf } from '@wordpress/i18n';
+import { __, _n, sprintf } from '@wordpress/i18n';
 
 import { request } from './api';
 
@@ -19,6 +19,7 @@ export interface TraceChunk {
 	title: string;
 	url: string;
 	score: number | null;
+	match?: string;
 	excerpt: string;
 }
 
@@ -157,8 +158,10 @@ export function explainReply( data: PlaygroundReply ): string {
 			return trace.knowledge.length > 0
 				? sprintf(
 						/* translators: %d: Number of knowledge passages. */
-						__(
+						_n(
+							'Answered by the AI using %d passage from your knowledge.',
 							'Answered by the AI using %d passages from your knowledge.',
+							trace.knowledge.length,
 							'chatlume-ai-chatbot'
 						),
 						trace.knowledge.length
@@ -189,6 +192,26 @@ export function cacheLabel( cache: ReplyTrace[ 'cache' ] ): string {
 				'Not used (only the first question of a conversation is cached, when caching is on)',
 				'chatlume-ai-chatbot'
 			);
+	}
+}
+
+/**
+ * How a knowledge passage was found.
+ *
+ * @param match Retrieval method from the trace.
+ * @return Label, or '' when unknown.
+ */
+export function matchLabel( match: string | undefined ): string {
+	switch ( match ) {
+		case 'keyword':
+			return __( 'Keywords', 'chatlume-ai-chatbot' );
+		case 'ngram':
+			return __( 'Character match', 'chatlume-ai-chatbot' );
+		case 'keyword_semantic':
+		case 'ngram_semantic':
+			return __( 'Keywords and meaning', 'chatlume-ai-chatbot' );
+		default:
+			return '';
 	}
 }
 

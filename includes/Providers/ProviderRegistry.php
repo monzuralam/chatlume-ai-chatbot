@@ -274,11 +274,12 @@ final class ProviderRegistry {
 	/**
 	 * Embeddings through the embeddings provider.
 	 *
-	 * @param string[] $texts Texts.
+	 * @param string[]             $texts   Texts.
+	 * @param array<string, mixed> $options Optional: timeout (seconds).
 	 * @return array{vectors: array<int, float[]>, model: string, dimensions: int}
 	 * @throws ProviderError When no embeddings provider is set up or the request fails.
 	 */
-	public static function embed( array $texts ): array {
+	public static function embed( array $texts, array $options = array() ): array {
 		$target   = self::embeddings_target();
 		$provider = null !== $target ? self::get( $target['provider'] ) : null;
 
@@ -287,13 +288,14 @@ final class ProviderRegistry {
 		}
 
 		try {
-			$vectors = $provider->embed(
-				$texts,
-				array(
-					'model'      => $target['model'],
-					'dimensions' => $provider->supports( 'embedding_dimensions' ) ? $target['dimensions'] : 0,
-				)
+			$request = array(
+				'model'      => $target['model'],
+				'dimensions' => $provider->supports( 'embedding_dimensions' ) ? $target['dimensions'] : 0,
 			);
+			if ( ! empty( $options['timeout'] ) ) {
+				$request['timeout'] = (int) $options['timeout'];
+			}
+			$vectors = $provider->embed( $texts, $request );
 		} catch ( ProviderError $error ) {
 			ErrorLog::record( $error, $target['model'] );
 			throw $error;

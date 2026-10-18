@@ -702,7 +702,7 @@ Approved decisions:
 - Delivered in five modules, each committed after review: sources and indexer, retrieval and embeddings, documents, WooCommerce products sync, Knowledge page.
 - Published pages and posts are indexed automatically for free keyword search. Embeddings are created in the background only when an embeddings-capable provider is set, and can be turned off.
 
-Module 6.1 – Sources and indexer ✅ (2026-10-18, awaiting review)
+Module 6.1 – Sources and indexer ✅ (2026-10-18)
 - [x] Settings section `knowledge`: post types to index (default pages and posts), single items to include or exclude, and free-text business information
 - [x] Content cleaning (shortcodes, scripts, styles, tags, entities) and chunking into about 800 characters with 120 characters of overlap, breaking at paragraphs, then sentences (Latin, Bengali, Arabic, and CJK sentence ends), then words, never inside a multibyte character
 - [x] Posts are re-indexed when saved and removed when unpublished, password-protected, trashed, deleted, or excluded; chunks whose text did not change keep their embeddings
@@ -715,6 +715,21 @@ Implementation decisions (for review):
 - Including or excluding single items, or editing the business information, re-indexes only those items; only a change of post types rebuilds everything.
 - The first-index check runs on `admin_init`, so front-end requests never pay for it.
 - Saving content of a type that is not indexed costs no database queries.
+
+Module 6.2 – Retrieval and embeddings ✅ (2026-10-18, awaiting review)
+- [x] Two-stage retrieval through `chatlume_retrieved_context`: MySQL FULLTEXT picks up to 100 candidates; PHP n-gram scoring (BM25-style, character pairs for Chinese, Japanese, Thai, and other unspaced scripts) is used for those scripts, without FULLTEXT, and when FULLTEXT finds nothing
+- [x] Semantic reranking of the candidates only (70% meaning, 30% keywords), and only when at least 80% of them have vectors from the current model; vectors are never loaded beyond the candidates and models are never mixed
+- [x] Background embeddings in WP-Cron (32 passages per request, up to 8 requests per run within 20 seconds), packed as 32-bit floats with the model and dimensions; a model or dimension change marks old vectors stale and re-creates them; provider errors wait 15 minutes; the admin's progress checks catch up when WP-Cron is late
+- [x] Question vectors cached for a week; a failing provider pauses question embeddings for 5 minutes and retrieval falls back to keywords
+- [x] Settings `knowledge.use_embeddings` (on by default; nothing runs without an embeddings provider and model) and `knowledge.top_k` (1–10, default 4); passages scoring under 40% of the best are left out
+- [x] `/knowledge/status` reports embeddings progress (switched on, available, model, pending, errors)
+- [x] "Why this answer" shows how each passage was found (keywords, character match, or keywords and meaning)
+- [x] Indexed content can no longer close the `<website_information>` delimiter
+
+Implementation decisions (for review):
+- FULLTEXT runs in boolean mode with stem prefixes ("refunds" becomes `refun*`), because MySQL does not stem; the n-gram scorer uses the same stems.
+- Measured on the local site with 5,000 chunks and 512-dimension vectors: 26 ms median retrieval with FULLTEXT, 63 ms with n-gram scoring (question vector cached).
+- A question embedding waits at most 5 seconds.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

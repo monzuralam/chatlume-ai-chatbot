@@ -211,7 +211,7 @@ class Indexer {
 			return 0;
 		}
 
-		return $this->repository->replace(
+		$stored = $this->repository->replace(
 			$type,
 			$id,
 			mb_substr( (string) ( $source['title'] ?? '' ), 0, 300 ),
@@ -219,5 +219,10 @@ class Indexer {
 			Language::primary( (string) ( $source['language'] ?? '' ) ),
 			Chunker::split( $text )
 		);
+
+		// New or changed chunks get their vectors in the background.
+		Embeddings::schedule();
+
+		return $stored;
 	}
 }

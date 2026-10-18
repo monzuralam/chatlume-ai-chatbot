@@ -181,6 +181,8 @@ export const knowledgeSettingsSchema = z
 		include_ids: z.array( z.number().int().min( 0 ) ).max( 500 ),
 		exclude_ids: z.array( z.number().int().min( 0 ) ).max( 500 ),
 		business_info: z.string().max( 20000 ),
+		use_embeddings: z.boolean(),
+		top_k: z.number().int().min( 1 ).max( 10 ),
 	} )
 	.strict();
 

@@ -93,6 +93,7 @@ Nothing is removed unless you enable **Delete all data on uninstall** in Chatlum
 * Setup wizard: choose an AI provider, follow the steps to get a key, connect and test it, pick a model and your colors, with a live preview the whole way, or skip the AI and start with quick answers and site search.
 * Command Palette: open any Chatlume screen from anywhere in the admin with Ctrl+K (Cmd+K on Mac), for example "Chatlume: Conversations" or "Chatlume: Test your bot".
 * Knowledge base: your published pages and posts (or any other public content types you choose, single items included or excluded) and a short text about your business are indexed automatically, kept up to date as you edit, and rebuilt in the background without slowing your site. Multilingual sites using WPML or Polylang keep each language separate.
+* Knowledge search: the bot answers from the most relevant passages of your content, found by keywords (with plurals and word forms) and, when an embeddings provider is set up, ranked by meaning; Chinese, Japanese, Thai, and other languages written without spaces are supported. Answers list up to three source links.
 
 == External services ==
 
@@ -103,7 +104,7 @@ Chatlume connects to the AI provider(s) that you, the site administrator, set up
 * When you load or refresh a provider's model list: your API key (as an authentication header) to that provider's model list endpoint.
 * When you test a connection: your API key and a short test prompt ("Reply with the single word OK.").
 * When the chatbot answers a visitor: the visitor's message, the recent conversation, your system prompt, the current page's title and URL, the visitor's display name if your prompt uses {user_name}, and matching excerpts from your site's content, sent to the primary provider (and to the fallback provider if the primary fails). Quick answers, cached answers, and site-search results are served without contacting any provider.
-* When building the knowledge base (in later versions): the text of the posts, pages, products, and documents you choose to index, sent to the embeddings provider.
+* Only when embeddings are switched on and an embeddings provider and model are selected: the title and text of each indexed item (in passages of about 800 characters), sent to the embeddings provider in the background when the item is indexed or changes, and each visitor question, sent to the same provider to find the most relevant passages. Repeated questions are answered from a cache without contacting the provider.
 * OpenRouter only, and only if you turn on "Send app attribution": your site's address and name.
 
 Chatlume does not send any data to its authors, and it uses no analytics or tracking.

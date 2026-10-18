@@ -13,6 +13,7 @@ import {
 import {
 	cacheLabel,
 	explainReply,
+	matchLabel,
 	promptText,
 	type PlaygroundTurn,
 } from '../../lib/playground';
@@ -178,6 +179,18 @@ export function DebugPanel( {
 									<p className="chatlume:line-clamp-3 chatlume:text-fg-muted">
 										{ chunk.excerpt }
 									</p>
+									{ matchLabel( chunk.match ) !== '' && (
+										<p className="chatlume:mt-1 chatlume:text-fg-muted">
+											{ sprintf(
+												/* translators: %s: How the passage was found, for example "Keywords and meaning". */
+												__(
+													'Found by: %s',
+													'chatlume-ai-chatbot'
+												),
+												matchLabel( chunk.match )
+											) }
+										</p>
+									) }
 								</li>
 							) ) }
 						</ol>

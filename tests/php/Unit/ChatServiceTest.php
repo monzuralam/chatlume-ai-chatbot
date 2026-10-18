@@ -557,6 +557,7 @@ class ChatServiceTest extends TestCase {
 				'title'   => 'Shipping',
 				'url'     => 'https://example.test/shipping/',
 				'score'   => 0.812,
+				'match'   => '',
 				'excerpt' => 'We ship worldwide.',
 			),
 			$trace['knowledge'][0]

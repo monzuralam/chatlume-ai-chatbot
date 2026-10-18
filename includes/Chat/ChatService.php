@@ -620,6 +620,7 @@ class ChatService {
 				'title'   => $title,
 				'url'     => $url,
 				'score'   => isset( $chunk['score'] ) && is_numeric( $chunk['score'] ) ? round( (float) $chunk['score'], 3 ) : null,
+				'match'   => sanitize_key( (string) ( $chunk['match'] ?? '' ) ),
 				'excerpt' => mb_substr( trim( (string) $chunk['content'] ), 0, 300 ),
 			);
 			if ( '' !== $url && ! isset( $sources[ $url ] ) && count( $sources ) < 3 ) {

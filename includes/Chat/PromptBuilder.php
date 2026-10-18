@@ -111,7 +111,8 @@ class PromptBuilder {
 
 		$parts[] = $this->base_rules( $context );
 
-		$knowledge = trim( (string) ( $context['knowledge'] ?? '' ) );
+		// Indexed content can never close the delimiter and pose as instructions.
+		$knowledge = trim( (string) preg_replace( '#</?\s*website_information\s*>#i', '', (string) ( $context['knowledge'] ?? '' ) ) );
 		if ( '' !== $knowledge ) {
 			$parts[] = "<website_information>\n" . $knowledge . "\n</website_information>";
 		}

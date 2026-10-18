@@ -18,7 +18,9 @@ use Chatlume\Frontend\WidgetLoader;
 use Chatlume\Installer\Activation;
 use Chatlume\Installer\Migrations;
 use Chatlume\Installer\Multisite;
+use Chatlume\Knowledge\Embeddings;
 use Chatlume\Knowledge\Indexer;
+use Chatlume\Knowledge\Retriever;
 use Chatlume\REST\AppearanceController;
 use Chatlume\REST\ChatbotController;
 use Chatlume\REST\ChatController;
@@ -95,6 +97,8 @@ final class Plugin {
 		( new RetentionCleanup() )->register();
 		( new Indexer() )->register();
 		( new IndexQueue() )->register();
+		( new Embeddings() )->register();
+		( new Retriever() )->register();
 		( new Shortcode() )->register();
 
 		if ( ! is_admin() ) {

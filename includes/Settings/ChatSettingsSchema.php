@@ -287,26 +287,30 @@ final class ChatSettingsSchema {
 			__( 'What the bot knows.', 'chatlume-ai-chatbot' ),
 			array(
 				// Published content of these post types is indexed.
-				'post_types'    => array(
+				'post_types'     => array(
 					'type'     => 'array',
 					'maxItems' => 30,
 					'default'  => array( 'page', 'post' ),
 					'items'    => self::text( '', 20, 'key' ),
 				),
 				// Single items of other post types.
-				'include_ids'   => array(
+				'include_ids'    => array(
 					'type'     => 'array',
 					'maxItems' => 500,
 					'items'    => self::integer( 0, 0, PHP_INT_MAX ),
 				),
 				// Items left out even though their post type is selected.
-				'exclude_ids'   => array(
+				'exclude_ids'    => array(
 					'type'     => 'array',
 					'maxItems' => 500,
 					'items'    => self::integer( 0, 0, PHP_INT_MAX ),
 				),
 				// Free-text facts: opening hours, policies, contact details.
-				'business_info' => self::text( '', 20000, 'textarea' ),
+				'business_info'  => self::text( '', 20000, 'textarea' ),
+				// Semantic ranking when an embeddings provider is set up.
+				'use_embeddings' => self::boolean( true ),
+				// Passages added to the prompt per question.
+				'top_k'          => self::integer( 4, 1, 10 ),
 			)
 		);
 	}
