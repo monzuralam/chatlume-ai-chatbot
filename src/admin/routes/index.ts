@@ -35,6 +35,9 @@ const ConversationsRoute = lazy(
 			/* webpackChunkName: "route-conversations" */ './conversations/ConversationsRoute'
 		)
 );
+const SetupRoute = lazy(
+	() => import( /* webpackChunkName: "route-setup" */ './setup/SetupRoute' )
+);
 const CustomizeRoute = lazy(
 	() =>
 		import(
@@ -90,6 +93,16 @@ export function registerBuiltInPages(): void {
 		icon: Bot,
 		component: ChatbotRoute,
 		order: 200,
+	} );
+
+	pageRegistry.register( {
+		id: 'setup',
+		title: __( 'Setup', 'chatlume-ai-chatbot' ),
+		path: '/setup',
+		component: SetupRoute,
+		order: 5,
+		wide: true,
+		hidden: true,
 	} );
 
 	pageRegistry.register( {

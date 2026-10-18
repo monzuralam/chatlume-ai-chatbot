@@ -657,7 +657,7 @@ Implementation decisions (for review):
 - The stored widget configuration is rebuilt automatically after a plugin update or a site move, because font URLs depend on both.
 - Phones keep the message field at 16 px or larger, whatever the base size (no iOS zoom).
 
-Module 5.7c – Customizer site preview and tools ✅ (2026-10-15, awaiting review)
+Module 5.7c – Customizer site preview and tools ✅ (2026-10-15)
 - [x] Real website backdrop: a same-origin frame of any page on the site (address picker), opened with a signed, user-bound, 30-minute preview token; the admin bar and the live widget are hidden there and a pinned preview widget takes the Customizer's updates; a skeleton while loading; automatic fallback to a neutral backdrop (light, dark, pattern, or custom color) with a short explanation when the page cannot be framed, redirects, uses another origin, or does not load the preview in time
 - [x] Devices: desktop, tablet (768×1024), and phone (375×812), scaled to fit; the phone frame shows the widget's real full-screen behavior
 - [x] Click to edit (hover shows the element's name; clicking opens and focuses its section) and context-aware states (focusing a section switches the preview and outlines the element), with an "Auto-switch preview" toggle
@@ -673,6 +673,17 @@ Implementation decisions (for review):
 - "Preview on my site" answers with samples (no AI cost, nothing in Conversations); live answers are available inside the Customizer.
 - The preview widget re-syncs every time a preview page connects, so reloading the page, renewing the token, or switching devices never shows stale settings.
 - When a site has no colorful brand color (neutral palette and buttons), "Match my website" keeps the colors and says so.
+
+Module 5.8 – Setup wizard ✅ (2026-10-15, awaiting review)
+- [x] Opens once, when the admin first arrives on the Dashboard and setup is not finished or skipped (the activation redirect already lands there); not listed in the sidebar; a Dashboard banner offers it until it is done
+- [x] Steps: AI provider (WordPress-connected providers first once the Connectors bridge exists, then popular ones, with "Free option" and "Connected" badges) → how to get a key (account, billing or free tier, create and copy the key, with direct links; server address steps for Ollama and custom endpoints) → connect and test (key and/or server address, saved and tested with one click, plain-language errors with fix links) → model (a recommended model preselected; recommended and free models marked) → look (brand color, "Match my website", position) → done, with next steps
+- [x] A live widget preview beside every step
+- [x] "Skip AI for now" (no-key mode: quick answers and site search; the existing provider setting is left as it is) and "Skip setup"
+
+Implementation decisions (for review):
+- Finishing saves the provider and model, marks setup complete, and publishes the look (including any unpublished Customizer changes, which the look step starts from).
+- The key is saved, then tested with the saved configuration, so the provider's status on the Providers page is up to date after the wizard.
+- WordPress Connectors appear in the wizard once the bridge arrives in Phase 7; the wizard already lists providers of that kind first.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

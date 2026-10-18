@@ -5,6 +5,7 @@
  */
 import { __, _n, sprintf } from '@wordpress/i18n';
 import { useState } from 'react';
+import { Link } from 'react-router';
 
 import { BarChart } from '../../components/charts/BarChart';
 import { PageHeader } from '../../components/layout/PageHeader';
@@ -15,9 +16,11 @@ import {
 	CardHeader,
 	CardTitle,
 } from '../../components/ui/card';
+import { buttonVariants } from '../../components/ui/button';
 import { Skeleton } from '../../components/ui/skeleton';
 import { dashboardCardRegistry } from '../../extensions/registry';
 import { useRegistry } from '../../extensions/useRegistry';
+import { useSettings } from '../../hooks/useSettings';
 import { useStats } from '../../hooks/useStats';
 import { getBootstrap } from '../../lib/bootstrap';
 import type { Period, StatsResponse } from '../../lib/stats';
@@ -150,6 +153,7 @@ export default function HomeRoute() {
 	const { user } = getBootstrap();
 	const [ days, setDays ] = useState< Period >( 7 );
 	const stats = useStats( days );
+	const settings = useSettings();
 	const cards = useRegistry( dashboardCardRegistry );
 	const totals = stats.data?.totals;
 	const loading = ! totals;
@@ -195,6 +199,31 @@ export default function HomeRoute() {
 					</div>
 				}
 			/>
+
+			{ settings.data && ! settings.data.setup.completed && (
+				<div className="chatlume:mb-6 chatlume:flex chatlume:flex-wrap chatlume:items-center chatlume:justify-between chatlume:gap-3 chatlume:rounded-card chatlume:bg-accent-soft chatlume:px-5 chatlume:py-4">
+					<div>
+						<p className="chatlume:text-sm chatlume:font-semibold chatlume:text-fg">
+							{ __(
+								'Finish setting up your chatbot',
+								'chatlume-ai-chatbot'
+							) }
+						</p>
+						<p className="chatlume:text-[13px] chatlume:text-fg-muted">
+							{ __(
+								'Connect an AI and pick your colors in a few quick steps.',
+								'chatlume-ai-chatbot'
+							) }
+						</p>
+					</div>
+					<Link
+						to="/setup"
+						className={ buttonVariants( { variant: 'primary' } ) }
+					>
+						{ __( 'Start setup', 'chatlume-ai-chatbot' ) }
+					</Link>
+				</div>
+			) }
 
 			{ stats.isError && (
 				<p

@@ -9,6 +9,7 @@ namespace Chatlume\Admin;
 
 use Chatlume\Frontend\WidgetLoader;
 use Chatlume\Plugin;
+use Chatlume\Settings\Settings;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	exit;
@@ -125,23 +126,25 @@ class Assets {
 		$user = wp_get_current_user();
 
 		return array(
-			'version'       => CHATLUME_VERSION,
-			'restNamespace' => Plugin::REST_NAMESPACE,
-			'assetsUrl'     => CHATLUME_URL . 'build/admin/',
-			'adminUrl'      => admin_url( 'admin.php?page=' . Plugin::ADMIN_SLUG ),
-			'siteUrl'       => home_url( '/' ),
+			'version'        => CHATLUME_VERSION,
+			'restNamespace'  => Plugin::REST_NAMESPACE,
+			'assetsUrl'      => CHATLUME_URL . 'build/admin/',
+			'adminUrl'       => admin_url( 'admin.php?page=' . Plugin::ADMIN_SLUG ),
+			'siteUrl'        => home_url( '/' ),
+			// The setup wizard opens once, until it is finished or skipped.
+			'setupCompleted' => (bool) Settings::get( 'setup.completed', false ),
 			// For the live preview's AI replies, which run inside the widget (not apiFetch).
-			'restNonce'     => wp_create_nonce( 'wp_rest' ),
-			'docsUrl'       => 'https://wordpress.org/plugins/chatlume-ai-chatbot/',
-			'colorMode'     => AdminPage::get_color_mode( (int) $user->ID ),
-			'user'          => array(
+			'restNonce'      => wp_create_nonce( 'wp_rest' ),
+			'docsUrl'        => 'https://wordpress.org/plugins/chatlume-ai-chatbot/',
+			'colorMode'      => AdminPage::get_color_mode( (int) $user->ID ),
+			'user'           => array(
 				'id'          => (int) $user->ID,
 				'displayName' => $user->display_name,
 			),
-			'isRtl'         => is_rtl(),
-			'system'        => HealthCheck::snapshot(),
+			'isRtl'          => is_rtl(),
+			'system'         => HealthCheck::snapshot(),
 			// Widget configuration for previews (same data visitors' pages get).
-			'widget'        => WidgetLoader::is_built() ? WidgetLoader::inline_config( false ) : null,
+			'widget'         => WidgetLoader::is_built() ? WidgetLoader::inline_config( false ) : null,
 		);
 	}
 }

@@ -1,11 +1,12 @@
 import { __ } from '@wordpress/i18n';
 import { domAnimation, LazyMotion, m, MotionConfig } from 'motion/react';
-import { Suspense, useState, type ReactNode } from 'react';
-import { useLocation } from 'react-router';
+import { Suspense, useEffect, useState, type ReactNode } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { Toaster } from 'sonner';
 
 import { matchPage, pageRegistry } from '../../extensions/registry';
 import { useRegistry } from '../../extensions/useRegistry';
+import { getBootstrap } from '../../lib/bootstrap';
 import NotFoundRoute from '../../routes/NotFoundRoute';
 import { useColorModeContext } from '../ColorModeProvider';
 import { PortalContainerContext } from '../PortalContainer';
@@ -39,6 +40,29 @@ function PageOutlet() {
 			</Suspense>
 		</ErrorBoundary>
 	);
+}
+
+let checkedSetup = false;
+
+/**
+ * Opens the setup wizard once per page load, when setup is not finished
+ * (or skipped) and the admin arrives on the Dashboard.
+ */
+function SetupRedirect() {
+	const location = useLocation();
+	const navigate = useNavigate();
+
+	useEffect( () => {
+		if ( checkedSetup ) {
+			return;
+		}
+		checkedSetup = true;
+		if ( ! getBootstrap().setupCompleted && location.pathname === '/' ) {
+			navigate( '/setup', { replace: true } );
+		}
+	}, [ location.pathname, navigate ] );
+
+	return null;
 }
 
 /**
@@ -78,6 +102,7 @@ export function AppShell() {
 			<MotionConfig reducedMotion="user">
 				<LazyMotion features={ domAnimation } strict>
 					<TooltipProvider delayDuration={ 300 }>
+						<SetupRedirect />
 						<Header />
 						<div className="chatlume:flex">
 							<Sidebar />

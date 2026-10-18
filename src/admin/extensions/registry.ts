@@ -35,6 +35,8 @@ export interface PageRegistration {
 	order?: number;
 	/** Use the full width of the screen (editors such as the Customizer). */
 	wide?: boolean;
+	/** Reachable by address only, not listed in the sidebar (the setup wizard). */
+	hidden?: boolean;
 }
 
 export interface SettingsSectionRegistration {
