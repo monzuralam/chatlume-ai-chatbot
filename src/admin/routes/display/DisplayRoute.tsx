@@ -10,7 +10,11 @@ import { useEffect, useId, useMemo } from 'react';
 import { Controller, useForm, useWatch, type Resolver } from 'react-hook-form';
 import { toast } from 'sonner';
 
-import { FormSection, SwitchField } from '../../components/form/fields';
+import {
+	FormSection,
+	NumberField,
+	SwitchField,
+} from '../../components/form/fields';
 import { PageHeader } from '../../components/layout/PageHeader';
 import { PageSkeleton } from '../../components/layout/PageSkeleton';
 import { StickySaveBar } from '../../components/layout/StickySaveBar';
@@ -54,6 +58,13 @@ const resolver: Resolver< DisplayFormValues > = async ( values ) => {
 		const path = issue.path.map( String );
 		if ( path[ 0 ] === 'display' && path[ 1 ] === 'url_patterns' ) {
 			return { ...issue, path: [ 'patterns' ] };
+		}
+		if (
+			path[ 0 ] === 'display' &&
+			path[ 1 ] === 'triggers' &&
+			path[ 2 ] === 'url_patterns'
+		) {
+			return { ...issue, path: [ 'trigger_patterns' ] };
 		}
 		if ( path[ 0 ] === 'chatbot' ) {
 			return { ...issue, path: [ 'offline_message' ] };
@@ -194,6 +205,11 @@ function DisplayForm( {
 		behavior: useId(),
 		offline: useId(),
 		shortcode: useId(),
+		triggerAction: useId(),
+		triggerMessage: useId(),
+		triggerPages: useId(),
+		triggerPatterns: useId(),
+		triggerFrequency: useId(),
 	};
 	const days = dayNames();
 
@@ -898,6 +914,325 @@ function DisplayForm( {
 									{ ...register( 'offline_message' ) }
 								/>
 							</Field>
+						</>
+					) }
+				</FormSection>
+
+				<FormSection
+					title={ __(
+						'Proactive invitations',
+						'chatlume-ai-chatbot'
+					) }
+					description={ __(
+						'Invite visitors to chat when they seem interested: after some time on a page, after scrolling, or when they are about to leave.',
+						'chatlume-ai-chatbot'
+					) }
+				>
+					<SwitchField
+						control={ control }
+						name="display.triggers.enabled"
+						label={ __(
+							'Invite visitors to chat',
+							'chatlume-ai-chatbot'
+						) }
+						description={ __(
+							'Never shown while the chat is open, outside business hours, or more often than you allow below.',
+							'chatlume-ai-chatbot'
+						) }
+					/>
+					{ display.triggers.enabled && (
+						<>
+							<fieldset>
+								<legend className="chatlume:mb-2 chatlume:text-sm chatlume:font-medium chatlume:text-fg">
+									{ __(
+										'Invitation',
+										'chatlume-ai-chatbot'
+									) }
+								</legend>
+								<Controller
+									control={ control }
+									name="display.triggers.action"
+									render={ ( { field } ) => (
+										<ChoiceCards
+											name={ ids.triggerAction }
+											value={ field.value }
+											onChange={ field.onChange }
+											columns={ 2 }
+											options={ [
+												{
+													id: 'teaser',
+													label: __(
+														'Show a message bubble',
+														'chatlume-ai-chatbot'
+													),
+													description: __(
+														'A friendly note next to the chat button. Visitors can open or dismiss it.',
+														'chatlume-ai-chatbot'
+													),
+												},
+												{
+													id: 'open',
+													label: __(
+														'Open the chat',
+														'chatlume-ai-chatbot'
+													),
+													description: __(
+														'Opens the chat window. On phones the message bubble shows instead, so the page is not covered.',
+														'chatlume-ai-chatbot'
+													),
+												},
+											] }
+										/>
+									) }
+								/>
+							</fieldset>
+
+							<Field
+								id={ ids.triggerMessage }
+								label={ __(
+									'Bubble message',
+									'chatlume-ai-chatbot'
+								) }
+								hint={ __(
+									'Leave empty for: “Hi there! Have a question? I can help.”',
+									'chatlume-ai-chatbot'
+								) }
+							>
+								<Input
+									id={ ids.triggerMessage }
+									maxLength={ 200 }
+									aria-describedby={ `${ ids.triggerMessage }-hint` }
+									{ ...register(
+										'display.triggers.message'
+									) }
+								/>
+							</Field>
+
+							<fieldset className="chatlume:flex chatlume:flex-col chatlume:gap-4">
+								<legend className="chatlume:mb-1 chatlume:text-sm chatlume:font-medium chatlume:text-fg">
+									{ __( 'When', 'chatlume-ai-chatbot' ) }
+								</legend>
+								<p className="chatlume:-mt-2 chatlume:text-[13px] chatlume:text-fg-muted">
+									{ __(
+										'The invitation shows as soon as one of these happens. With all of them off, it shows right after the page loads.',
+										'chatlume-ai-chatbot'
+									) }
+								</p>
+								<div className="chatlume:grid chatlume:gap-4 chatlume:sm:grid-cols-2">
+									<NumberField
+										register={ register }
+										name="display.triggers.delay"
+										label={ __(
+											'After time on the page',
+											'chatlume-ai-chatbot'
+										) }
+										hint={ __(
+											'0 turns this off.',
+											'chatlume-ai-chatbot'
+										) }
+										min={ 0 }
+										max={ 600 }
+										suffix={ __(
+											'seconds',
+											'chatlume-ai-chatbot'
+										) }
+										error={ message(
+											errors.display?.triggers?.delay
+										) }
+									/>
+									<NumberField
+										register={ register }
+										name="display.triggers.scroll"
+										label={ __(
+											'After scrolling',
+											'chatlume-ai-chatbot'
+										) }
+										hint={ __(
+											'Share of the page read. 0 turns this off.',
+											'chatlume-ai-chatbot'
+										) }
+										min={ 0 }
+										max={ 100 }
+										suffix="%"
+										error={ message(
+											errors.display?.triggers?.scroll
+										) }
+									/>
+								</div>
+								<SwitchField
+									control={ control }
+									name="display.triggers.exit_intent"
+									label={ __(
+										'When the visitor is about to leave',
+										'chatlume-ai-chatbot'
+									) }
+									description={ __(
+										'When the mouse heads for the browser’s tabs or address bar. Computers only; phones have no mouse.',
+										'chatlume-ai-chatbot'
+									) }
+								/>
+							</fieldset>
+
+							<fieldset
+								aria-describedby={ `${ ids.triggerPages }-error` }
+							>
+								<legend className="chatlume:mb-2 chatlume:text-sm chatlume:font-medium chatlume:text-fg">
+									{ __( 'Where', 'chatlume-ai-chatbot' ) }
+								</legend>
+								<Controller
+									control={ control }
+									name="display.triggers.pages"
+									render={ ( { field } ) => (
+										<ChoiceCards
+											name={ ids.triggerPages }
+											value={ field.value }
+											onChange={ field.onChange }
+											columns={ 2 }
+											options={ [
+												{
+													id: 'all',
+													label: __(
+														'Every page with the chat button',
+														'chatlume-ai-chatbot'
+													),
+													description: __(
+														'Wherever the rules above show the button.',
+														'chatlume-ai-chatbot'
+													),
+												},
+												{
+													id: 'include',
+													label: __(
+														'Only on chosen pages',
+														'chatlume-ai-chatbot'
+													),
+													description: __(
+														'For example your pricing or contact page.',
+														'chatlume-ai-chatbot'
+													),
+												},
+											] }
+										/>
+									) }
+								/>
+								{ message(
+									errors.display?.triggers?.pages
+								) && (
+									<p
+										id={ `${ ids.triggerPages }-error` }
+										className="chatlume:mt-2 chatlume:text-[13px] chatlume:text-danger"
+									>
+										{ message(
+											errors.display?.triggers?.pages
+										) }
+									</p>
+								) }
+							</fieldset>
+							{ display.triggers.pages === 'include' && (
+								<div className="chatlume:flex chatlume:flex-col chatlume:gap-4 chatlume:rounded-control chatlume:border chatlume:border-border chatlume:p-4">
+									<Controller
+										control={ control }
+										name="display.triggers.page_ids"
+										render={ ( { field } ) => (
+											<PagePicker
+												value={ field.value }
+												known={ info.trigger_pages }
+												onChange={ field.onChange }
+											/>
+										) }
+									/>
+									<Field
+										id={ ids.triggerPatterns }
+										label={ __(
+											'Page addresses',
+											'chatlume-ai-chatbot'
+										) }
+										hint={ __(
+											'One per line, with * as a wildcard, for example /pricing or /shop/*.',
+											'chatlume-ai-chatbot'
+										) }
+										error={ message(
+											errors.trigger_patterns
+										) }
+									>
+										<textarea
+											id={ ids.triggerPatterns }
+											rows={ 3 }
+											className={ cn(
+												textareaClasses,
+												'chatlume:font-mono'
+											) }
+											placeholder={ '/pricing\n/shop/*' }
+											aria-invalid={
+												errors.trigger_patterns
+													? true
+													: undefined
+											}
+											aria-describedby={ `${ ids.triggerPatterns }-hint ${ ids.triggerPatterns }-error` }
+											{ ...register(
+												'trigger_patterns'
+											) }
+										/>
+									</Field>
+								</div>
+							) }
+
+							<Field
+								id={ ids.triggerFrequency }
+								label={ __(
+									'How often',
+									'chatlume-ai-chatbot'
+								) }
+								hint={ __(
+									'For each visitor, on this browser.',
+									'chatlume-ai-chatbot'
+								) }
+							>
+								<Select
+									id={ ids.triggerFrequency }
+									aria-describedby={ `${ ids.triggerFrequency }-hint` }
+									{ ...register(
+										'display.triggers.frequency'
+									) }
+								>
+									<option value="session">
+										{ __(
+											'Once per visit',
+											'chatlume-ai-chatbot'
+										) }
+									</option>
+									<option value="day">
+										{ __(
+											'At most once a day',
+											'chatlume-ai-chatbot'
+										) }
+									</option>
+									<option value="week">
+										{ __(
+											'At most once a week',
+											'chatlume-ai-chatbot'
+										) }
+									</option>
+									<option value="always">
+										{ __(
+											'On every page view',
+											'chatlume-ai-chatbot'
+										) }
+									</option>
+								</Select>
+							</Field>
+							<SwitchField
+								control={ control }
+								name="display.triggers.skip_returning"
+								label={ __(
+									'Skip visitors who have already chatted',
+									'chatlume-ai-chatbot'
+								) }
+								description={ __(
+									'They know where the chat is.',
+									'chatlume-ai-chatbot'
+								) }
+							/>
 						</>
 					) }
 				</FormSection>

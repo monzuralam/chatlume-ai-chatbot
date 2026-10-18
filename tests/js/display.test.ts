@@ -146,9 +146,58 @@ describe( 'Display page helpers', () => {
 					sun: { open: false, start: '09:00', end: '17:00' },
 				},
 			},
+			triggers: {
+				enabled: true,
+				action: 'teaser',
+				message: '',
+				delay: 20,
+				scroll: 0,
+				exit_intent: false,
+				pages: 'include',
+				page_ids: [],
+				url_patterns: [ '/pricing' ],
+				frequency: 'day',
+				skip_returning: true,
+			},
 		},
 		chatbot: { offline_message: 'Away' },
 	} as unknown as Settings;
+
+	it( 'edits invitation addresses one per line and needs a page when limited', () => {
+		const form = toDisplayForm( settings );
+		expect( form.trigger_patterns ).toBe( '/pricing' );
+		expect( 'url_patterns' in form.display.triggers ).toBe( false );
+
+		const update = fromDisplayForm( {
+			...form,
+			trigger_patterns: ' /pricing \n/shop/*',
+		} );
+		expect( update.display.triggers.url_patterns ).toEqual( [
+			'/pricing',
+			'/shop/*',
+		] );
+		expect( displayFormSchema.safeParse( update ).success ).toBe( true );
+
+		const nowhere = fromDisplayForm( { ...form, trigger_patterns: '' } );
+		const result = displayFormSchema.safeParse( nowhere );
+		expect( result.error?.issues[ 0 ].path ).toEqual( [
+			'display',
+			'triggers',
+			'pages',
+		] );
+
+		const everywhere = fromDisplayForm( {
+			...form,
+			display: {
+				...form.display,
+				triggers: { ...form.display.triggers, pages: 'all' },
+			},
+			trigger_patterns: '',
+		} );
+		expect( displayFormSchema.safeParse( everywhere ).success ).toBe(
+			true
+		);
+	} );
 
 	it( 'edits address patterns one per line', () => {
 		const form = toDisplayForm( settings );

@@ -31,6 +31,8 @@ const chatbot: Settings[ 'chatbot' ] = {
 	offline_message: '',
 	error_message: '',
 	site_search_message: '',
+	voice_input: true,
+	read_aloud: false,
 };
 
 const settings = {
@@ -206,6 +208,9 @@ describe( 'previewBehavior', () => {
 		expect( behavior.quick_actions ).toEqual( [
 			{ label: 'Shop', type: 'url', href: 'https://a.test' },
 		] );
+		// The voice switches show in the preview right away.
+		expect( behavior.voice_input ).toBe( true );
+		expect( behavior.read_aloud ).toBe( false );
 	} );
 } );
 

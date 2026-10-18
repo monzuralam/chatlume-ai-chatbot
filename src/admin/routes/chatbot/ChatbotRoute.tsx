@@ -804,6 +804,39 @@ function ChatbotForm( {
 				</FormSection>
 
 				<FormSection
+					title={ __( 'Voice', 'chatlume-ai-chatbot' ) }
+					description={ __(
+						'Uses the visitor’s own browser, at no cost to you. The buttons appear only in browsers that support them.',
+						'chatlume-ai-chatbot'
+					) }
+				>
+					<SwitchField
+						control={ control }
+						name="chatbot.voice_input"
+						label={ __(
+							'Let visitors speak their questions',
+							'chatlume-ai-chatbot'
+						) }
+						description={ __(
+							'Adds a microphone button. Some browsers, such as Chrome, use their maker’s online service to turn speech into text.',
+							'chatlume-ai-chatbot'
+						) }
+					/>
+					<SwitchField
+						control={ control }
+						name="chatbot.read_aloud"
+						label={ __(
+							'Read answers aloud',
+							'chatlume-ai-chatbot'
+						) }
+						description={ __(
+							'Adds a speaker button to each answer, using the voices installed on the visitor’s device.',
+							'chatlume-ai-chatbot'
+						) }
+					/>
+				</FormSection>
+
+				<FormSection
 					title={ __( 'Guardrails', 'chatlume-ai-chatbot' ) }
 					description={ __(
 						'Keep conversations on topic and appropriate.',

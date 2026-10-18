@@ -918,6 +918,60 @@
 	white-space: nowrap;
 }
 
+.cl-mic {
+	display: inline-flex;
+	flex: none;
+	align-items: center;
+	justify-content: center;
+	width: 36px;
+	height: 36px;
+	margin: 0;
+	padding: 0;
+	border: 0;
+	border-radius: var(--chatlume-radius-button);
+	background: transparent;
+	color: var(--chatlume-muted);
+	cursor: pointer;
+	transition: background var(--chatlume-duration) ease, color var(--chatlume-duration) ease;
+}
+
+.cl-mic:hover {
+	color: var(--chatlume-bot-text);
+}
+
+.cl-mic[aria-pressed="true"] {
+	background: var(--chatlume-error);
+	color: #fff;
+	animation: cl-listen 1.4s ease-in-out infinite;
+}
+
+.cl-mic:disabled {
+	cursor: not-allowed;
+	opacity: 0.4;
+}
+
+@keyframes cl-listen {
+
+	50% {
+		opacity: 0.7;
+	}
+}
+
+.cl-voice-note {
+	position: absolute;
+	right: 0;
+	bottom: calc(100% + 6px);
+	left: 0;
+	margin: 0;
+	padding: 8px 10px;
+	border: 1px solid var(--chatlume-border);
+	border-radius: var(--chatlume-radius-input);
+	background: var(--chatlume-background);
+	color: var(--chatlume-error);
+	font-size: 0.8em;
+	box-shadow: var(--chatlume-shadow);
+}
+
 .cl-send {
 	display: inline-flex;
 	flex: none;

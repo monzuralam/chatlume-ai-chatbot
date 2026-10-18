@@ -116,6 +116,8 @@ export function previewBehavior(
 			.filter( ( action ): action is QuickAction => action !== null ),
 		max_message_length: chatbot.max_message_length,
 		store_conversations: true,
+		voice_input: chatbot.voice_input,
+		read_aloud: chatbot.read_aloud,
 	};
 }
 

@@ -421,7 +421,7 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started. Approved deviati
 4. ✅ **Widget** (done 2026-10-15): full widget UI, design token system, widget styles (floating, side panel, modal, inline), message styles, CSS parts, preview mode, streaming with stream limiter and abort handling, markdown sanitizer, source cards, quick actions, tab sync, mobile, accessibility, shortcode, block, JS API.
 5. ✅ **Admin experience** (done 2026-10-18): setup wizard with provider guides, Dashboard, Chatbot, Playground, the Customizer with always-on live preview (presets, Simple/Advanced modes, colors, typography, layout, draft/publish, versions, real-site backdrop, context-aware states, click-to-edit, interactive preview, before/after, devices, Developer styling panel), Display & triggers, Conversations, Settings with Health check, core Command Palette commands.
 6. ✅ **Knowledge base** (done 2026-10-18): indexer, document uploads, embeddings storage and re-embedding, two-stage retrieval with n-gram fallback, source links, WooCommerce sync, multilingual filtering, Knowledge page.
-7. ⬜ **Engagement, integrations, and platform**: proactive triggers, voice, lead capture, handoff, webhooks, email notifications, analytics events, cache purging, optimization-plugin compatibility, WPML/Polylang, "Match my website", WordPress Font Library and theme.json integration, "Preview on my site", per-language content, WordPress Connectors bridge and core AI Client, Abilities registration.
+7. 🚧 **Engagement, integrations, and platform**: proactive triggers, voice, lead capture, handoff, webhooks, email notifications, analytics events, cache purging, optimization-plugin compatibility, WPML/Polylang, "Match my website", WordPress Font Library and theme.json integration, "Preview on my site", per-language content, WordPress Connectors bridge and core AI Client, Abilities registration.
 8. ⬜ **Hardening and release**: privacy integrations, uninstall, full test suite, i18n, readme with all required sections, Plugin Check fixes, release zip.
 
 ### Build log
@@ -758,7 +758,7 @@ Implementation decisions (for review):
 - The end-of-rebuild cleanup now removes sources whose post is no longer a published, chosen candidate by comparing with the posts table, instead of by update time (rows saved in the same second as a rebuild started could survive).
 - The index remembers which post types it covers and rebuilds itself (checked on admin pages) when they change outside the settings: WooCommerce activated or deactivated, a custom post type removed, or an update that adds a source. Existing indexes from 6.1 rebuild once to add products.
 
-Module 6.5 – Knowledge page ✅ (2026-10-18, awaiting review)
+Module 6.5 – Knowledge page ✅ (2026-10-18)
 - [x] New Knowledge page (sidebar after Chatbot; tab kept in the address, e.g. `#/knowledge?tab=documents`) and a "Chatlume: Knowledge" Command Palette command
 - [x] Sources: content types, WooCommerce products switch, "Also include" and "Leave out" pickers, business information with a character counter (sticky save bar, unsaved-changes guard, Ctrl/Cmd+S); the indexed items with title search, type filter, pages, links, passage counts, and one-click "Leave out"
 - [x] Documents: drag-and-drop or file picker, several files read one at a time with a status per file (waiting, reading, learned N passages, or the reason it was refused), type and size checked before uploading, language per upload, document list with delete confirmation, and the upload size limit next to the server's own limit
@@ -771,7 +771,27 @@ Implementation decisions (for review):
 - An imported row that leaves out the keywords or enabled column keeps the existing quick answer's value; new rows are enabled.
 - Saving any knowledge setting refreshes the index views, because the server re-indexes right away.
 
-Phase 6 – Knowledge base is complete pending review of module 6.5.
+Phase 6 – Knowledge base is complete.
+
+**Phase 7 – Engagement, integrations, and platform 🚧 (in progress)**
+
+Approved decisions:
+- Delivered in six modules, each committed after review: proactive invitations and voice; lead capture, handoff, and transcript email; Integrations page (webhooks, email notifications, analytics events, Turnstile); cache purging and optimization-plugin compatibility; WPML/Polylang current language and per-language widget strings; WordPress Connectors, core AI Client, and Abilities API.
+- "Match my website", Font Library and theme.json fonts, and "Preview on my site" were delivered in Phase 5.
+- Transcript emails: "Email this conversation to the team" always goes to the notification address; a visitor can email the transcript only to the email they gave in the lead form, at most 3 times per session per hour.
+
+Module 7.1 – Proactive invitations and voice ✅ (2026-10-18, awaiting review)
+- [x] Settings `display.triggers`: invitation on/off, show a message bubble or open the chat, bubble text (friendly default), after N seconds, after N% scrolled, on exit intent (desktop), on every page or only chosen pages and addresses, frequency (once per visit, day, or week, or every page view), and skipping visitors who already chatted
+- [x] The page carries the invitation only when it applies to that page, so cached pages stay correct; it never shows while the chat is open or outside business hours
+- [x] "Open the chat" shows the bubble instead on small screens, so the page is never covered on phones; the bubble is announced to screen readers and the launcher pulses once (no motion under prefers-reduced-motion)
+- [x] Display page: a "Proactive invitations" section with inline validation (chosen pages need at least one page or address)
+- [x] Voice input: a microphone button using the browser's speech recognition in the page language; words appear in the message box to check before sending; a clear note when the microphone is blocked
+- [x] Read aloud: a speaker button on each answer using the device's voices; one answer at a time; stops when the chat closes
+- [x] Chatbot page: a "Voice" section with both switches (on by default; hidden in browsers without support), shown in the live preview
+
+Implementation decisions (for review):
+- Invitation code is a separate 0.7 KB (gzipped) chunk loaded only on pages with an invitation. The launcher grew by 0.26 KB to 8.0 KB gzipped; it was already 7.8 KB, above the 6 KB budget, before this module, to be addressed in Phase 8. The chat app is 24.5 KB gzipped (budget 45 KB).
+- Voice input does not send automatically, so visitors can correct misheard words.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

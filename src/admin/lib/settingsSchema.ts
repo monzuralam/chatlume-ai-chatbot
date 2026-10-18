@@ -87,6 +87,8 @@ export const chatbotSettingsSchema = z
 		offline_message: z.string().max( 500 ),
 		error_message: z.string().max( 500 ),
 		site_search_message: z.string().max( 500 ),
+		voice_input: z.boolean(),
+		read_aloud: z.boolean(),
 	} )
 	.strict();
 
@@ -170,6 +172,23 @@ export const displaySettingsSchema = z
 						sun: dayHoursSchema,
 					} )
 					.strict(),
+			} )
+			.strict(),
+		triggers: z
+			.object( {
+				enabled: z.boolean(),
+				action: z.enum( [ 'teaser', 'open' ] ),
+				message: z.string().max( 200 ),
+				delay: z.number().int().min( 0 ).max( 600 ),
+				scroll: z.number().int().min( 0 ).max( 100 ),
+				exit_intent: z.boolean(),
+				pages: z.enum( [ 'all', 'include' ] ),
+				page_ids: z.array( z.number().int().min( 0 ) ).max( 200 ),
+				url_patterns: z
+					.array( z.string().min( 1 ).max( 200 ) )
+					.max( 50 ),
+				frequency: z.enum( [ 'session', 'day', 'week', 'always' ] ),
+				skip_returning: z.boolean(),
 			} )
 			.strict(),
 	} )

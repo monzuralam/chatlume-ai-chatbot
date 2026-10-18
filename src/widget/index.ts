@@ -11,11 +11,17 @@
  */
 import launcherCss from './styles/launcher.css?inline';
 import { CLOSE_ICON, LAUNCHER_ICONS, svgIcon } from './launcher/icons';
-import { showFloating } from './lib/display';
+import { isClosed, showFloating } from './lib/display';
 import { loadFonts } from './lib/fonts';
 import { read, write } from './lib/storage';
 import { pageDirection, resolveMode, safeUrl, themeCss } from './lib/theme';
-import type { ChatApp, ThemeConfig, WidgetConfig, WidgetHost } from './types';
+import type {
+	ChatApp,
+	ThemeConfig,
+	TriggerConfig,
+	WidgetConfig,
+	WidgetHost,
+} from './types';
 
 // eslint-disable-next-line camelcase, @typescript-eslint/no-unused-vars -- webpack's documented runtime variable (assigned, read by webpack).
 declare let __webpack_public_path__: string;
@@ -95,6 +101,7 @@ class Controller implements WidgetHost {
 	private compactQuery: MediaQueryList | null = null;
 	private unread: HTMLElement | null = null;
 	private teaser: HTMLElement | null = null;
+	private teaserText = '';
 	private savedOverflow: string | null = null;
 
 	constructor( element: HTMLElement, config: WidgetConfig ) {
@@ -147,6 +154,58 @@ class Controller implements WidgetHost {
 			whenIdle( () => {
 				loadApp().catch( () => undefined );
 			} );
+		}
+
+		// Invitations load their own small chunk, only on pages that have one,
+		// and never while the bot is closed (business hours).
+		const triggers = config.display?.triggers;
+		if (
+			triggers &&
+			! this.inline &&
+			! this.preview &&
+			! isClosed( config.display )
+		) {
+			let stopped = false;
+			let stop = () => {
+				stopped = true;
+			};
+			this.cleanups.push( () => stop() );
+			import( /* webpackChunkName: "triggers" */ './lib/triggers' )
+				.then( ( module ) => {
+					if ( ! stopped ) {
+						stop = module.watchTriggers( triggers, () => {
+							module.recordInvitation();
+							this.invite( triggers );
+						} );
+					}
+				} )
+				.catch( () => undefined );
+		}
+	}
+
+	/**
+	 * Shows a proactive invitation: opens the chat, or (on small screens,
+	 * where opening would cover the page) shows the message bubble.
+	 *
+	 * @param triggers Invitation settings.
+	 */
+	private invite( triggers: TriggerConfig ): void {
+		if ( this.opened ) {
+			return;
+		}
+		if (
+			triggers.action === 'open' &&
+			! this.wrap.hasAttribute( 'data-compact' )
+		) {
+			this.open();
+			return;
+		}
+		this.renderTeaser( triggers.message, true );
+		if ( this.launcher ) {
+			this.launcher.dataset.nudge = '';
+			window.setTimeout( () => {
+				delete this.launcher?.dataset.nudge;
+			}, 4000 );
 		}
 	}
 
@@ -445,16 +504,22 @@ class Controller implements WidgetHost {
 		this.syncLauncherState();
 	}
 
-	private renderTeaser( text: string ): void {
+	private renderTeaser( text: string, invitation = false ): void {
 		this.teaser?.remove();
 		this.teaser = null;
-		const dismissed = this.preview ? false : read( 'teaser', '' ) === text;
+		const dismissed =
+			this.preview || invitation ? false : read( 'teaser', '' ) === text;
 		if ( ! text || dismissed || this.opened ) {
 			return;
 		}
 
 		const teaser = el( 'div', 'cl-teaser' );
 		teaser.setAttribute( 'part', 'teaser' );
+		if ( invitation ) {
+			// Announced to screen readers, since it appears on its own.
+			teaser.setAttribute( 'role', 'status' );
+		}
+		this.teaserText = text;
 		const message = el( 'span', 'cl-teaser-text' );
 		message.textContent = text;
 		message.addEventListener( 'click', () => this.open() );
@@ -476,7 +541,7 @@ class Controller implements WidgetHost {
 			return;
 		}
 		if ( remember && ! this.preview ) {
-			write( 'teaser', this.config.theme.ui.launcher.teaser );
+			write( 'teaser', this.teaserText );
 		}
 		this.teaser.remove();
 		this.teaser = null;

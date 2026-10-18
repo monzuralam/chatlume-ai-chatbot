@@ -228,4 +228,61 @@ class DisplayRulesTest extends TestCase {
 
 		$this->assertInstanceOf( WP_Error::class, ( new DisplayController() )->permissions_check() );
 	}
+
+	public function test_invitations_only_on_chosen_pages_with_safe_values(): void {
+		$pricing = array(
+			'object_id' => 12,
+			'post_type' => 'page',
+			'path'      => '/pricing',
+		);
+		$blog    = array(
+			'object_id' => 40,
+			'post_type' => 'post',
+			'path'      => '/blog/hello',
+		);
+
+		$this->assertNull( DisplayRules::triggers( array( 'enabled' => false ), $pricing ) );
+
+		$everywhere = DisplayRules::triggers(
+			array(
+				'enabled'        => true,
+				'action'         => 'open',
+				'delay'          => 9999,
+				'scroll'         => -5,
+				'exit_intent'    => 1,
+				'frequency'      => 'hourly',
+				'skip_returning' => false,
+			),
+			$blog
+		);
+		$this->assertSame(
+			array(
+				'action'        => 'open',
+				'message'       => 'Hi there! Have a question? I can help.',
+				'delay'         => 600,
+				'scroll'        => 0,
+				'exit'          => true,
+				'frequency'     => 'day',
+				'skipReturning' => false,
+			),
+			$everywhere
+		);
+
+		$chosen = array(
+			'enabled'      => true,
+			'message'      => 'Questions about plans?',
+			'pages'        => 'include',
+			'page_ids'     => array( 99 ),
+			'url_patterns' => array( '/pricing' ),
+		);
+		$this->assertSame( 'Questions about plans?', DisplayRules::triggers( $chosen, $pricing )['message'] );
+		$this->assertNull( DisplayRules::triggers( $chosen, $blog ) );
+		$this->assertSame( 'teaser', DisplayRules::triggers( $chosen + array( 'action' => 'bogus' ), $pricing )['action'] );
+	}
+
+	public function test_page_config_leaves_out_invitations_when_off(): void {
+		Functions\when( 'wp_timezone_string' )->justReturn( 'UTC' );
+		// Off by default: the page context is not even read.
+		$this->assertNull( DisplayRules::client_config()['triggers'] );
+	}
 }

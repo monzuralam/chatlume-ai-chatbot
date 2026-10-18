@@ -59,6 +59,13 @@ final class WidgetStrings {
 			'charCount'    => __( '%1$d / %2$d', 'chatlume-ai-chatbot' ),
 			'poweredBy'    => __( 'Powered by Chatlume', 'chatlume-ai-chatbot' ),
 			'externalLink' => __( '(opens in a new tab)', 'chatlume-ai-chatbot' ),
+			'voiceStart'   => __( 'Speak your message', 'chatlume-ai-chatbot' ),
+			'voiceStop'    => __( 'Stop listening', 'chatlume-ai-chatbot' ),
+			'listening'    => __( 'Listening…', 'chatlume-ai-chatbot' ),
+			'voiceBlocked' => __( 'Microphone access is blocked. Allow it in your browser settings, or type your message.', 'chatlume-ai-chatbot' ),
+			'voiceFailed'  => __( 'Voice input did not work. Please type your message.', 'chatlume-ai-chatbot' ),
+			'readAloud'    => __( 'Read aloud', 'chatlume-ai-chatbot' ),
+			'stopReading'  => __( 'Stop reading', 'chatlume-ai-chatbot' ),
 		);
 	}
 }

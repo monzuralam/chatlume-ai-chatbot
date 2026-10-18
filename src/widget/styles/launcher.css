@@ -219,6 +219,17 @@
 	pointer-events: none;
 }
 
+/* A proactive invitation draws the eye once. */
+.cl-launcher[data-nudge]::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	box-shadow: 0 0 0 0 var(--chatlume-launcher-background);
+	animation: cl-pulse 1.6s ease-out 2;
+	pointer-events: none;
+}
+
 .cl-launcher[data-attention="bounce"] {
 	animation: cl-bounce 0.9s ease 1.2s 1;
 }

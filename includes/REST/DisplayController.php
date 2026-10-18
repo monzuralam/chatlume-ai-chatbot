@@ -71,19 +71,20 @@ class DisplayController {
 
 		$response = new WP_REST_Response(
 			array(
-				'post_types' => self::post_types(),
-				'roles'      => self::roles(),
-				'pages'      => self::pages( array_map( 'intval', (array) Settings::get( 'display.page_ids', array() ) ) ),
-				'timezone'   => array(
+				'post_types'    => self::post_types(),
+				'roles'         => self::roles(),
+				'pages'         => self::pages( array_map( 'intval', (array) Settings::get( 'display.page_ids', array() ) ) ),
+				'trigger_pages' => self::pages( array_map( 'intval', (array) Settings::get( 'display.triggers.page_ids', array() ) ) ),
+				'timezone'      => array(
 					'name'  => wp_timezone_string(),
 					'label' => self::timezone_label( $now ),
 				),
-				'now'        => array(
+				'now'           => array(
 					'day'  => DisplayRules::DAYS[ (int) $now->format( 'w' ) ],
 					'time' => $now->format( 'H:i' ),
 					'open' => DisplayRules::is_open( (array) Settings::get( 'display.hours.days', array() ), $now ),
 				),
-				'shortcode'  => '[' . Shortcode::TAG . ' height="600"]',
+				'shortcode'     => '[' . Shortcode::TAG . ' height="600"]',
 			)
 		);
 		$response->header( 'Cache-Control', 'no-store, private' );

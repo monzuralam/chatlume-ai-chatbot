@@ -2,8 +2,15 @@
  * The message composer: auto-growing textarea, Enter to send,
  * Shift+Enter for a new line, a counter near the limit, Send / Stop.
  */
-import { forwardRef, useLayoutEffect, useRef, useState } from 'react';
+import {
+	forwardRef,
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+} from 'react';
 
+import { canListen, listen } from '../lib/voice';
 import type { ThemeUi, WidgetStrings } from '../types';
 import { Icon } from './icons';
 import type { Chat } from './useChat';
@@ -15,6 +22,8 @@ interface Props {
 	maxLength: number;
 	/** Outside business hours: no input. */
 	closed?: boolean;
+	/** Show the microphone button (where the browser supports it). */
+	voice?: boolean;
 }
 
 /**
@@ -42,14 +51,51 @@ export function format(
 
 export const Composer = forwardRef< HTMLTextAreaElement, Props >(
 	function ComposerField(
-		{ chat, ui, strings, maxLength, closed = false },
+		{ chat, ui, strings, maxLength, closed = false, voice = false },
 		ref
 	) {
 		const [ text, setText ] = useState( '' );
+		const [ listening, setListening ] = useState( false );
+		const [ voiceNote, setVoiceNote ] = useState( '' );
+		const stopListening = useRef< ( () => void ) | null >( null );
 		const area = useRef< HTMLTextAreaElement | null >( null );
 		const blocked = chat.busy || chat.otherTabBusy || closed;
 		const length = Array.from( text ).length;
 		const near = length >= Math.floor( maxLength * 0.8 );
+		const showMic = voice && ! closed && canListen();
+
+		// Stop listening when the composer goes away.
+		useEffect( () => () => stopListening.current?.(), [] );
+
+		const toggleVoice = () => {
+			if ( listening ) {
+				stopListening.current?.();
+				return;
+			}
+			const before = text.trim();
+			setVoiceNote( '' );
+			setListening( true );
+			stopListening.current = listen( {
+				onText: ( heard ) =>
+					setText(
+						( before ? `${ before } ${ heard }` : heard ).slice(
+							0,
+							maxLength
+						)
+					),
+				onEnd: () => {
+					setListening( false );
+					stopListening.current = null;
+					area.current?.focus();
+				},
+				onError: ( kind ) =>
+					setVoiceNote(
+						kind === 'blocked'
+							? strings.voiceBlocked
+							: strings.voiceFailed
+					),
+			} );
+		};
 
 		useLayoutEffect( () => {
 			const node = area.current;
@@ -117,6 +163,31 @@ export const Composer = forwardRef< HTMLTextAreaElement, Props >(
 					<span className="cl-count" aria-live="polite">
 						{ format( strings.charCount, length, maxLength ) }
 					</span>
+				) }
+				<span className="cl-sr" role="status">
+					{ listening ? strings.listening : '' }
+				</span>
+				{ voiceNote && (
+					<p className="cl-voice-note" role="alert">
+						{ voiceNote }
+					</p>
+				) }
+				{ showMic && ! chat.busy && (
+					<button
+						type="button"
+						className="cl-mic"
+						aria-pressed={ listening }
+						aria-label={
+							listening ? strings.voiceStop : strings.voiceStart
+						}
+						title={
+							listening ? strings.voiceStop : strings.voiceStart
+						}
+						disabled={ blocked }
+						onClick={ toggleVoice }
+					>
+						<Icon name="mic" />
+					</button>
 				) }
 				{ chat.busy ? (
 					<button

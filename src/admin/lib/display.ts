@@ -26,6 +26,8 @@ export interface DisplayInfo {
 	post_types: Array< { name: string; label: string } >;
 	roles: Array< { slug: string; name: string } >;
 	pages: ChosenPage[];
+	/** Titles of the pages chosen for invitations. */
+	trigger_pages: ChosenPage[];
 	timezone: { name: string; label: string };
 	now: { day: DayKey; time: string; open: boolean };
 	shortcode: string;
@@ -66,8 +68,12 @@ export async function searchContent( term: string ): Promise< ChosenPage[] > {
  * offline message lives in the chatbot section.
  */
 export interface DisplayFormValues {
-	display: Omit< DisplaySettings, 'url_patterns' >;
+	display: Omit< DisplaySettings, 'url_patterns' | 'triggers' > & {
+		triggers: Omit< DisplaySettings[ 'triggers' ], 'url_patterns' >;
+	};
 	patterns: string;
+	/** Invitation addresses, one per line. */
+	trigger_patterns: string;
 	offline_message: string;
 }
 
@@ -91,10 +97,12 @@ export function lines( text: string ): string[] {
  * @return Form values.
  */
 export function toDisplayForm( settings: Settings ): DisplayFormValues {
-	const { url_patterns: patterns, ...display } = settings.display;
+	const { url_patterns: patterns, triggers, ...display } = settings.display;
+	const { url_patterns: triggerPatterns, ...triggerRest } = triggers;
 	return {
-		display,
+		display: { ...display, triggers: triggerRest },
 		patterns: patterns.join( '\n' ),
+		trigger_patterns: triggerPatterns.join( '\n' ),
 		offline_message: settings.chatbot.offline_message,
 	};
 }
@@ -110,7 +118,14 @@ export function fromDisplayForm( values: DisplayFormValues ): {
 	chatbot: { offline_message: string };
 } {
 	return {
-		display: { ...values.display, url_patterns: lines( values.patterns ) },
+		display: {
+			...values.display,
+			url_patterns: lines( values.patterns ),
+			triggers: {
+				...values.display.triggers,
+				url_patterns: lines( values.trigger_patterns ),
+			},
+		},
 		chatbot: { offline_message: values.offline_message },
 	};
 }
@@ -132,6 +147,16 @@ export const displayFormSchema = z
 						.regex( PATTERN, { message: 'pattern' } )
 				)
 				.max( 50 ),
+			triggers: displaySettingsSchema.shape.triggers.extend( {
+				url_patterns: z
+					.array(
+						z
+							.string()
+							.max( 200 )
+							.regex( PATTERN, { message: 'pattern' } )
+					)
+					.max( 50 ),
+			} ),
 		} ),
 		chatbot: z.object( { offline_message: z.string().max( 500 ) } ),
 	} )
@@ -146,6 +171,18 @@ export const displayFormSchema = z
 			context.addIssue( {
 				code: 'custom',
 				path: [ 'display', 'pages_mode' ],
+				message: 'rules:empty',
+			} );
+		}
+		if (
+			display.triggers.enabled &&
+			display.triggers.pages === 'include' &&
+			! display.triggers.page_ids.length &&
+			! display.triggers.url_patterns.length
+		) {
+			context.addIssue( {
+				code: 'custom',
+				path: [ 'display', 'triggers', 'pages' ],
 				message: 'rules:empty',
 			} );
 		}

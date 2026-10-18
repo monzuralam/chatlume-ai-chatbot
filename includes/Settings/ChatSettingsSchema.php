@@ -80,6 +80,10 @@ final class ChatSettingsSchema {
 				'offline_message'     => self::text( '', 500, 'textarea' ),
 				'error_message'       => self::text( '', 500, 'textarea' ),
 				'site_search_message' => self::text( '', 500, 'textarea' ),
+				// Microphone button (the browser's speech recognition; hidden where unsupported).
+				'voice_input'         => self::boolean( true ),
+				// "Read aloud" on answers (the browser's speech synthesis; hidden where unsupported).
+				'read_aloud'          => self::boolean( true ),
 			)
 		);
 	}
@@ -219,6 +223,48 @@ final class ChatSettingsSchema {
 						),
 					)
 				),
+				'triggers'     => self::triggers(),
+			)
+		);
+	}
+
+	/**
+	 * Proactive invitations: a teaser or an opened chat when a visitor has
+	 * spent some time, scrolled, or is about to leave.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function triggers(): array {
+		return self::section(
+			__( 'Proactive invitations.', 'chatlume-ai-chatbot' ),
+			array(
+				'enabled'        => self::boolean( false ),
+				// Show a message bubble, or open the chat (a bubble on small screens).
+				'action'         => self::choice( 'teaser', array( 'teaser', 'open' ) ),
+				// Bubble text; empty uses a friendly default.
+				'message'        => self::text( '', 200 ),
+				// Seconds on the page (0: not used).
+				'delay'          => self::integer( 20, 0, 600 ),
+				// Percent of the page scrolled (0: not used).
+				'scroll'         => self::integer( 0, 0, 100 ),
+				// Pointer heading out of the window (desktop).
+				'exit_intent'    => self::boolean( false ),
+				// Every page, or only chosen pages.
+				'pages'          => self::choice( 'all', array( 'all', 'include' ) ),
+				'page_ids'       => array(
+					'type'     => 'array',
+					'maxItems' => 200,
+					'items'    => self::integer( 0, 0, PHP_INT_MAX ),
+				),
+				'url_patterns'   => array(
+					'type'     => 'array',
+					'maxItems' => 50,
+					'items'    => self::text( '', 200, 'url-pattern' ),
+				),
+				// How often one visitor sees an invitation.
+				'frequency'      => self::choice( 'day', array( 'session', 'day', 'week', 'always' ) ),
+				// Skip visitors who have already opened the chat.
+				'skip_returning' => self::boolean( true ),
 			)
 		);
 	}

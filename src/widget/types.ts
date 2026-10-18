@@ -83,6 +83,19 @@ export interface DayHours {
 	end: string;
 }
 
+/** A proactive invitation (see `Chatlume\Frontend\DisplayRules::triggers()`). */
+export interface TriggerConfig {
+	action: 'teaser' | 'open';
+	message: string;
+	/** Seconds on the page (0: not used). */
+	delay: number;
+	/** Percent scrolled (0: not used). */
+	scroll: number;
+	exit: boolean;
+	frequency: 'session' | 'day' | 'week' | 'always';
+	skipReturning: boolean;
+}
+
 /** Rules applied in the browser (see `Chatlume\Frontend\DisplayRules::client_config()`). */
 export interface DisplayConfig {
 	devices: 'all' | 'desktop' | 'mobile';
@@ -92,6 +105,8 @@ export interface DisplayConfig {
 		timezone: string;
 		days: Partial< Record< string, DayHours > >;
 	};
+	/** Null when invitations are off or not for this page. */
+	triggers?: TriggerConfig | null;
 }
 
 export interface WidgetConfig {
@@ -129,6 +144,10 @@ export interface BehaviorConfig {
 	quick_actions: QuickAction[];
 	max_message_length: number;
 	store_conversations: boolean;
+	/** Microphone button (where the browser supports it). Missing from older cached configs. */
+	voice_input?: boolean;
+	/** "Read aloud" on answers (where the browser supports it). */
+	read_aloud?: boolean;
 }
 
 export interface Source {

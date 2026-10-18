@@ -471,6 +471,8 @@ class ChatController {
 			'quick_actions'       => self::quick_actions(),
 			'max_message_length'  => (int) Settings::get( 'chatbot.max_message_length', 1000 ),
 			'store_conversations' => (bool) Settings::get( 'privacy.store_conversations', true ),
+			'voice_input'         => (bool) Settings::get( 'chatbot.voice_input', true ),
+			'read_aloud'          => (bool) Settings::get( 'chatbot.read_aloud', true ),
 		);
 	}
 

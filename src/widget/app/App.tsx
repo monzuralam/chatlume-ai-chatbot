@@ -379,6 +379,7 @@ export function App( {
 					ui={ ui }
 					strings={ strings }
 					closed={ closed }
+					voice={ chat.behavior.voice_input !== false }
 					maxLength={ chat.behavior.max_message_length || 1000 }
 				/>
 				{ ui.brand.poweredBy && (

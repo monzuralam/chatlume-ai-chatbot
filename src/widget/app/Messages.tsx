@@ -1,9 +1,16 @@
 /**
  * The conversation: welcome, starters and quick actions, messages.
  */
-import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { markdownText, parseRichText } from '../lib/markdown';
+import {
+	canSpeak,
+	onSpeaking,
+	speak,
+	speakingId,
+	stopSpeaking,
+} from '../lib/voice';
 import type {
 	BehaviorConfig,
 	ChatMessage,
@@ -157,7 +164,16 @@ function MessageItem( {
 } ) {
 	const [ copied, setCopied ] = useState( false );
 	const [ thanked, setThanked ] = useState( false );
+	const [ reading, setReading ] = useState( speakingId() === message.id );
 	const bot = message.role === 'bot';
+	const readAloud = bot && chat.behavior.read_aloud !== false && canSpeak();
+
+	useEffect( () => {
+		if ( ! readAloud ) {
+			return undefined;
+		}
+		return onSpeaking( ( id ) => setReading( id === message.id ) );
+	}, [ readAloud, message.id ] );
 	const timestamps = ui.messages.timestamps;
 	const finished = message.status === 'done' || message.status === 'stopped';
 	const time = timeFormat.format( new Date( message.time ) );
@@ -282,6 +298,27 @@ function MessageItem( {
 										} )
 									}
 								/>
+								{ readAloud && (
+									<ActionButton
+										icon={ reading ? 'stop' : 'speaker' }
+										label={
+											reading
+												? strings.stopReading
+												: strings.readAloud
+										}
+										pressed={ reading }
+										onClick={ () =>
+											reading
+												? stopSpeaking()
+												: speak(
+														message.id,
+														markdownText(
+															message.text
+														)
+													)
+										}
+									/>
+								) }
 								{ !! message.serverId && (
 									<>
 										<ActionButton

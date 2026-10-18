@@ -240,21 +240,59 @@ class DisplayRules {
 	}
 
 	/**
-	 * Rules the browser applies: device and business hours.
+	 * Rules the browser applies: device, business hours, and proactive
+	 * invitations for this page.
 	 *
-	 * @return array{devices: string, hours: array<string, mixed>}
+	 * @return array{devices: string, hours: array<string, mixed>, triggers: array<string, mixed>|null}
 	 */
 	public static function client_config(): array {
 		$hours = (array) Settings::get( 'display.hours', array() );
 
 		return array(
-			'devices' => (string) Settings::get( 'display.devices', 'all' ),
-			'hours'   => array(
+			'devices'  => (string) Settings::get( 'display.devices', 'all' ),
+			'hours'    => array(
 				'enabled'  => ! empty( $hours['enabled'] ),
 				'behavior' => (string) ( $hours['behavior'] ?? 'offline' ),
 				'timezone' => wp_timezone_string(),
 				'days'     => (array) ( $hours['days'] ?? array() ),
 			),
+			'triggers' => self::triggers( (array) Settings::get( 'display.triggers', array() ) ),
+		);
+	}
+
+	/**
+	 * The invitation for a page, or null when invitations are off or the
+	 * page is not one of the chosen ones. Matched per address, so cached
+	 * pages stay correct.
+	 *
+	 * @param array<string, mixed>                                        $triggers Trigger settings.
+	 * @param array{object_id: int, post_type: string, path: string}|null $context  Request context (default: the current request).
+	 * @return array{action: string, message: string, delay: int, scroll: int, exit: bool, frequency: string, skipReturning: bool}|null
+	 */
+	public static function triggers( array $triggers, ?array $context = null ): ?array {
+		if ( empty( $triggers['enabled'] ) ) {
+			return null;
+		}
+
+		$rules = array(
+			'pages_mode'   => 'include' === ( $triggers['pages'] ?? 'all' ) ? 'include' : 'all',
+			'page_ids'     => (array) ( $triggers['page_ids'] ?? array() ),
+			'url_patterns' => (array) ( $triggers['url_patterns'] ?? array() ),
+		);
+		if ( ! self::page_matches( $rules, $context ?? self::request_context() ) ) {
+			return null;
+		}
+
+		$message = trim( (string) ( $triggers['message'] ?? '' ) );
+
+		return array(
+			'action'        => 'open' === ( $triggers['action'] ?? '' ) ? 'open' : 'teaser',
+			'message'       => '' !== $message ? $message : __( 'Hi there! Have a question? I can help.', 'chatlume-ai-chatbot' ),
+			'delay'         => max( 0, min( 600, (int) ( $triggers['delay'] ?? 0 ) ) ),
+			'scroll'        => max( 0, min( 100, (int) ( $triggers['scroll'] ?? 0 ) ) ),
+			'exit'          => ! empty( $triggers['exit_intent'] ),
+			'frequency'     => in_array( $triggers['frequency'] ?? '', array( 'session', 'day', 'week', 'always' ), true ) ? (string) $triggers['frequency'] : 'day',
+			'skipReturning' => ! empty( $triggers['skip_returning'] ),
 		);
 	}
 

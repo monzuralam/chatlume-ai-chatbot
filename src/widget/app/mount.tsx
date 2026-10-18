@@ -4,6 +4,7 @@
  */
 import { createRoot } from 'react-dom/client';
 
+import { stopSpeaking } from '../lib/voice';
 import appCss from '../styles/app.css?inline';
 import type { ChatApp, WidgetHost } from '../types';
 import { App, type AppApi } from './App';
@@ -29,6 +30,13 @@ export function mount( host: WidgetHost ): ChatApp {
 		}
 	};
 
+	// Reading aloud stops when the window closes.
+	const unwatch = host.onToggle( ( open ) => {
+		if ( ! open ) {
+			stopSpeaking();
+		}
+	} );
+
 	const root = createRoot( host.mount );
 	root.render(
 		<App
@@ -46,6 +54,8 @@ export function mount( host: WidgetHost ): ChatApp {
 		update: ( config ) => call( ( current ) => current.update( config ) ),
 		setState: ( state ) => call( ( current ) => current.setState( state ) ),
 		unmount: () => {
+			unwatch();
+			stopSpeaking();
 			root.unmount();
 			style.remove();
 		},

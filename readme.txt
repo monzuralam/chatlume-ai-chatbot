@@ -61,6 +61,10 @@ Add the **Chatlume Chat** block, or the shortcode `[chatlume height="600"]` (hei
 
 Chatlume stores no custom CSS, but the widget reads `--chatlume-*` CSS custom properties, so you can override them in Appearance > Customize > Additional CSS (or the Site Editor's Styles), for example `chatlume-widget { --chatlume-primary: #0a7d33; }`. Key elements can also be styled with `chatlume-widget::part(launcher)`, `::part(window)`, `::part(header)`, `::part(message-bot)`, `::part(message-user)`, `::part(composer)`, and `::part(source-card)`.
 
+= Where does voice input go? =
+
+Voice input and read-aloud use the visitor's own browser; Chatlume never receives or stores audio. Read-aloud uses the voices installed on the device. For speech recognition, some browsers (such as Google Chrome) send the audio to their maker's online service to turn it into text. You can turn either feature off in Chatlume > Chatbot > Voice.
+
 = What content does the bot learn from? =
 
 Published, public, non-password-protected pages and posts by default, and WooCommerce products when WooCommerce is active (with their current price, sale, and stock status). You can choose other public content types, add or leave out single items, and add a short text about your business such as opening hours and policies. Drafts, private content, and password-protected pages are never indexed. Developers can change or leave out any item with the `chatlume_knowledge_sources` filter.
@@ -97,6 +101,8 @@ Nothing is removed unless you enable **Delete all data on uninstall** in Chatlum
 * Knowledge documents: upload PDF, Word (DOCX), text, Markdown, CSV, and JSON files (up to 10 MB by default) for the bot to learn from. Only the extracted text is kept; the files themselves are never saved on your site.
 * WooCommerce: products visible in your shop are indexed automatically with their price as shoppers see it (including sales and price ranges), stock status, categories, SKU, attributes, and descriptions, and updated whenever a product, its stock, or a scheduled sale changes.
 * Knowledge page: choose what the bot learns from, upload documents by drag and drop, manage quick answers with inline editing and CSV import and export, and follow the index size, re-indexing progress, and embeddings in one place.
+* Proactive invitations: invite visitors with a message bubble or an opened chat after some time on the page, after scrolling, or when they are about to leave, on every page or only chosen ones, as often as you allow.
+* Voice: visitors can speak their questions and have answers read aloud, using their browser's built-in speech features.
 
 == External services ==
 
