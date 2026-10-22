@@ -216,7 +216,7 @@ export function StatusTab( {
 							</span>
 							<span className="chatlume:text-fg-muted">
 								{ sprintf(
-									/* translators: 1: Items done, 2: Items in total. */
+									/* translators: 1: Amount done or used, 2: Total or limit. */
 									__( '%1$s of %2$s', 'chatlume-ai-chatbot' ),
 									queue.done.toLocaleString(),
 									queue.total.toLocaleString()

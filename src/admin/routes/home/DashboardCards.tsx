@@ -86,7 +86,7 @@ function UsageBar( {
 				<span>{ label }</span>
 				<span>
 					{ sprintf(
-						/* translators: 1: Amount used, 2: Budget. */
+						/* translators: 1: Amount done or used, 2: Total or limit. */
 						__( '%1$s of %2$s', 'chatlume-ai-chatbot' ),
 						format( used ),
 						format( budget )

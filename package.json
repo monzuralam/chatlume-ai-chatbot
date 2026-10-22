@@ -38,7 +38,7 @@
 		"lint:php": "composer run phpcs",
 		"format": "wp-scripts format src tests/js",
 		"test": "wp-scripts test-unit-jest",
-		"i18n": "wp i18n make-pot . languages/chatlume-ai-chatbot.pot --exclude=node_modules,vendor,vendor-prefixed,tests,docs,src && wp i18n make-json languages --use-map=build/admin/map.json --no-purge",
+		"i18n": "wp i18n make-pot . languages/chatlume-ai-chatbot.pot --slug=chatlume-ai-chatbot --exclude=node_modules,vendor,vendor-prefixed,tests,docs,src",
 		"zip": "composer install --no-dev --optimize-autoloader && wp-scripts plugin-zip && composer install"
 	},
 	"dependencies": {

@@ -110,7 +110,7 @@ export function PagePicker( {
 									type="button"
 									className="chatlume:rounded-full chatlume:p-0.5 chatlume:hover:bg-accent chatlume:hover:text-white"
 									aria-label={ sprintf(
-										/* translators: %s: Page title. */
+										/* translators: %s: Name of the item to remove. */
 										__(
 											'Remove %s',
 											'chatlume-ai-chatbot'

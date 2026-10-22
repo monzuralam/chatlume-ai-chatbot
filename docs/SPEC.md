@@ -891,7 +891,7 @@ Implementation decisions (for review):
 - Scheduled events are not user data, so uninstall removes them even without the opt-in (a deleted plugin's events would only keep firing).
 - Verified live through WordPress's own Tools screens (confirmed requests, "Download personal data", "Erase personal data"), the Policy Guide, the Settings page, and the widget on the site; test data, requests, and export files were removed afterwards.
 
-Module 8.2 – Launcher size ✅ (2026-10-22, awaiting review)
+Module 8.2 – Launcher size ✅ (2026-10-22)
 - [x] The launcher is 6.06 KB gzipped (5.9 KiB, under the 6 KB budget; it was 8.0 KB): the chat app (`chatlume-app.js`) and the invitation code (`chatlume-triggers.js`) are separate webpack entries that the launcher adds with a plain script tag (versions from their `.asset.php` files, sent as `scripts` in the page configuration), so webpack's chunk-loading runtime is no longer in the launcher
 - [x] The theme configuration carries only the chosen launcher icon (`ui.launcher.path`, from `Appearance\LauncherIcons` and, in the Customizer, the same TypeScript list; a test keeps both identical), so the launcher no longer includes all twelve icons; stored configurations are rebuilt once (configuration format 2)
 - [x] The "chat opened" analytics event moved into the chat app (reported for the first open and every later one); the draft-preview notice is printed by the server (an enqueued inline style and an escaped element in the footer)
@@ -901,6 +901,15 @@ Module 8.2 – Launcher size ✅ (2026-10-22, awaiting review)
 Implementation decisions (for review):
 - The chat app is 27.6 KB gzipped (budget 45 KB); it now includes its own copy of a few small helpers it shared with the launcher.
 - Verified live: a page loads only the launcher; the first open adds the app script once (with its version) and the chat works; invitations add their script without loading the app; the Customizer preview (both backdrops) and the draft preview tab work; analytics still report every open.
+
+Module 8.3 – Test-suite gaps and i18n ✅ (2026-10-22, awaiting review)
+- [x] Audit of the Module 11 test list: every PHPUnit and Jest topic is covered; added the missing ones — Customizer undo/redo (steps, gesture grouping, no-op changes, redo cleared by a new change, 100-step limit), the control-to-state mapping (`setPath`/`getPath`/`resetSection`), and preview pages suppressing the live widget (never cached, no robots, draft widget instead)
+- [x] `languages/chatlume-ai-chatbot.pot` generated (1,725 strings) with no warnings: translator comments added where minification separated them from their strings, and one wording per repeated string
+- [x] Translations of the admin's lazily loaded pages and shared chunks: each chunk's translation file is read and added to the app's translations before it starts (skipped for English); verified live with a test translation of a Settings page string
+- [x] `npm run i18n` makes the .pot only (WordPress.org builds the JavaScript translation files)
+
+Implementation decisions (for review):
+- Theme schema migrations run only in PHP (`ThemeSchema::sanitize`), where they are already tested; the admin always receives current themes.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

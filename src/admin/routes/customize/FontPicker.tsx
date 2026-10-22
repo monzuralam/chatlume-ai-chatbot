@@ -309,7 +309,7 @@ export function FontUploads( {
 									className="chatlume:size-8"
 									disabled={ busy }
 									aria-label={ sprintf(
-										/* translators: %s: Font name. */
+										/* translators: %s: Name of the item to delete. */
 										__(
 											'Delete %s',
 											'chatlume-ai-chatbot'

@@ -98,6 +98,7 @@ class Assets {
 		);
 
 		wp_set_script_translations( self::HANDLE, 'chatlume-ai-chatbot', CHATLUME_PATH . 'languages' );
+		$this->add_chunk_translations();
 		wp_enqueue_script( self::HANDLE );
 
 		// The widget itself, for live previews (no floating launcher in the admin).
@@ -113,6 +114,42 @@ class Assets {
 		if ( is_readable( CHATLUME_PATH . 'build/admin/index.css' ) ) {
 			wp_enqueue_style( self::HANDLE, CHATLUME_URL . 'build/admin/index.css', array(), $ver );
 			wp_style_add_data( self::HANDLE, 'rtl', 'replace' );
+		}
+	}
+
+	/**
+	 * Translations of the app's lazily loaded pages. WordPress loads
+	 * translations only for registered scripts, so each chunk file is
+	 * registered briefly to read its translation file, and the strings are
+	 * added to the app's translations before it starts.
+	 *
+	 * @return void
+	 */
+	private function add_chunk_translations(): void {
+		if ( 'en_US' === determine_locale() ) {
+			return;
+		}
+
+		foreach ( (array) glob( CHATLUME_PATH . 'build/admin/*.js' ) as $file ) {
+			$name = basename( (string) $file, '.js' );
+			if ( 'index' === $name || ! preg_match( '/^[a-z0-9-]+$/', $name ) ) {
+				continue;
+			}
+
+			$handle = self::HANDLE . '-chunk-' . $name;
+			wp_register_script( $handle, CHATLUME_URL . 'build/admin/' . $name . '.js', array(), CHATLUME_VERSION, true );
+			$json = load_script_textdomain( $handle, 'chatlume-ai-chatbot', CHATLUME_PATH . 'languages' );
+			wp_deregister_script( $handle );
+
+			$data     = is_string( $json ) ? json_decode( $json, true ) : null;
+			$messages = is_array( $data ) ? ( $data['locale_data']['messages'] ?? $data['locale_data']['chatlume-ai-chatbot'] ?? null ) : null;
+			if ( is_array( $messages ) ) {
+				wp_add_inline_script(
+					self::HANDLE,
+					'wp.i18n.setLocaleData( ' . wp_json_encode( $messages ) . ', "chatlume-ai-chatbot" );',
+					'before'
+				);
+			}
 		}
 	}
 

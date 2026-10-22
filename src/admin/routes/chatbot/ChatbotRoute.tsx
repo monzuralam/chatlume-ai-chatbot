@@ -436,7 +436,7 @@ function ChatbotForm( {
 									className="chatlume:text-xs chatlume:tabular-nums chatlume:text-fg-muted"
 								>
 									{ sprintf(
-										/* translators: 1: Characters used, 2: Limit. */
+										/* translators: 1: Characters typed, 2: Maximum characters. */
 										__(
 											'%1$d / %2$d',
 											'chatlume-ai-chatbot'
@@ -497,7 +497,7 @@ function ChatbotForm( {
 										key={ index }
 										maxLength={ 120 }
 										aria-label={ sprintf(
-											/* translators: %d: Question number. */
+											/* translators: %d: Starter question number. */
 											__(
 												'Starter question %d',
 												'chatlume-ai-chatbot'

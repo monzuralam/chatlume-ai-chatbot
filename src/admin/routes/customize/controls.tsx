@@ -580,7 +580,7 @@ export function ImageControl( {
 						variant="ghost"
 						className="chatlume:size-8"
 						aria-label={ sprintf(
-							/* translators: %s: Image label. */
+							/* translators: %s: Name of the item to remove. */
 							__( 'Remove %s', 'chatlume-ai-chatbot' ),
 							label
 						) }

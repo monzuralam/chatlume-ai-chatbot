@@ -234,16 +234,17 @@ export function formatBytes( bytes: number ): string {
 	const amount = value.toLocaleString( undefined, {
 		maximumFractionDigits: value < 10 ? 1 : 0,
 	} );
-	if ( unit === 0 ) {
+	// One string per unit, each with its own translator comment (kept by the minifier).
+	const formats = [
 		/* translators: %s: Size in kilobytes. */
-		return sprintf( __( '%s KB', 'chatlume-ai-chatbot' ), amount );
-	}
-	if ( unit === 1 ) {
+		__( '%s KB', 'chatlume-ai-chatbot' ),
 		/* translators: %s: Size in megabytes. */
-		return sprintf( __( '%s MB', 'chatlume-ai-chatbot' ), amount );
-	}
-	/* translators: %s: Size in gigabytes. */
-	return sprintf( __( '%s GB', 'chatlume-ai-chatbot' ), amount );
+		__( '%s MB', 'chatlume-ai-chatbot' ),
+		/* translators: %s: Size in gigabytes. */
+		__( '%s GB', 'chatlume-ai-chatbot' ),
+	];
+	// One placeholder, filled directly (sprintf needs a literal format string).
+	return formats[ unit ].replace( '%s', amount );
 }
 
 /**

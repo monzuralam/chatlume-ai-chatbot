@@ -81,6 +81,28 @@ class PreviewModeTest extends TestCase {
 		$this->assertSame( '', PreviewMode::current(), 'The admin must still be allowed to manage Chatlume.' );
 	}
 
+	public function test_a_preview_page_hides_the_live_widget_and_is_never_cached(): void {
+		Functions\when( 'get_current_user_id' )->justReturn( 7 );
+		Functions\when( 'current_user_can' )->justReturn( true );
+
+		// Without a valid token nothing changes.
+		$_GET[ PreviewMode::PARAM ] = 'not-a-token';
+		( new PreviewMode() )->start();
+		$this->assertFalse( has_filter( 'chatlume_should_display_widget', '__return_false' ) );
+
+		PreviewMode::reset();
+		$_GET[ PreviewMode::PARAM ] = PreviewMode::token( 7, 'frame' )['token'];
+		$preview                    = new PreviewMode();
+		$preview->start();
+
+		$this->assertSame( 99, has_filter( 'chatlume_should_display_widget', '__return_false' ), 'The published widget is replaced by the draft.' );
+		$this->assertNotFalse( has_filter( 'wp_robots', 'wp_robots_no_robots' ) );
+		$this->assertNotFalse( has_action( 'send_headers', 'nocache_headers' ) );
+		$this->assertTrue( defined( 'DONOTCACHEPAGE' ) && DONOTCACHEPAGE );
+		$this->assertNotFalse( has_action( 'wp_enqueue_scripts', array( $preview, 'enqueue' ) ) );
+		$this->assertNotFalse( has_filter( 'show_admin_bar', '__return_false' ), 'The Customizer frame shows the page without the admin bar.' );
+	}
+
 	public function test_the_draft_notice_is_printed_by_the_server(): void {
 		ob_start();
 		PreviewMode::print_badge();

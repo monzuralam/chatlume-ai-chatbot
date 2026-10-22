@@ -527,7 +527,7 @@ export function DocumentsTab( {
 									size="icon"
 									variant="ghost"
 									aria-label={ sprintf(
-										/* translators: %s: File name. */
+										/* translators: %s: Name of the item to delete. */
 										__(
 											'Delete %s',
 											'chatlume-ai-chatbot'
