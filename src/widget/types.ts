@@ -38,6 +38,8 @@ export interface ThemeUi {
 		label: string;
 		attention: 'none' | 'pulse' | 'bounce' | 'badge';
 		teaser: string;
+		/** Path data of the chosen icon (resolved by the server or the Customizer). */
+		path?: string;
 	};
 	motion: 'scale' | 'slide' | 'none';
 	brand: {
@@ -113,6 +115,8 @@ export interface WidgetConfig {
 	rest: string;
 	assets: string;
 	version: string;
+	/** Versions of the scripts the launcher loads later (cache busting). */
+	scripts?: { app?: string; triggers?: string };
 	floating: boolean;
 	preload: boolean;
 	/** Missing in previews. */
@@ -244,8 +248,6 @@ export interface PreviewOptions {
 	samples?: Partial< PreviewSamples >;
 	/** Real AI replies through the admin-only Playground endpoint (Customizer "Live AI replies"). */
 	live?: { url: string; nonce: string } | null;
-	/** Notice shown on a draft preview of the site. */
-	badge?: string;
 }
 
 /** What the launcher hands to the lazily loaded chat app. */
@@ -297,5 +299,15 @@ declare global {
 			) => Promise< ChatApp >;
 		};
 		dataLayer?: unknown[];
+		/** Set by chatlume-app.js. */
+		ChatlumeApp?: { mount: ( host: WidgetHost ) => ChatApp };
+		/** Set by chatlume-triggers.js. */
+		ChatlumeTriggers?: {
+			watchTriggers: (
+				config: TriggerConfig,
+				fire: () => void
+			) => () => void;
+			recordInvitation: () => void;
+		};
 	}
 }

@@ -47,6 +47,11 @@ final class PreviewMode {
 	public const MODES = array( 'frame', 'site', 'sample' );
 
 	/**
+	 * Style handle of the draft notice.
+	 */
+	public const BADGE_HANDLE = 'chatlume-preview-badge';
+
+	/**
 	 * Mode of the current request, once checked.
 	 *
 	 * @var string|null
@@ -108,10 +113,26 @@ final class PreviewMode {
 			'samples'  => array(
 				'reply' => __( 'This is a sample reply. Draft previews never contact your AI provider, so there is no cost.', 'chatlume-ai-chatbot' ),
 			),
-			'badge'    => 'site' === $mode ? __( 'Draft preview: only you can see this. Replies are samples.', 'chatlume-ai-chatbot' ) : '',
 		);
 
 		WidgetLoader::configure( $config );
+
+		// In a tab of its own, a notice says the page shows a draft (printed by the server, not the launcher).
+		if ( 'site' === $mode ) {
+			wp_register_style( self::BADGE_HANDLE, false, array(), CHATLUME_VERSION );
+			wp_enqueue_style( self::BADGE_HANDLE );
+			wp_add_inline_style( self::BADGE_HANDLE, '.chatlume-preview-badge{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:2147483647;padding:8px 14px;border-radius:999px;background:#111827;color:#fff;font:500 13px/1.4 system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.2);pointer-events:none;max-width:calc(100vw - 32px);text-align:center}' );
+			add_action( 'wp_footer', array( self::class, 'print_badge' ) );
+		}
+	}
+
+	/**
+	 * The draft notice at the top of the page.
+	 *
+	 * @return void
+	 */
+	public static function print_badge(): void {
+		echo '<div class="chatlume-preview-badge" role="status">' . esc_html__( 'Draft preview: only you can see this. Replies are samples.', 'chatlume-ai-chatbot' ) . '</div>';
 	}
 
 	/**

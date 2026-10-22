@@ -12,6 +12,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 use Brain\Monkey\Functions;
+use Chatlume\Appearance\LauncherIcons;
 use Chatlume\Appearance\ThemeSchema;
 use Chatlume\Appearance\TokenResolver;
 use Chatlume\Tests\TestCase;
@@ -137,6 +138,32 @@ class AppearanceTest extends TestCase {
 		// Every visible change gives a new version hash.
 		$theme['colors']['light']['primary'] = '#000000';
 		$this->assertNotSame( $config['v'], TokenResolver::resolve( $theme )['v'] );
+	}
+
+	public function test_the_launcher_gets_only_the_chosen_icon(): void {
+		$theme                     = ThemeSchema::defaults();
+		$theme['launcher']['icon'] = 'heart';
+
+		$launcher = TokenResolver::resolve( $theme )['ui']['launcher'];
+
+		$this->assertSame( LauncherIcons::PATHS['heart'], $launcher['path'] );
+		$this->assertSame( 'heart', $launcher['icon'] );
+		$this->assertSame( LauncherIcons::PATHS['chat'], LauncherIcons::path( 'unknown' ) );
+	}
+
+	public function test_icon_lists_match_the_schema_and_the_customizer(): void {
+		$this->assertSame( ThemeSchema::LAUNCHER_ICONS, array_keys( LauncherIcons::PATHS ) );
+
+		// The Customizer draws the same icons from the TypeScript list.
+		$source = (string) file_get_contents( dirname( __DIR__, 3 ) . '/src/widget/launcher/icons.ts' ); // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- A local source file.
+		preg_match( '/LAUNCHER_ICONS[^=]*=\s*\{(.*?)\n\};/s', $source, $block );
+		preg_match_all( "/^\s*'?([a-z-]+)'?:\s*'([^']+)'/m", str_replace( "\n\t\t'", " '", $block[1] ?? '' ), $pairs, PREG_SET_ORDER );
+		$typescript = array();
+		foreach ( $pairs as $pair ) {
+			$typescript[ $pair[1] ] = $pair[2];
+		}
+
+		$this->assertSame( LauncherIcons::PATHS, $typescript );
 	}
 
 	public function test_minimal_header_uses_the_background(): void {

@@ -4,6 +4,7 @@
  * instantly without a server round trip. A shared fixture test keeps both
  * implementations identical.
  */
+import { LAUNCHER_ICONS } from '../../../widget/launcher/icons';
 import type { FontFaceSpec, ThemeConfig } from '../../../widget/types';
 import {
 	COLOR_TOKENS,
@@ -164,7 +165,13 @@ export function resolveTheme(
 			messages: theme.messages,
 			background: theme.background,
 			composer: theme.composer,
-			launcher: theme.launcher,
+			// Only the chosen icon, as the server sends it (see LauncherIcons.php).
+			launcher: {
+				...theme.launcher,
+				path:
+					LAUNCHER_ICONS[ theme.launcher.icon ] ??
+					LAUNCHER_ICONS.chat,
+			},
 			motion: theme.motion.open,
 			brand: theme.brand,
 		},

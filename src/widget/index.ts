@@ -3,15 +3,16 @@
  *
  * A tiny, dependency-free entry loaded with `defer`. It defines the
  * `<chatlume-widget>` element (Shadow DOM), applies the design tokens on
- * first paint, renders the floating launcher, and loads the chat app with a
- * dynamic `import()` on first open (or when idle, if preloading is on).
+ * first paint, renders the floating launcher, and adds the chat app script
+ * (chatlume-app.js) on first open (or when idle, if preloading is on).
+ * Separate scripts loaded with a plain script tag keep webpack's
+ * chunk-loading runtime out of this file, which has a 6 KB budget.
  *
  * Public API: `window.Chatlume.open()`, `.close()`, `.toggle()`,
  * `.send( text )`, and `.mountPreview( element, config )`.
  */
 import launcherCss from './styles/launcher.css?inline';
-import { CLOSE_ICON, LAUNCHER_ICONS, svgIcon } from './launcher/icons';
-import { track } from './lib/analytics';
+import { CLOSE_ICON, svgIcon } from './launcher/icons';
 import { isClosed, showFloating } from './lib/display';
 import { loadFonts } from './lib/fonts';
 import { read, write } from './lib/storage';
@@ -24,27 +25,54 @@ import type {
 	WidgetHost,
 } from './types';
 
-// eslint-disable-next-line camelcase, @typescript-eslint/no-unused-vars -- webpack's documented runtime variable (assigned, read by webpack).
-declare let __webpack_public_path__: string;
-
 const TAG = 'chatlume-widget';
 
-type AppModule = typeof import( './app/mount' );
-let appModule: Promise< AppModule > | null = null;
+/** The default launcher icon, when the configuration names none. */
+const CHAT_ICON = 'M4 5h16v11H9l-5 4z';
+
+/** Where the widget's scripts live and their versions (from the configuration). */
+let scripts: Pick< WidgetConfig, 'assets' | 'version' | 'scripts' > | null =
+	null;
+const loading: Record< string, Promise< void > > = {};
 
 /**
- * Loads the chat app chunk once.
+ * Adds one of the widget's scripts to the page once.
  *
- * @return The app module.
+ * @param name app or triggers.
+ * @return Resolves when the script has run.
  */
-function loadApp(): Promise< AppModule > {
-	if ( ! appModule ) {
-		appModule = import( /* webpackChunkName: "app" */ './app/mount' );
-		appModule.catch( () => {
-			appModule = null;
+function loadScript( name: 'app' | 'triggers' ): Promise< void > {
+	if ( ! loading[ name ] ) {
+		loading[ name ] = new Promise( ( resolve, reject ) => {
+			const script = document.createElement( 'script' );
+			script.src = `${ scripts?.assets ?? '' }chatlume-${ name }.js?ver=${ encodeURIComponent(
+				scripts?.scripts?.[ name ] ?? scripts?.version ?? ''
+			) }`;
+			script.async = true;
+			script.onload = () => resolve();
+			script.onerror = () => {
+				script.remove();
+				delete loading[ name ];
+				reject( new Error( name ) );
+			};
+			document.head.append( script );
 		} );
 	}
-	return appModule;
+	return loading[ name ];
+}
+
+/**
+ * Loads the chat app once.
+ *
+ * @return Mounts the app into a widget.
+ */
+function loadApp(): Promise< NonNullable< Window[ 'ChatlumeApp' ] > > {
+	return loadScript( 'app' ).then( () => {
+		if ( ! window.ChatlumeApp ) {
+			throw new Error( 'app' );
+		}
+		return window.ChatlumeApp;
+	} );
 }
 
 /**
@@ -91,19 +119,19 @@ class Controller implements WidgetHost {
 	site: boolean;
 	launcher: HTMLButtonElement | null = null;
 
-	private wrap: HTMLDivElement;
-	private tokens: HTMLStyleElement;
-	private opened = false;
-	private app: ChatApp | null = null;
-	private loading: Promise< ChatApp > | null = null;
-	private pending: string[] = [];
-	private listeners = new Set< ( open: boolean ) => void >();
-	private cleanups: Array< () => void > = [];
-	private compactQuery: MediaQueryList | null = null;
-	private unread: HTMLElement | null = null;
-	private teaser: HTMLElement | null = null;
-	private teaserText = '';
-	private savedOverflow: string | null = null;
+	#wrap: HTMLDivElement;
+	#tokens: HTMLStyleElement;
+	#opened = false;
+	#app: ChatApp | null = null;
+	#loading: Promise< ChatApp > | null = null;
+	#pending: string[] = [];
+	#listeners = new Set< ( open: boolean ) => void >();
+	#cleanups: Array< () => void > = [];
+	#compactQuery: MediaQueryList | null = null;
+	#unread: HTMLElement | null = null;
+	#teaser: HTMLElement | null = null;
+	#teaserText = '';
+	#savedOverflow: string | null = null;
 
 	constructor( element: HTMLElement, config: WidgetConfig ) {
 		this.element = element;
@@ -117,18 +145,18 @@ class Controller implements WidgetHost {
 
 		const base = document.createElement( 'style' );
 		base.textContent = launcherCss;
-		this.tokens = document.createElement( 'style' );
-		this.wrap = el( 'div', 'cl-root' );
+		this.#tokens = document.createElement( 'style' );
+		this.#wrap = el( 'div', 'cl-root' );
 		this.mount = el( 'div', 'cl-mount' );
-		this.wrap.append( this.mount );
-		this.root.append( base, this.tokens, this.wrap );
+		this.#wrap.append( this.mount );
+		this.root.append( base, this.#tokens, this.#wrap );
 
-		this.wrap.dir = pageDirection();
+		this.#wrap.dir = pageDirection();
 		if ( this.inline ) {
-			this.wrap.dataset.inline = '';
+			this.#wrap.dataset.inline = '';
 		}
 		if ( element.hasAttribute( 'data-contained' ) ) {
-			this.wrap.dataset.contained = '';
+			this.#wrap.dataset.contained = '';
 		}
 
 		const scheme =
@@ -136,9 +164,9 @@ class Controller implements WidgetHost {
 				? window.matchMedia( '(prefers-color-scheme: dark)' )
 				: null;
 		if ( scheme ) {
-			const onScheme = () => this.applyMode();
+			const onScheme = () => this.#applyMode();
 			scheme.addEventListener( 'change', onScheme );
-			this.cleanups.push( () =>
+			this.#cleanups.push( () =>
 				scheme.removeEventListener( 'change', onScheme )
 			);
 		}
@@ -150,7 +178,7 @@ class Controller implements WidgetHost {
 		}
 
 		if ( this.inline || ( this.preview && ! this.site ) ) {
-			this.startEmbedded();
+			this.#startEmbedded();
 		} else if ( config.preload ) {
 			whenIdle( () => {
 				loadApp().catch( () => undefined );
@@ -170,13 +198,14 @@ class Controller implements WidgetHost {
 			let stop = () => {
 				stopped = true;
 			};
-			this.cleanups.push( () => stop() );
-			import( /* webpackChunkName: "triggers" */ './lib/triggers' )
-				.then( ( module ) => {
-					if ( ! stopped ) {
+			this.#cleanups.push( () => stop() );
+			loadScript( 'triggers' )
+				.then( () => {
+					const module = window.ChatlumeTriggers;
+					if ( module && ! stopped ) {
 						stop = module.watchTriggers( triggers, () => {
 							module.recordInvitation();
-							this.invite( triggers );
+							this.#invite( triggers );
 						} );
 					}
 				} )
@@ -190,18 +219,18 @@ class Controller implements WidgetHost {
 	 *
 	 * @param triggers Invitation settings.
 	 */
-	private invite( triggers: TriggerConfig ): void {
-		if ( this.opened ) {
+	#invite( triggers: TriggerConfig ): void {
+		if ( this.#opened ) {
 			return;
 		}
 		if (
 			triggers.action === 'open' &&
-			! this.wrap.hasAttribute( 'data-compact' )
+			! this.#wrap.hasAttribute( 'data-compact' )
 		) {
 			this.open();
 			return;
 		}
-		this.renderTeaser( triggers.message, true );
+		this.#renderTeaser( triggers.message, true );
 		if ( this.launcher ) {
 			this.launcher.dataset.nudge = '';
 			window.setTimeout( () => {
@@ -211,31 +240,28 @@ class Controller implements WidgetHost {
 	}
 
 	isOpen(): boolean {
-		return this.opened;
+		return this.#opened;
 	}
 
 	open(): void {
-		if ( this.opened ) {
+		if ( this.#opened ) {
 			return;
 		}
-		this.opened = true;
-		this.wrap.dataset.open = '';
-		this.syncLauncherState();
-		this.hideTeaser( false );
-		if ( this.unread ) {
-			this.unread.hidden = true;
+		this.#opened = true;
+		this.#wrap.dataset.open = '';
+		this.#syncLauncherState();
+		this.#hideTeaser( false );
+		if ( this.#unread ) {
+			this.#unread.hidden = true;
 		}
 		if ( ! this.inline && ! this.preview ) {
 			write( 'seen', true );
 		}
-		if ( ! this.preview ) {
-			track( this.config.analytics, 'chat_open' );
-		}
-		this.syncScrollLock();
-		this.emit();
+		this.#syncScrollLock();
+		this.#emit();
 		this.ensureApp()
 			.then( ( app ) => {
-				if ( this.opened ) {
+				if ( this.#opened ) {
 					app.focus();
 				}
 			} )
@@ -243,23 +269,23 @@ class Controller implements WidgetHost {
 	}
 
 	close(): void {
-		if ( ! this.opened || this.inline ) {
+		if ( ! this.#opened || this.inline ) {
 			return;
 		}
 		const hadFocus =
 			this.element.ownerDocument.activeElement === this.element;
-		this.opened = false;
-		delete this.wrap.dataset.open;
-		this.syncLauncherState();
-		this.syncScrollLock();
-		this.emit();
+		this.#opened = false;
+		delete this.#wrap.dataset.open;
+		this.#syncLauncherState();
+		this.#syncScrollLock();
+		this.#emit();
 		if ( hadFocus ) {
 			this.launcher?.focus();
 		}
 	}
 
 	toggle(): void {
-		if ( this.opened ) {
+		if ( this.#opened ) {
 			this.close();
 		} else {
 			this.open();
@@ -272,26 +298,26 @@ class Controller implements WidgetHost {
 			return;
 		}
 		this.open();
-		if ( this.app ) {
-			this.app.send( message );
+		if ( this.#app ) {
+			this.#app.send( message );
 		} else {
-			this.pending.push( message );
+			this.#pending.push( message );
 		}
 	}
 
 	notify(): void {
-		if ( ! this.opened && this.unread ) {
-			this.unread.hidden = false;
+		if ( ! this.#opened && this.#unread ) {
+			this.#unread.hidden = false;
 		}
 	}
 
 	onToggle( listener: ( open: boolean ) => void ): () => void {
-		this.listeners.add( listener );
-		return () => this.listeners.delete( listener );
+		this.#listeners.add( listener );
+		return () => this.#listeners.delete( listener );
 	}
 
 	setDirection( direction: 'ltr' | 'rtl' ): void {
-		this.wrap.dir = direction;
+		this.#wrap.dir = direction;
 	}
 
 	setTheme( theme: ThemeConfig ): void {
@@ -300,15 +326,15 @@ class Controller implements WidgetHost {
 		}
 		this.config = { ...this.config, theme };
 		loadFonts( theme.fonts );
-		this.tokens.textContent = themeCss( theme );
-		this.wrap.dataset.position = theme.ui.position;
-		this.wrap.dataset.style = this.inline ? 'inline' : theme.ui.style;
-		this.applyMode();
-		this.watchCompact( theme.ui.fullscreenBelow );
+		this.#tokens.textContent = themeCss( theme );
+		this.#wrap.dataset.position = theme.ui.position;
+		this.#wrap.dataset.style = this.inline ? 'inline' : theme.ui.style;
+		this.#applyMode();
+		this.#watchCompact( theme.ui.fullscreenBelow );
 		if ( ! this.inline ) {
-			this.renderLauncher();
+			this.#renderLauncher();
 		}
-		this.app?.update( { theme } );
+		this.#app?.update( { theme } );
 	}
 
 	/**
@@ -317,34 +343,34 @@ class Controller implements WidgetHost {
 	 * @return The mounted app.
 	 */
 	ensureApp(): Promise< ChatApp > {
-		if ( ! this.loading ) {
+		if ( ! this.#loading ) {
 			this.launcher?.setAttribute( 'aria-busy', 'true' );
-			this.loading = loadApp()
+			this.#loading = loadApp()
 				.then( ( module ) => {
 					const app = module.mount( this );
-					this.app = app;
-					this.pending
+					this.#app = app;
+					this.#pending
 						.splice( 0 )
 						.forEach( ( text ) => app.send( text ) );
 					return app;
 				} )
 				.finally( () => this.launcher?.removeAttribute( 'aria-busy' ) );
-			this.loading.catch( () => {
-				this.loading = null;
+			this.#loading.catch( () => {
+				this.#loading = null;
 			} );
 		}
-		return this.loading;
+		return this.#loading;
 	}
 
 	destroy(): void {
-		this.cleanups.splice( 0 ).forEach( ( cleanup ) => cleanup() );
-		this.compactQuery = null;
-		this.app?.unmount();
-		this.app = null;
-		this.loading = null;
-		if ( this.opened ) {
-			this.opened = false;
-			this.syncScrollLock();
+		this.#cleanups.splice( 0 ).forEach( ( cleanup ) => cleanup() );
+		this.#compactQuery = null;
+		this.#app?.unmount();
+		this.#app = null;
+		this.#loading = null;
+		if ( this.#opened ) {
+			this.#opened = false;
+			this.#syncScrollLock();
 		}
 		if ( primary === this ) {
 			primary = null;
@@ -355,7 +381,7 @@ class Controller implements WidgetHost {
 	 * Inline and preview widgets are always open; inline ones load when
 	 * they come near the viewport.
 	 */
-	private startEmbedded(): void {
+	#startEmbedded(): void {
 		const begin = () => this.open();
 		if ( this.preview || ! ( 'IntersectionObserver' in window ) ) {
 			begin();
@@ -371,75 +397,75 @@ class Controller implements WidgetHost {
 			{ rootMargin: '300px' }
 		);
 		observer.observe( this.element );
-		this.cleanups.push( () => observer.disconnect() );
+		this.#cleanups.push( () => observer.disconnect() );
 	}
 
-	private applyMode(): void {
+	#applyMode(): void {
 		this.element.dataset.mode = resolveMode( this.config.theme.ui.mode );
 	}
 
-	private watchCompact( below: number ): void {
+	#watchCompact( below: number ): void {
 		if ( typeof window.matchMedia !== 'function' ) {
 			return;
 		}
 		const width = Math.max( 0, Math.round( Number( below ) || 0 ) );
 		const query = window.matchMedia( `(max-width: ${ width }px)` );
-		if ( this.compactQuery?.media === query.media ) {
-			this.applyCompact();
+		if ( this.#compactQuery?.media === query.media ) {
+			this.#applyCompact();
 			return;
 		}
-		this.compactQuery = query;
-		const onChange = () => this.applyCompact();
+		this.#compactQuery = query;
+		const onChange = () => this.#applyCompact();
 		query.addEventListener( 'change', onChange );
-		this.cleanups.push( () =>
+		this.#cleanups.push( () =>
 			query.removeEventListener( 'change', onChange )
 		);
-		this.applyCompact();
+		this.#applyCompact();
 	}
 
-	private applyCompact(): void {
+	#applyCompact(): void {
 		const compact =
 			! this.inline &&
-			! this.wrap.hasAttribute( 'data-contained' ) &&
-			!! this.compactQuery?.matches;
-		this.toggleData( 'compact', compact );
-		this.toggleData(
+			! this.#wrap.hasAttribute( 'data-contained' ) &&
+			!! this.#compactQuery?.matches;
+		this.#toggleData( 'compact', compact );
+		this.#toggleData(
 			'fullscreen',
 			compact && this.config.theme.ui.mobileFullscreen
 		);
-		this.syncScrollLock();
+		this.#syncScrollLock();
 	}
 
-	private toggleData( name: string, on: boolean ): void {
+	#toggleData( name: string, on: boolean ): void {
 		if ( on ) {
-			this.wrap.dataset[ name ] = '';
+			this.#wrap.dataset[ name ] = '';
 		} else {
-			delete this.wrap.dataset[ name ];
+			delete this.#wrap.dataset[ name ];
 		}
 	}
 
 	/**
 	 * Locks page scrolling behind a full-screen window or a modal.
 	 */
-	private syncScrollLock(): void {
+	#syncScrollLock(): void {
 		const style = this.config.theme.ui.style;
 		const lock =
-			this.opened &&
+			this.#opened &&
 			! this.inline &&
-			! this.wrap.hasAttribute( 'data-contained' ) &&
-			( this.wrap.hasAttribute( 'data-fullscreen' ) ||
+			! this.#wrap.hasAttribute( 'data-contained' ) &&
+			( this.#wrap.hasAttribute( 'data-fullscreen' ) ||
 				style === 'modal' );
 		const html = document.documentElement;
-		if ( lock && this.savedOverflow === null ) {
-			this.savedOverflow = html.style.overflow;
+		if ( lock && this.#savedOverflow === null ) {
+			this.#savedOverflow = html.style.overflow;
 			html.style.overflow = 'hidden';
-		} else if ( ! lock && this.savedOverflow !== null ) {
-			html.style.overflow = this.savedOverflow;
-			this.savedOverflow = null;
+		} else if ( ! lock && this.#savedOverflow !== null ) {
+			html.style.overflow = this.#savedOverflow;
+			this.#savedOverflow = null;
 		}
 	}
 
-	private renderLauncher(): void {
+	#renderLauncher(): void {
 		const { ui } = this.config.theme;
 		const options = ui.launcher;
 		const strings = this.config.strings;
@@ -450,7 +476,7 @@ class Controller implements WidgetHost {
 			this.launcher.setAttribute( 'part', 'launcher' );
 			this.launcher.setAttribute( 'aria-haspopup', 'dialog' );
 			this.launcher.addEventListener( 'click', () => this.toggle() );
-			this.wrap.append( this.launcher );
+			this.#wrap.append( this.launcher );
 		}
 
 		const button = this.launcher;
@@ -474,9 +500,7 @@ class Controller implements WidgetHost {
 			image.decoding = 'async';
 			openIcon.append( image );
 		} else {
-			openIcon.append(
-				svgIcon( LAUNCHER_ICONS[ options.icon ] ?? LAUNCHER_ICONS.chat )
-			);
+			openIcon.append( svgIcon( options.path || CHAT_ICON ) );
 		}
 		const closeIcon = el( 'span', 'cl-icon-close' );
 		closeIcon.append( svgIcon( CLOSE_ICON ) );
@@ -489,12 +513,12 @@ class Controller implements WidgetHost {
 			button.append( label );
 		}
 
-		this.unread = el( 'span', 'cl-unread' );
-		this.unread.hidden = true;
+		this.#unread = el( 'span', 'cl-unread' );
+		this.#unread.hidden = true;
 		const unreadText = el( 'span', 'cl-sr' );
 		unreadText.textContent = strings.newMessage ?? '';
-		this.unread.append( unreadText );
-		button.append( this.unread );
+		this.#unread.append( unreadText );
+		button.append( this.#unread );
 
 		const seen = this.preview ? false : read( 'seen', false );
 		if ( options.attention === 'badge' && ! seen ) {
@@ -504,16 +528,16 @@ class Controller implements WidgetHost {
 			button.append( badge );
 		}
 
-		this.renderTeaser( options.teaser );
-		this.syncLauncherState();
+		this.#renderTeaser( options.teaser );
+		this.#syncLauncherState();
 	}
 
-	private renderTeaser( text: string, invitation = false ): void {
-		this.teaser?.remove();
-		this.teaser = null;
+	#renderTeaser( text: string, invitation = false ): void {
+		this.#teaser?.remove();
+		this.#teaser = null;
 		const dismissed =
 			this.preview || invitation ? false : read( 'teaser', '' ) === text;
-		if ( ! text || dismissed || this.opened ) {
+		if ( ! text || dismissed || this.#opened ) {
 			return;
 		}
 
@@ -523,7 +547,7 @@ class Controller implements WidgetHost {
 			// Announced to screen readers, since it appears on its own.
 			teaser.setAttribute( 'role', 'status' );
 		}
-		this.teaserText = text;
+		this.#teaserText = text;
 		const message = el( 'span', 'cl-teaser-text' );
 		message.textContent = text;
 		message.addEventListener( 'click', () => this.open() );
@@ -533,41 +557,41 @@ class Controller implements WidgetHost {
 		close.append( svgIcon( CLOSE_ICON ) );
 		close.addEventListener( 'click', ( event ) => {
 			event.stopPropagation();
-			this.hideTeaser( true );
+			this.#hideTeaser( true );
 		} );
 		teaser.append( message, close );
-		this.wrap.append( teaser );
-		this.teaser = teaser;
+		this.#wrap.append( teaser );
+		this.#teaser = teaser;
 	}
 
-	private hideTeaser( remember: boolean ): void {
-		if ( ! this.teaser ) {
+	#hideTeaser( remember: boolean ): void {
+		if ( ! this.#teaser ) {
 			return;
 		}
 		if ( remember && ! this.preview ) {
-			write( 'teaser', this.teaserText );
+			write( 'teaser', this.#teaserText );
 		}
-		this.teaser.remove();
-		this.teaser = null;
+		this.#teaser.remove();
+		this.#teaser = null;
 	}
 
-	private syncLauncherState(): void {
+	#syncLauncherState(): void {
 		if ( ! this.launcher ) {
 			return;
 		}
 		const strings = this.config.strings;
-		this.launcher.setAttribute( 'aria-expanded', String( this.opened ) );
+		this.launcher.setAttribute( 'aria-expanded', String( this.#opened ) );
 		this.launcher.setAttribute(
 			'aria-label',
-			( this.opened ? strings.close : strings.open ) ?? ''
+			( this.#opened ? strings.close : strings.open ) ?? ''
 		);
-		if ( this.opened ) {
+		if ( this.#opened ) {
 			this.launcher.querySelector( '.cl-badge' )?.remove();
 		}
 	}
 
-	private emit(): void {
-		this.listeners.forEach( ( listener ) => listener( this.opened ) );
+	#emit(): void {
+		this.#listeners.forEach( ( listener ) => listener( this.#opened ) );
 	}
 }
 
@@ -607,9 +631,8 @@ function mountPreview(
 	config: WidgetConfig
 ): Promise< ChatApp > {
 	define();
-	if ( config.assets && ! window.chatlumeWidgetConfig ) {
-		// eslint-disable-next-line camelcase -- webpack's documented runtime variable.
-		__webpack_public_path__ = config.assets;
+	if ( ! scripts ) {
+		scripts = config;
 	}
 	const widget = document.createElement( TAG ) as ChatlumeWidget;
 	widget.chatlumeConfig = {
@@ -627,7 +650,7 @@ function mountPreview(
 /**
  * Draft preview on a real page: inside the Customizer's frame (pinned open,
  * updated by the Customizer) or in a tab of its own (a normal floating
- * widget with sample replies and a notice).
+ * widget with sample replies; the server prints the notice above it).
  *
  * @param config Page configuration.
  */
@@ -638,16 +661,6 @@ function startDraftPreview( config: WidgetConfig ): void {
 		widget.setAttribute( 'data-site', '' );
 	}
 	document.body.append( widget );
-
-	const text = config.preview?.badge;
-	if ( text ) {
-		const badge = document.createElement( 'div' );
-		badge.setAttribute( 'role', 'status' );
-		badge.textContent = text;
-		badge.style.cssText =
-			'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:2147483647;padding:8px 14px;border-radius:999px;background:#111827;color:#fff;font:500 13px/1.4 system-ui,sans-serif;box-shadow:0 4px 16px rgba(0,0,0,.2);pointer-events:none;max-width:calc(100vw - 32px);text-align:center';
-		document.body.append( badge );
-	}
 }
 
 /**
@@ -672,8 +685,7 @@ function start(): void {
 
 	const config = window.chatlumeWidgetConfig;
 	if ( config?.assets ) {
-		// eslint-disable-next-line camelcase -- webpack's documented runtime variable.
-		__webpack_public_path__ = config.assets;
+		scripts = config;
 	}
 
 	window.Chatlume = {

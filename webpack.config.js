@@ -64,14 +64,20 @@ const widgetRules = scriptConfig.module.rules.map( ( rule ) =>
 const widget = {
 	...scriptConfig,
 	name: 'widget',
+	// The launcher loads the chat app and the invitation code as plain scripts
+	// (not webpack chunks), which keeps webpack's chunk runtime out of the
+	// launcher's 6 KB budget. Each entry gets its own .asset.php version.
 	entry: {
 		index: path.resolve( __dirname, 'src/widget/index.ts' ),
+		'chatlume-app': path.resolve( __dirname, 'src/widget/app/entry.ts' ),
+		'chatlume-triggers': path.resolve(
+			__dirname,
+			'src/widget/lib/triggers-entry.ts'
+		),
 	},
 	output: {
 		...scriptConfig.output,
 		path: path.resolve( __dirname, 'build/widget' ),
-		// Lazy chunks are named so optimization plugins can be told to leave them alone.
-		chunkFilename: 'chatlume-[name].js?ver=[contenthash]',
 	},
 	resolve: {
 		...scriptConfig.resolve,
@@ -127,10 +133,13 @@ const widget = {
 		// One lazy chunk for the chat app (Preact included).
 		splitChunks: false,
 	},
+	// Guards the launcher, which loads on every page (budget: 6 KB gzipped,
+	// about 18 KB minified). The chat app loads only when a visitor opens it.
 	performance: {
 		hints: 'warning',
-		maxEntrypointSize: 60 * 1024,
-		maxAssetSize: 200 * 1024,
+		assetFilter: ( name ) => name === 'index.js',
+		maxEntrypointSize: 20 * 1024,
+		maxAssetSize: 20 * 1024,
 	},
 };
 

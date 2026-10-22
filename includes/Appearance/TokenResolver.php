@@ -34,6 +34,12 @@ final class TokenResolver {
 	public const THEME_OPTION = 'chatlume_theme';
 
 	/**
+	 * Shape of the stored widget configuration; raise it when the resolved
+	 * output gains or changes fields (2: the launcher icon's path).
+	 */
+	private const FORMAT = 2;
+
+	/**
 	 * Shadow presets.
 	 */
 	private const SHADOWS = array(
@@ -124,12 +130,14 @@ final class TokenResolver {
 	}
 
 	/**
-	 * Identifies the plugin version and address the stored URLs belong to.
+	 * Identifies the plugin version, the address the stored URLs belong to,
+	 * and the shape of the configuration (FORMAT), so a stored copy is
+	 * rebuilt whenever any of them changes.
 	 *
 	 * @return string
 	 */
 	private static function build(): string {
-		return substr( md5( CHATLUME_VERSION . '|' . CHATLUME_URL ), 0, 8 );
+		return substr( md5( CHATLUME_VERSION . '|' . CHATLUME_URL . '|' . self::FORMAT ), 0, 8 );
 	}
 
 	/**
@@ -210,7 +218,8 @@ final class TokenResolver {
 			'messages'         => $theme['messages'],
 			'background'       => $theme['background'],
 			'composer'         => $theme['composer'],
-			'launcher'         => $theme['launcher'],
+			// Only the chosen icon's drawing, so the launcher script does not carry all of them.
+			'launcher'         => array_merge( $theme['launcher'], array( 'path' => LauncherIcons::path( (string) $theme['launcher']['icon'] ) ) ),
 			'motion'           => $theme['motion']['open'],
 			'brand'            => $theme['brand'],
 		);

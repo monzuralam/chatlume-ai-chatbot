@@ -1,9 +1,10 @@
 /**
- * Chat app entry (lazy chunk): renders the window into the widget's
+ * Chat app (chatlume-app.js, loaded on first open): renders the window into the widget's
  * shadow root and returns the imperative API the launcher uses.
  */
 import { createRoot } from 'react-dom/client';
 
+import { track } from '../lib/analytics';
 import { stopSpeaking } from '../lib/voice';
 import appCss from '../styles/app.css?inline';
 import type { ChatApp, WidgetHost } from '../types';
@@ -30,9 +31,21 @@ export function mount( host: WidgetHost ): ChatApp {
 		}
 	};
 
+	// "Chat opened" for the site's analytics: the first open loaded this app, later ones are watched.
+	const opened = () => {
+		if ( ! host.preview ) {
+			track( host.config.analytics, 'chat_open' );
+		}
+	};
+	if ( host.isOpen() ) {
+		opened();
+	}
+
 	// Reading aloud stops when the window closes.
 	const unwatch = host.onToggle( ( open ) => {
-		if ( ! open ) {
+		if ( open ) {
+			opened();
+		} else {
 			stopSpeaking();
 		}
 	} );

@@ -1,6 +1,8 @@
 /**
  * Built-in launcher icons: 24×24 line drawings (path data only), drawn for
- * Chatlume. Names match `ThemeSchema::LAUNCHER_ICONS`.
+ * Chatlume. Names match `ThemeSchema::LAUNCHER_ICONS`. The server sends the
+ * chosen icon with the theme (`LauncherIcons.php`, kept identical by a test),
+ * so the launcher itself includes only the close icon and `svgIcon()`.
  */
 export const LAUNCHER_ICONS: Record< string, string > = {
 	chat: 'M4 5h16v11H9l-5 4z',

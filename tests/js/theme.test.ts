@@ -21,6 +21,7 @@ import {
 } from '../../src/admin/lib/theme/presets';
 import { resolveTheme } from '../../src/admin/lib/theme/resolve';
 import type { Theme } from '../../src/admin/lib/theme/types';
+import { LAUNCHER_ICONS } from '../../src/widget/launcher/icons';
 
 const theme = defaults as unknown as Theme;
 
@@ -44,6 +45,23 @@ describe( 'resolveTheme', () => {
 			header: { style: 'minimal', gradientAngle: 90 },
 		} );
 		expect( minimal.light[ '--chatlume-header-ink' ] ).toBe( '#1f2330' );
+	} );
+
+	it( 'gives the launcher only the chosen icon', () => {
+		const heart = resolveTheme( {
+			...theme,
+			launcher: { ...theme.launcher, icon: 'heart' },
+		} );
+		expect( heart.ui.launcher.path ).toBe( LAUNCHER_ICONS.heart );
+		const unknown = resolveTheme( {
+			...theme,
+			// An unknown name from an old saved theme.
+			launcher: {
+				...theme.launcher,
+				icon: 'not-an-icon' as Theme[ 'launcher' ][ 'icon' ],
+			},
+		} );
+		expect( unknown.ui.launcher.path ).toBe( LAUNCHER_ICONS.chat );
 	} );
 } );
 

@@ -880,7 +880,7 @@ Approved decisions:
 - The first release is version 1.0.0.
 - Release tests run on throwaway WordPress installs in subfolders of the development site (their own table prefixes), deleted afterwards.
 
-Module 8.1 – Privacy and uninstall ✅ (2026-10-22, awaiting review)
+Module 8.1 – Privacy and uninstall ✅ (2026-10-22)
 - [x] `Privacy\PrivacyHandler`: Tools > Export Personal Data and Erase Personal Data find a person's conversations by the email they left in the lead form or by their WordPress account; the export holds each conversation's times, page, language, name and email, rating, and transcript (20 per page); erasing deletes those conversations with their messages (50 per request)
 - [x] Suggested privacy policy text (Settings > Privacy > Policy Guide): what the chat collects, the one-way IP code, what goes to the AI service, retention, browser storage (no cookies), emails, and Turnstile
 - [x] Optional privacy notice under the message box (`privacy.chat_notice`: bold, italics, links; off by default), with "Use the suggested text" linking to the site's privacy policy page; translatable on the Widget texts page
@@ -890,6 +890,17 @@ Implementation decisions (for review):
 - Admin Playground and ability test conversations (`is_test`) are not part of exports or erasure; they hold no visitor data.
 - Scheduled events are not user data, so uninstall removes them even without the opt-in (a deleted plugin's events would only keep firing).
 - Verified live through WordPress's own Tools screens (confirmed requests, "Download personal data", "Erase personal data"), the Policy Guide, the Settings page, and the widget on the site; test data, requests, and export files were removed afterwards.
+
+Module 8.2 – Launcher size ✅ (2026-10-22, awaiting review)
+- [x] The launcher is 6.06 KB gzipped (5.9 KiB, under the 6 KB budget; it was 8.0 KB): the chat app (`chatlume-app.js`) and the invitation code (`chatlume-triggers.js`) are separate webpack entries that the launcher adds with a plain script tag (versions from their `.asset.php` files, sent as `scripts` in the page configuration), so webpack's chunk-loading runtime is no longer in the launcher
+- [x] The theme configuration carries only the chosen launcher icon (`ui.launcher.path`, from `Appearance\LauncherIcons` and, in the Customizer, the same TypeScript list; a test keeps both identical), so the launcher no longer includes all twelve icons; stored configurations are rebuilt once (configuration format 2)
+- [x] The "chat opened" analytics event moved into the chat app (reported for the first open and every later one); the draft-preview notice is printed by the server (an enqueued inline style and an escaped element in the footer)
+- [x] The launcher's private members are native private class members, which the minifier shortens
+- [x] Webpack's size warning now guards the launcher alone (20 KiB minified)
+
+Implementation decisions (for review):
+- The chat app is 27.6 KB gzipped (budget 45 KB); it now includes its own copy of a few small helpers it shared with the launcher.
+- Verified live: a page loads only the launcher; the first open adds the app script once (with its version) and the chat works; invitations add their script without loading the app; the Customizer preview (both backdrops) and the draft preview tab work; analytics still report every open.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

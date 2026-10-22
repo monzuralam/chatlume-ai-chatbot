@@ -81,6 +81,14 @@ class PreviewModeTest extends TestCase {
 		$this->assertSame( '', PreviewMode::current(), 'The admin must still be allowed to manage Chatlume.' );
 	}
 
+	public function test_the_draft_notice_is_printed_by_the_server(): void {
+		ob_start();
+		PreviewMode::print_badge();
+		$html = (string) ob_get_clean();
+
+		$this->assertSame( '<div class="chatlume-preview-badge" role="status">Draft preview: only you can see this. Replies are samples.</div>', $html );
+	}
+
 	public function test_presets_are_saved_sanitized_and_limited(): void {
 		$theme                               = ThemeSchema::defaults();
 		$theme['colors']['light']['primary'] = 'not a color';

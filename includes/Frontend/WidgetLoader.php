@@ -85,6 +85,23 @@ class WidgetLoader {
 	}
 
 	/**
+	 * Build versions of the scripts the launcher loads on demand, for cache
+	 * busting (the plugin version when a build file is missing).
+	 *
+	 * @return array{app: string, triggers: string}
+	 */
+	public static function script_versions(): array {
+		$versions = array();
+		foreach ( array( 'app', 'triggers' ) as $name ) {
+			$file              = CHATLUME_PATH . 'build/widget/chatlume-' . $name . '.asset.php';
+			$asset             = is_readable( $file ) ? require $file : array();
+			$versions[ $name ] = is_array( $asset ) && isset( $asset['version'] ) ? (string) $asset['version'] : CHATLUME_VERSION;
+		}
+
+		return $versions;
+	}
+
+	/**
 	 * Whether the widget bundle exists.
 	 *
 	 * @return bool
@@ -182,6 +199,8 @@ class WidgetLoader {
 			array(
 				'rest'      => esc_url_raw( rest_url( Plugin::REST_NAMESPACE . '/' ) ),
 				'assets'    => CHATLUME_URL . 'build/widget/',
+				// Versions of the scripts the launcher adds later (chat app, invitations).
+				'scripts'   => self::script_versions(),
 				'version'   => CHATLUME_VERSION,
 				'floating'  => $floating,
 				'preload'   => (bool) Settings::get( 'display.preload', false ),

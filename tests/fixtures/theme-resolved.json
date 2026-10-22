@@ -107,7 +107,8 @@
             "size": "m",
             "label": "",
             "attention": "none",
-            "teaser": ""
+            "teaser": "",
+            "path": "M4 5h16v11H9l-5 4z"
         },
         "motion": "scale",
         "brand": {
