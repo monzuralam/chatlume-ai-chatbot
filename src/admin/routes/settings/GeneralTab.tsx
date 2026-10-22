@@ -2,7 +2,7 @@
  * Settings > General: limits, streaming, cache, privacy, troubleshooting,
  * and import/export.
  */
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { Eraser, TriangleAlert } from 'lucide-react';
 import { useEffect, useId } from 'react';
 import {
@@ -36,6 +36,7 @@ import {
 	type Settings,
 } from '../../lib/settingsSchema';
 import { cn } from '../../lib/utils';
+import { getBootstrap } from '../../lib/bootstrap';
 import { ImportExport } from './ImportExport';
 
 type FormValues = Omit< GeneralSettingsForm, 'security' > & {
@@ -135,6 +136,7 @@ export function GeneralTab() {
 	const clearCache = useClearCache();
 	const proxyId = useId();
 	const ipsId = useId();
+	const noticeId = useId();
 
 	const form = useForm< FormValues >( { resolver } );
 	const {
@@ -210,6 +212,21 @@ export function GeneralTab() {
 
 	const proxy = form.watch( 'security.trusted_proxy' );
 	const deleteOnUninstall = form.watch( 'privacy.delete_data_on_uninstall' );
+	const chatNotice = form.watch( 'privacy.chat_notice' );
+	const privacyUrl = getBootstrap().privacyUrl;
+	const suggestedNotice = privacyUrl
+		? sprintf(
+				/* translators: %s: Privacy policy address. */
+				__(
+					'By chatting, you agree to our <a href="%s">privacy policy</a>.',
+					'chatlume-ai-chatbot'
+				),
+				privacyUrl
+			)
+		: __(
+				'By chatting, you agree to our privacy policy.',
+				'chatlume-ai-chatbot'
+			);
 	const storeConversations = form.watch( 'privacy.store_conversations' );
 
 	return (
@@ -522,6 +539,54 @@ export function GeneralTab() {
 								errors.privacy?.retention_days?.message
 							) }
 						/>
+					) }
+					<Field
+						id={ noticeId }
+						label={ __(
+							'Privacy notice in the chat',
+							'chatlume-ai-chatbot'
+						) }
+						hint={ __(
+							'Shown under the message box, for example with a link to your privacy policy. Bold, italics, and links are allowed. Leave empty to show nothing. Translate it on the Widget texts page.',
+							'chatlume-ai-chatbot'
+						) }
+						error={ problem(
+							errors.privacy?.chat_notice?.message
+						) }
+					>
+						<textarea
+							id={ noticeId }
+							rows={ 2 }
+							maxLength={ 300 }
+							className={ cn(
+								inputClasses,
+								'chatlume:h-auto chatlume:py-2'
+							) }
+							placeholder={ suggestedNotice }
+							aria-describedby={ `${ noticeId }-hint` }
+							{ ...register( 'privacy.chat_notice' ) }
+						/>
+					</Field>
+					{ ! chatNotice?.trim() && (
+						<div>
+							<Button
+								type="button"
+								size="sm"
+								variant="ghost"
+								onClick={ () =>
+									form.setValue(
+										'privacy.chat_notice',
+										suggestedNotice,
+										{ shouldDirty: true }
+									)
+								}
+							>
+								{ __(
+									'Use the suggested text',
+									'chatlume-ai-chatbot'
+								) }
+							</Button>
+						</div>
 					) }
 					<SwitchField
 						control={ control }

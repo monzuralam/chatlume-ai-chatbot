@@ -109,4 +109,35 @@ class ActivationTest extends TestCase {
 
 		$this->assertSame( array( 'chatlume_retention_cleanup', 'chatlume_index_queue' ), $unscheduled );
 	}
+
+	public function test_network_deactivation_clears_every_site(): void {
+		Functions\when( 'delete_transient' )->justReturn( true );
+		Functions\when( 'is_multisite' )->justReturn( true );
+		Functions\when( 'get_sites' )->justReturn( array( 1, 2, 3 ) );
+
+		$site   = 0;
+		$events = array();
+		Functions\when( 'switch_to_blog' )->alias(
+			static function ( $id ) use ( &$site ) {
+				$site = (int) $id;
+				return true;
+			}
+		);
+		Functions\when( 'restore_current_blog' )->justReturn( true );
+		Functions\when( '_get_cron_array' )->alias(
+			static function () use ( &$site ) {
+				return array( 1700000000 => array( 'chatlume_daily_cleanup' => array() ) );
+			}
+		);
+		Functions\when( 'wp_unschedule_hook' )->alias(
+			static function ( $hook ) use ( &$site, &$events ) {
+				$events[] = $site . ':' . $hook;
+				return 1;
+			}
+		);
+
+		Activation::deactivate( true );
+
+		$this->assertSame( array( '1:chatlume_daily_cleanup', '2:chatlume_daily_cleanup', '3:chatlume_daily_cleanup' ), $events );
+	}
 }

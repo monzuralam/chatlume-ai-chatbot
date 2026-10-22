@@ -15,6 +15,7 @@ export const privacySettingsSchema = z
 		delete_data_on_uninstall: z.boolean(),
 		store_conversations: z.boolean(),
 		retention_days: z.number().int().min( 0 ).max( 3650 ),
+		chat_notice: z.string().max( 300 ),
 	} )
 	.strict();
 

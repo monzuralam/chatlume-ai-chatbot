@@ -15,6 +15,7 @@ const settings: Settings = {
 		delete_data_on_uninstall: false,
 		store_conversations: true,
 		retention_days: 90,
+		chat_notice: '',
 	},
 	chatbot: {
 		bot_name: '',

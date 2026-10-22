@@ -30,6 +30,8 @@ export interface ChatlumeBootstrap {
 	assetsUrl: string;
 	adminUrl: string;
 	siteUrl: string;
+	/** Published privacy policy page, or empty. */
+	privacyUrl: string;
 	restNonce: string;
 	setupCompleted: boolean;
 	docsUrl: string;
@@ -50,6 +52,7 @@ const FALLBACK: ChatlumeBootstrap = {
 	assetsUrl: '',
 	adminUrl: '',
 	siteUrl: '',
+	privacyUrl: '',
 	restNonce: '',
 	setupCompleted: true,
 	docsUrl: '',

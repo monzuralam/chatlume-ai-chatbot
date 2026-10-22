@@ -109,6 +109,7 @@ Nothing is removed unless you enable **Delete all data on uninstall** in Chatlum
 * Caching and optimization plugins: publishing a new look or changing what the chat shows clears the page cache of WP Rocket, LiteSpeed Cache, W3 Total Cache, WP Super Cache, WP Fastest Cache, and SiteGround Optimizer, and the chat scripts are kept out of JavaScript combine, minify, and delay features in WP Rocket, LiteSpeed Cache, Autoptimize, Perfmatters, and SiteGround Optimizer.
 * Widget texts: reword any label visitors see in the chat, and on sites using WPML or Polylang, translate the welcome message, starter questions, quick actions, messages, invitation, consent text, and header texts into each language. The chat follows the language of the page.
 * WordPress 7.0 and newer: AI providers connected in Settings > Connectors can be chosen in Chatlume without entering their keys again (Chatlume uses them through WordPress and never stores those keys).
+* Privacy: Chatlume works with WordPress's Export Personal Data and Erase Personal Data tools, suggests text for your privacy policy, and can show a short privacy notice under the message box.
 * WordPress 6.9 and newer: Chatlume abilities let AI agents and automation tools ask the chatbot, read its statistics, list questions it could not answer, and add quick answers, for users who can manage Chatlume.
 
 == External services ==

@@ -30,6 +30,9 @@ require_once __DIR__ . '/vendor/autoload.php';
 function chatlume_uninstall_current_site(): bool {
 	global $wpdb;
 
+	// Scheduled events are not user data: a deleted plugin's events would only keep firing, so they always go.
+	\Chatlume\Installer\Activation::clear_scheduled_events();
+
 	$settings = get_option( \Chatlume\Settings\Settings::OPTION, array() );
 	$opted_in = is_array( $settings ) && ! empty( $settings['privacy']['delete_data_on_uninstall'] );
 

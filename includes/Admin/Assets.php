@@ -131,6 +131,8 @@ class Assets {
 			'assetsUrl'      => CHATLUME_URL . 'build/admin/',
 			'adminUrl'       => admin_url( 'admin.php?page=' . Plugin::ADMIN_SLUG ),
 			'siteUrl'        => home_url( '/' ),
+			// For the suggested privacy notice ('' when the site has no published privacy policy page).
+			'privacyUrl'     => (string) get_privacy_policy_url(),
 			// The setup wizard opens once, until it is finished or skipped.
 			'setupCompleted' => (bool) Settings::get( 'setup.completed', false ),
 			// For the live preview's AI replies, which run inside the widget (not apiFetch).

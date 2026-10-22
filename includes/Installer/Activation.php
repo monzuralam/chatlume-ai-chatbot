@@ -58,14 +58,30 @@ class Activation {
 	}
 
 	/**
-	 * Deactivation hook callback: removes scheduled events and the redirect flag.
-	 * Data is kept; it is only removed on uninstall when the admin opted in.
+	 * Deactivation hook callback: removes scheduled events and the redirect flag,
+	 * on every site after a network deactivation. Data is kept; it is only
+	 * removed on uninstall when the admin opted in.
+	 *
+	 * @param bool $network_wide Whether the plugin is deactivated for the whole network.
+	 * @return void
+	 */
+	public static function deactivate( $network_wide = false ): void {
+		delete_transient( self::REDIRECT_TRANSIENT );
+
+		if ( $network_wide && is_multisite() ) {
+			Multisite::for_each_site( array( self::class, 'clear_scheduled_events' ) );
+			return;
+		}
+
+		self::clear_scheduled_events();
+	}
+
+	/**
+	 * Removes this site's scheduled `chatlume_*` events (with any arguments).
 	 *
 	 * @return void
 	 */
-	public static function deactivate(): void {
-		delete_transient( self::REDIRECT_TRANSIENT );
-
+	public static function clear_scheduled_events(): void {
 		foreach ( self::scheduled_hooks() as $hook ) {
 			wp_unschedule_hook( $hook );
 		}

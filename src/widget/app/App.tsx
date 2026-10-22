@@ -1,10 +1,11 @@
 /**
  * The chat window.
  */
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { track } from '../lib/analytics';
 import { isClosed } from '../lib/display';
+import { parseRichText } from '../lib/markdown';
 import { createPreviewChannel, type PreviewBatch } from '../lib/preview';
 import type {
 	BehaviorConfig,
@@ -18,6 +19,7 @@ import type {
 import { Composer } from './Composer';
 import { HandoffCard, LeadForm } from './Engagement';
 import { Header } from './Header';
+import { InlineNodes } from './Markdown';
 import { Messages } from './Messages';
 import { useChat } from './useChat';
 
@@ -138,6 +140,10 @@ export function App( {
 	const [ previewLead, setPreviewLead ] = useState( false );
 	const [ handoffOpen, setHandoffOpen ] = useState( false );
 	const [ notice, setNotice ] = useState( '' );
+	const privacyNotice = useMemo(
+		() => parseRichText( chat.behavior.privacy_notice ?? '' ),
+		[ chat.behavior.privacy_notice ]
+	);
 	const leadGiven = !! lead?.given || leadSaved;
 	const visitorMessages = chat.messages.filter(
 		( message ) => message.role === 'user'
@@ -569,6 +575,14 @@ export function App( {
 						voice={ chat.behavior.voice_input !== false }
 						maxLength={ chat.behavior.max_message_length || 1000 }
 					/>
+				) }
+				{ privacyNotice.length > 0 && ! leadGate && (
+					<p className="cl-privacy">
+						<InlineNodes
+							nodes={ privacyNotice }
+							strings={ strings }
+						/>
+					</p>
 				) }
 				{ ui.brand.poweredBy && (
 					<p className="cl-powered">{ strings.poweredBy }</p>

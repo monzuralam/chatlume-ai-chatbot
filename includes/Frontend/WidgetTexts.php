@@ -61,6 +61,7 @@ final class WidgetTexts {
 		'chatbot.site_search_message' => array( 'textarea', 500 ),
 		'display.triggers.message'    => array( 'text', 200 ),
 		'leads.consent'               => array( 'rich', 300 ),
+		'privacy.chat_notice'         => array( 'rich', 300 ),
 		'theme.launcher.label'        => array( 'text', 40 ),
 		'theme.launcher.teaser'       => array( 'text', 140 ),
 		'theme.brand.headerTitle'     => array( 'text', 60 ),

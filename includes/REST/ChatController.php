@@ -514,6 +514,8 @@ class ChatController {
 			'read_aloud'          => (bool) Settings::get( 'chatbot.read_aloud', true ),
 			// Providers that answer all at once (e.g. through WordPress's AI Client) skip the first-word timeout.
 			'streams'             => self::primary_streams(),
+			// Optional notice under the message box (bold, italics, links), in the visitor's language.
+			'privacy_notice'      => WidgetTexts::translate( 'privacy.chat_notice', (string) Settings::get( 'privacy.chat_notice', '' ) ),
 		);
 	}
 

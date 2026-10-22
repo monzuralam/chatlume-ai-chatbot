@@ -67,6 +67,13 @@ final class SettingsSchema {
 						'minimum' => 0,
 						'maximum' => 3650,
 					),
+					// Optional notice under the message box, e.g. a link to the privacy policy (empty: none).
+					'chat_notice'              => array(
+						'type'      => 'string',
+						'format'    => 'rich',
+						'default'   => '',
+						'maxLength' => 300,
+					),
 				),
 			),
 			'providers'     => self::providers_section(),

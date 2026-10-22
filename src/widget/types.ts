@@ -160,6 +160,8 @@ export interface BehaviorConfig {
 	transcript?: boolean;
 	/** Whether replies arrive word by word (false for providers that answer all at once). */
 	streams?: boolean;
+	/** Notice under the message box (limited HTML: bold, italics, links), or empty. */
+	privacy_notice?: string;
 }
 
 /** Lead capture (see `Chatlume\Engagement\Leads::config()`). */

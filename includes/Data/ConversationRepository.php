@@ -168,6 +168,43 @@ class ConversationRepository {
 	}
 
 	/**
+	 * Conversations of one person, for privacy exports and erasure: those
+	 * where they left this email in the lead form, or chatted while logged
+	 * in as this user. Oldest first.
+	 *
+	 * @param string $email   Email address.
+	 * @param int    $user_id WordPress user with that email (0: none).
+	 * @param int    $limit   Most conversations.
+	 * @param int    $offset  Conversations to skip.
+	 * @return array<int, array<string, mixed>>
+	 */
+	public function for_person( string $email, int $user_id, int $limit, int $offset = 0 ): array {
+		global $wpdb;
+
+		if ( '' === $email && $user_id <= 0 ) {
+			return array();
+		}
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Chatlume's own table; privacy requests are rare.
+		$rows = $wpdb->get_results(
+			$wpdb->prepare(
+				'SELECT id, page_url, language, lead_name, lead_email, rating, created_at, updated_at FROM %i WHERE is_test = 0 AND ( ( %s <> %s AND lead_email = %s ) OR ( %d > 0 AND user_id = %d ) ) ORDER BY id ASC LIMIT %d OFFSET %d',
+				Schema::table( 'conversations' ),
+				$email,
+				'',
+				$email,
+				$user_id,
+				$user_id,
+				$limit,
+				$offset
+			),
+			ARRAY_A
+		);
+
+		return is_array( $rows ) ? $rows : array();
+	}
+
+	/**
 	 * Visitor conversations that went quiet in a time window and were not
 	 * reported as ended yet.
 	 *

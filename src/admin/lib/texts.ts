@@ -276,6 +276,7 @@ export function sourceLabel( path: string ): string {
 			'chatlume-ai-chatbot'
 		),
 		'leads.consent': __( 'Consent text', 'chatlume-ai-chatbot' ),
+		'privacy.chat_notice': __( 'Privacy notice', 'chatlume-ai-chatbot' ),
 		'theme.launcher.label': __( 'Chat button text', 'chatlume-ai-chatbot' ),
 		'theme.launcher.teaser': __(
 			'Chat button message bubble',

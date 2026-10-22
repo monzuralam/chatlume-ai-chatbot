@@ -422,7 +422,7 @@ Status legend: ✅ done · 🚧 in progress · ⬜ not started. Approved deviati
 5. ✅ **Admin experience** (done 2026-10-18): setup wizard with provider guides, Dashboard, Chatbot, Playground, the Customizer with always-on live preview (presets, Simple/Advanced modes, colors, typography, layout, draft/publish, versions, real-site backdrop, context-aware states, click-to-edit, interactive preview, before/after, devices, Developer styling panel), Display & triggers, Conversations, Settings with Health check, core Command Palette commands.
 6. ✅ **Knowledge base** (done 2026-10-18): indexer, document uploads, embeddings storage and re-embedding, two-stage retrieval with n-gram fallback, source links, WooCommerce sync, multilingual filtering, Knowledge page.
 7. ✅ **Engagement, integrations, and platform** (done 2026-10-18): proactive triggers, voice, lead capture, handoff, webhooks, email notifications, analytics events, cache purging, optimization-plugin compatibility, WPML/Polylang, "Match my website", WordPress Font Library and theme.json integration, "Preview on my site", per-language content, WordPress Connectors bridge and core AI Client, Abilities registration.
-8. ⬜ **Hardening and release**: privacy integrations, uninstall, full test suite, i18n, readme with all required sections, Plugin Check fixes, release zip.
+8. 🚧 **Hardening and release**: privacy integrations, uninstall, full test suite, i18n, readme with all required sections, Plugin Check fixes, release zip.
 
 ### Build log
 
@@ -856,7 +856,7 @@ Implementation decisions (for review):
 - Quick action links (pages, email, phone, WhatsApp) are the same in every language; only the button text and preset messages are translated.
 - Verified live with Polylang's public functions emulated by a temporary must-use plugin (English and Bengali), rather than installing Polylang on the shared test site.
 
-Module 7.6 – WordPress Connectors, core AI Client, and Abilities API ✅ (2026-10-18, awaiting review)
+Module 7.6 – WordPress Connectors, core AI Client, and Abilities API ✅ (2026-10-18)
 
 Approved decision: providers connected in WordPress send requests only through the core AI Client; Chatlume never reads, copies, or stores their keys (no word-by-word streaming for them).
 
@@ -872,6 +872,24 @@ Implementation decisions (for review):
 - Verified live on WordPress 7.1 with a temporary test provider registered in the AI Client (pointing at the local OpenAI-compatible server): connection test, model list, visitor chats with tokens logged, the wizard, the Health check, and all four abilities over REST (visitors get 401).
 
 Phase 7 – Engagement, integrations, and platform is complete.
+
+**Phase 8 – Hardening and release 🚧 (in progress)**
+
+Approved decisions:
+- Delivered in five modules, each committed after review: privacy and uninstall; launcher size; test-suite gaps and i18n; readme and directory compliance; release zip, test matrix, and the Definition of done walkthrough.
+- The first release is version 1.0.0.
+- Release tests run on throwaway WordPress installs in subfolders of the development site (their own table prefixes), deleted afterwards.
+
+Module 8.1 – Privacy and uninstall ✅ (2026-10-22, awaiting review)
+- [x] `Privacy\PrivacyHandler`: Tools > Export Personal Data and Erase Personal Data find a person's conversations by the email they left in the lead form or by their WordPress account; the export holds each conversation's times, page, language, name and email, rating, and transcript (20 per page); erasing deletes those conversations with their messages (50 per request)
+- [x] Suggested privacy policy text (Settings > Privacy > Policy Guide): what the chat collects, the one-way IP code, what goes to the AI service, retention, browser storage (no cookies), emails, and Turnstile
+- [x] Optional privacy notice under the message box (`privacy.chat_notice`: bold, italics, links; off by default), with "Use the suggested text" linking to the site's privacy policy page; translatable on the Widget texts page
+- [x] Deactivation clears scheduled events on every site after a network deactivation; uninstall always clears leftover scheduled events, while data is still removed only when the admin opted in
+
+Implementation decisions (for review):
+- Admin Playground and ability test conversations (`is_test`) are not part of exports or erasure; they hold no visitor data.
+- Scheduled events are not user data, so uninstall removes them even without the opt-in (a deleted plugin's events would only keep firing).
+- Verified live through WordPress's own Tools screens (confirmed requests, "Download personal data", "Erase personal data"), the Policy Guide, the Settings page, and the widget on the site; test data, requests, and export files were removed afterwards.
 
 ## Post-launch roadmap (design for these, do not build now)
 Keep the architecture ready for these without rewrites:

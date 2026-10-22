@@ -63,7 +63,16 @@ class Multisite {
 	 * @return int Number of sites processed.
 	 */
 	public static function install_all_sites( ?callable $installer = null ): int {
-		$installer = $installer ?? array( Migrations::class, 'install_site' );
+		return self::for_each_site( $installer ?? array( Migrations::class, 'install_site' ) );
+	}
+
+	/**
+	 * Runs a callback on every site in the network, in batches.
+	 *
+	 * @param callable $callback Called while switched to each site.
+	 * @return int Number of sites processed.
+	 */
+	public static function for_each_site( callable $callback ): int {
 		$offset    = 0;
 		$processed = 0;
 
@@ -79,7 +88,7 @@ class Multisite {
 
 			foreach ( $site_ids as $site_id ) {
 				switch_to_blog( (int) $site_id );
-				call_user_func( $installer );
+				call_user_func( $callback );
 				restore_current_blog();
 				++$processed;
 			}

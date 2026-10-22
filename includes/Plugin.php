@@ -26,6 +26,7 @@ use Chatlume\Knowledge\Indexer;
 use Chatlume\Integrations\Webhooks;
 use Chatlume\Knowledge\ProductSync;
 use Chatlume\Knowledge\Retriever;
+use Chatlume\Privacy\PrivacyHandler;
 use Chatlume\Providers\CoreConnectorsBridge;
 use Chatlume\REST\AppearanceController;
 use Chatlume\REST\ChatbotController;
@@ -111,6 +112,7 @@ final class Plugin {
 		( new CachePurger() )->register();
 		( new CoreConnectorsBridge() )->register();
 		( new AbilitiesRegistrar() )->register();
+		( new PrivacyHandler() )->register();
 		( new OptimizationPlugins() )->register();
 		( new Embeddings() )->register();
 		( new Retriever() )->register();
